@@ -96,6 +96,8 @@ intelli-app/
 ├── START_HERE.md        <- THIS FILE (your plain-English guide)
 ├── CONTEXT.md           Short context + progress log (for a new AI chat)
 ├── README.md            Quick technical readme
+├── docs/
+│   └── superpowers/specs/  Approved design write-ups (one file per feature)
 ├── docker-compose.yml   Recipe that runs the backend + database together
 ├── package.json         Project ID card + command shortcuts
 │
