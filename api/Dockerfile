@@ -9,7 +9,8 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN uv pip install --system --no-cache \
     "fastapi>=0.115" "uvicorn[standard]>=0.30" \
-    "sqlalchemy>=2.0" "psycopg[binary]>=3.2" "pydantic>=2.7"
+    "sqlalchemy>=2.0" "psycopg[binary]>=3.2" "pydantic>=2.7" \
+    "passlib[argon2]>=1.7" "pyjwt>=2.9"
 
 COPY app ./app
 

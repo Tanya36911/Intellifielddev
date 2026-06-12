@@ -1,0 +1,51 @@
+# Intelli — build context (read this first)
+
+If you're an AI assistant or a new teammate opening this repo fresh, read this
+file, then `README.md`, then the prototype's `TECH_STACK.txt` and
+`Intelli_Complete_Handoff.md` (in the sibling `hi-fi-intelli/` repo). Together
+they give you the product, the decisions, the stack, and the build state.
+
+## What this is
+The production build of **Intelli**, a multi-tenant CPG retail field-execution
+platform (Admin web, Manager web, Field mobile). The finished **prototype** in
+`../hi-fi-intelli/project/` is the visual + behavioral spec; this repo
+implements it for real. Differentiator: self-serve configurability + flexible
+rep autonomy + offline done right. AI (shelf photo -> per-SKU gap list) is a
+fast-follow, never the headline.
+
+## Stack (decided, see TECH_STACK.txt for full reasoning)
+- Monorepo: pnpm workspaces. TypeScript everywhere.
+- Web (Admin/Manager): React 19 + Vite + React Router + TanStack Query +
+  Redux Toolkit + react-hook-form/zod + CSS Modules.
+- Mobile (Field): Expo (managed) + Expo Router + WatermelonDB + same state libs.
+- Backend: FastAPI + Postgres + SQLAlchemy + plain-SQL migrations (dbmate, NOT
+  Alembic) + JWT/Argon2. Security spine = "scope follows the pin" (a user sees
+  only their subtree of the org tree), enforced in one ScopedRepo + Postgres RLS.
+
+## Build order (gated phases)
+- [x] **Phase 0** - monorepo + Docker (API + Postgres) + shared tokens + blank Admin app. Verified.
+- [ ] **Phase 1** - tenancy + auth (in progress). Gate: log in; cannot see another tenant.
+- [ ] **Phase 2** - hierarchy + scope guard. Gate (MANDATORY): isolation tests pass.
+- [ ] **Phase 3** - catalog + surveys + versions + assignments.
+- [ ] **Phase 4** - responses + analytics + payroll + export.
+- [ ] **Phase 5** - Field app + offline sync.
+- [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
+
+## How to run (see README for detail)
+- Backend + DB: `docker compose up -d` (API at :8000, /docs for API docs)
+- Migrations: `docker compose run --rm migrate up`
+- Web: `pnpm install` then `pnpm dev:admin` (:5173)
+
+## Working preferences (how the user wants to be helped)
+- Explain every change in plain, detailed terms (limited coding background).
+- Commit to git after each meaningful change so it can be reverted.
+- No em dashes anywhere in UI copy. UI status text is terse; prose is plain
+  sentences, not dot-spliced fragments.
+- Keep this file's build-order checklist + the prototype handoff CHANGELOG
+  updated as work progresses.
+
+## Progress log
+- 2026-06-12: Phase 0 committed (monorepo, FastAPI+Postgres, tokens, blank Admin). First commit.
+- 2026-06-12: Phase 1 backend - tenants + users tables (dbmate migration), Argon2 password
+  hashing + JWT, POST /auth/login, seed (dana@lumenbeauty.com / demo1234). Verified: correct
+  password returns a token, wrong password 401, password stored as Argon2 hash. Login SCREEN next.

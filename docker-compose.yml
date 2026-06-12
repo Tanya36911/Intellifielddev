@@ -27,5 +27,18 @@ services:
       db:
         condition: service_healthy
 
+  # Migrations (dbmate). Not started by `up` (profile "tools"); run on demand:
+  #   docker compose run --rm migrate up
+  migrate:
+    image: ghcr.io/amacneil/dbmate:2
+    profiles: ["tools"]
+    environment:
+      DATABASE_URL: postgres://intelli:intelli_dev@db:5432/intelli?sslmode=disable
+    volumes:
+      - ./db:/db
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
