@@ -18,6 +18,9 @@ __pycache__/
 .env.*
 !.env.example
 
+# brainstorm previews (local mockups, not app code)
+.superpowers/
+
 # editor / os
 .DS_Store
 Thumbs.db
