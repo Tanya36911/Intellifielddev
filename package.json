@@ -10,6 +10,7 @@
   "scripts": {
     "dev:admin": "pnpm --filter @intelli/admin dev",
     "build:admin": "pnpm --filter @intelli/admin build",
+    "test:admin": "pnpm --filter @intelli/admin test",
     "api:up": "docker compose up --build",
     "api:down": "docker compose down",
     "api:logs": "docker compose logs -f api"
