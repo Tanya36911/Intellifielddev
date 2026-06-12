@@ -1,0 +1,17 @@
+{
+  "name": "intelli-app",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Intelli production app (monorepo): web Admin/Manager + React Native Field + FastAPI backend",
+  "packageManager": "pnpm@11.6.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:admin": "pnpm --filter @intelli/admin dev",
+    "build:admin": "pnpm --filter @intelli/admin build",
+    "api:up": "docker compose up --build",
+    "api:down": "docker compose down",
+    "api:logs": "docker compose logs -f api"
+  }
+}

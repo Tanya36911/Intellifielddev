@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Allow specific dependencies to run install scripts (pnpm blocks these by
+# default for safety). esbuild fetches its native binary in a postinstall.
+allowBuilds:
+  esbuild: true
