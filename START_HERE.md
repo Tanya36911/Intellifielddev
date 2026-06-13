@@ -110,12 +110,14 @@ intelli-app/
 ├── START_HERE.md        <- THIS FILE (your plain-English guide)
 ├── CONTEXT.md           Short context + progress log (for a new AI chat)
 ├── README.md            Quick technical readme
+├── CODEBASE_MAP.md      PLAIN-ENGLISH MAP OF THE CODE (backend vs frontend)
 ├── docs/
 │   └── superpowers/        Design write-ups (specs/) + build plans (plans/)
 ├── docker-compose.yml   Recipe that runs the backend + database together
 ├── package.json         Project ID card + command shortcuts
 │
 ├── api/                 THE BACKEND (Python). The "waiter" that talks to the DB.
+│   ├── README.md        Plain-English guide to every backend file
 │   ├── Dockerfile       Recipe to build the backend's box
 │   ├── pyproject.toml   List of backend libraries it needs
 │   └── app/
@@ -125,15 +127,18 @@ intelli-app/
 │       ├── auth.py      The /auth/login check
 │       └── seed.py      Creates the demo company + user
 │
-├── db/
+├── db/                  THE DATABASE shape (not the data itself)
+│   ├── README.md        Plain-English guide to migrations + schema
 │   ├── migrations/      Database change files (each adds/changes tables)
 │   └── schema.sql       Auto-generated snapshot of the current DB shape
 │
 ├── packages/
 │   └── tokens/          Shared colors/fonts/spacing (one source for all apps)
+│       └── README.md    Plain-English guide to the design tokens
 │
-└── apps/
+└── apps/                THE FRONTEND apps (the screens you see)
     ├── admin/           ADMIN web app (React). Has a real login now.
+    │   ├── README.md    Plain-English guide to every frontend file
     │   └── src/
     │       ├── lib/api.ts        The one file that talks to the backend
     │       ├── store/            The session pocket (who is signed in)
@@ -144,6 +149,12 @@ intelli-app/
     ├── manager/         MANAGER web app  (not created yet)
     └── field/           FIELD mobile app (not created yet)
 ```
+
+**Want to understand the code, not just run it?** Open
+[CODEBASE_MAP.md](CODEBASE_MAP.md) first. It explains, in plain English, which
+folders are the backend and which are the frontend, then each folder has its
+own README that walks through every file. The backend one
+([api/README.md](api/README.md)) assumes you know nothing about backends.
 
 ---
 

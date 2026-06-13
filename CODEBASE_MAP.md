@@ -1,0 +1,101 @@
+# CODEBASE MAP, Tanya (read this to understand the code)
+
+This is your plain-English map of the whole project. START_HERE.md tells you
+how to RUN things; this file explains what the CODE is and where it lives, so
+you (and anyone helping you) can find your way around without being a coder.
+
+It is kept up to date: whenever a file is added or its job changes, this map
+and the per-folder README guides get updated in the same step.
+
+---
+
+## 1. The 30-second mental model
+
+The app has three parts. A simple way to picture it, a restaurant:
+
+- **The frontend** is the dining room: the screens you see and click. It runs
+  in your web browser. (Built with React, a popular tool for making web
+  screens.)
+- **The backend** is the waiter: it takes requests from the dining room,
+  fetches or saves things, and brings answers back. It is the only one allowed
+  to talk to the kitchen. (Built with FastAPI, a Python tool for making
+  backends.)
+- **The database** is the kitchen's pantry: the app's permanent memory, where
+  all the real information is stored. (PostgreSQL, a well-known database.)
+
+The golden rule: the dining room never reaches into the pantry itself. It
+always asks the waiter. So the frontend never talks to the database directly,
+only to the backend. This keeps the data safe and the rules in one place.
+
+```
+   YOU (browser)              THE WAITER                THE PANTRY
+  +--------------+   asks    +--------------+  reads/  +--------------+
+  |  FRONTEND    | --------> |   BACKEND    |  writes  |  DATABASE    |
+  |  (React)     | <-------- |  (FastAPI)   | <------> | (PostgreSQL) |
+  +--------------+  answers  +--------------+          +--------------+
+     apps/ +                      api/                       db/
+     packages/
+```
+
+---
+
+## 2. Which folder is what
+
+| Folder | Part | In plain words |
+|--------|------|----------------|
+| `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
+| `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses (login is built). Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
+| `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
+| `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |
+| `docs/` | NOTES | Design write-ups and build plans (one file per feature). Not code. |
+
+Everything else at the top level is setup/config, explained in section 4.
+
+---
+
+## 3. How a login actually travels through the three parts
+
+This is the whole app in one example. When you sign in:
+
+1. **Frontend** (the login screen in `apps/admin/`) takes your email and
+   password and hands them to the waiter.
+2. **Backend** (`api/`) catches them, looks up the matching person in the
+   pantry, and checks the password against the safely-scrambled version.
+3. **Database** (`db/` defines its shape) hands the backend that one person's
+   record.
+4. **Backend** decides yes or no. If yes, it makes a "wristband" (a signed
+   token that proves who you are) and sends it back.
+5. **Frontend** stores the wristband and shows you the welcome page.
+
+Each part has a README that explains its own files in detail.
+
+---
+
+## 4. The setup files at the top level (what each one is for)
+
+These are not "the app" so much as the instructions for assembling and running
+it. You rarely edit them by hand.
+
+| File | In plain words |
+|------|----------------|
+| `docker-compose.yml` | The recipe that starts the backend and the database together with one command. Names the database, opens the right doors (ports), and knows how to run database updates. |
+| `package.json` (root) | The project's ID card plus a list of command shortcuts (like `pnpm dev:admin` and `pnpm test:admin`). |
+| `pnpm-workspace.yaml` | Tells the tooling that `apps/*` and `packages/*` are all part of one project, so they can share code. |
+| `.gitignore` | A list of things git should NOT save (downloaded libraries, build leftovers, secrets). |
+| `.env.example` | A template showing which secret settings exist (like the database address), without real secret values. You copy it to `.env` for real values. |
+| `README.md` | The short technical readme for developers. |
+| `START_HERE.md` | Your plain-English "how to run it" guide. |
+| `CONTEXT.md` | The short build-status + history for a fresh AI chat or teammate. |
+| `CODEBASE_MAP.md` | This file. |
+
+---
+
+## 5. Where to read next
+
+- To understand the part you said you find hardest, the backend, open
+  [api/README.md](api/README.md). It explains every backend file from scratch.
+- For the database, [db/README.md](db/README.md).
+- For the screens you see, [apps/admin/README.md](apps/admin/README.md).
+- For the shared colors and fonts, [packages/tokens/README.md](packages/tokens/README.md).
