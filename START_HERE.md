@@ -27,8 +27,21 @@ open a brand-new chat, read this file first (and tell the assistant to, too).
   wristband that proves who you are) if correct, or a rejection if wrong.
 - A **demo login** to test with:  email `dana@lumenbeauty.com`  password `demo1234`
 
-**What's NEXT:** the login *screen* (the actual form you type your email and
-password into), then the rest of the Admin app screens.
+**Phase 1 - login, the screen half (done):**
+- The Admin app now has a real **login page**: email + password, friendly
+  errors ("Invalid email or password", or "Can't reach the backend" when
+  Docker is off), and a quiet DEV box showing the demo login while we build.
+- After signing in you land on a small **welcome page** (your name, your
+  role, the green API dot, and Sign out). The real dashboard replaces it later.
+- You **stay signed in up to 12 hours**, even if you close the browser.
+- Permanent rails installed for every future screen: a page-switcher (each
+  screen gets its own web address, strangers get bounced to login), a
+  form-checker (catches typing mistakes before sending), a session pocket
+  (one shared place that remembers who is signed in), the brand fonts, and
+  a **testing robot** (27 automated checks that re-run on demand).
+
+**What's NEXT:** Phase 2, the org hierarchy + the scope guard ("you only see
+your own branch"), with its mandatory isolation tests.
 
 ---
 
@@ -85,6 +98,7 @@ for next time).
 | Apply new database changes | `docker compose run --rm migrate up` |
 | Re-create the demo user | `docker compose exec api python -m app.seed` |
 | Rebuild backend after code changes | `docker compose up -d --build api` |
+| Run the testing robot (frontend checks) | `pnpm test:admin` |
 | See what changed in git | `git status` |
 
 ---
@@ -97,7 +111,7 @@ intelli-app/
 ├── CONTEXT.md           Short context + progress log (for a new AI chat)
 ├── README.md            Quick technical readme
 ├── docs/
-│   └── superpowers/specs/  Approved design write-ups (one file per feature)
+│   └── superpowers/        Design write-ups (specs/) + build plans (plans/)
 ├── docker-compose.yml   Recipe that runs the backend + database together
 ├── package.json         Project ID card + command shortcuts
 │
@@ -119,8 +133,14 @@ intelli-app/
 │   └── tokens/          Shared colors/fonts/spacing (one source for all apps)
 │
 └── apps/
-    ├── admin/           ADMIN web app (React). The only app started so far.
-    │   └── src/         The screens live here (currently a blank starter page)
+    ├── admin/           ADMIN web app (React). Has a real login now.
+    │   └── src/
+    │       ├── lib/api.ts        The one file that talks to the backend
+    │       ├── store/            The session pocket (who is signed in)
+    │       ├── pages/            Login + welcome Home screens
+    │       ├── test/             Shared test helpers
+    │       ├── App.tsx           The route map (which address shows what)
+    │       └── main.tsx          The app's front door (wiring)
     ├── manager/         MANAGER web app  (not created yet)
     └── field/           FIELD mobile app (not created yet)
 ```
@@ -147,5 +167,6 @@ where we left off.
 
 ## 7. Where we are right now
 - Backend login: DONE and tested.
-- Login screen (frontend): NEXT.
+- Login screen (frontend): DONE and tested (27 automated checks).
+- Phase 1 is complete. NEXT: Phase 2, hierarchy + scope guard (isolation tests).
 - Everything is committed to git, so any step can be undone.

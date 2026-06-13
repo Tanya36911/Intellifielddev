@@ -24,7 +24,7 @@ fast-follow, never the headline.
 
 ## Build order (gated phases)
 - [x] **Phase 0** - monorepo + Docker (API + Postgres) + shared tokens + blank Admin app. Verified.
-- [ ] **Phase 1** - tenancy + auth (in progress). Gate: log in; cannot see another tenant.
+- [x] **Phase 1** - tenancy + auth. Done: backend login + Admin login screen. Gate met: log in works; only your own tenant's user comes back. (Full cross-tenant data isolation is Phase 2's gate.)
 - [ ] **Phase 2** - hierarchy + scope guard. Gate (MANDATORY): isolation tests pass.
 - [ ] **Phase 3** - catalog + surveys + versions + assignments.
 - [ ] **Phase 4** - responses + analytics + payroll + export.
@@ -49,3 +49,9 @@ fast-follow, never the headline.
 - 2026-06-12: Phase 1 backend - tenants + users tables (dbmate migration), Argon2 password
   hashing + JWT, POST /auth/login, seed (dana@lumenbeauty.com / demo1234). Verified: correct
   password returns a token, wrong password 401, password stored as Argon2 hash. Login SCREEN next.
+- 2026-06-13: Phase 1 frontend - Admin login screen (approved via browser mockup first). React
+  Router v7 route map (/login, /) with auth doorman, react-hook-form + zod validation, Redux
+  Toolkit session slice mirrored to localStorage (12h expiry read from the JWT), brand fonts
+  loaded, Vitest + Testing Library harness (27 tests, all green). Verified: full build passes,
+  live backend returns Dana's token on the demo login and 401 on a wrong password. Spec + plan
+  in docs/superpowers/. Phase 1 COMPLETE; Phase 2 (hierarchy + scope guard) next.
