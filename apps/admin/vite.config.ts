@@ -10,5 +10,10 @@ export default defineConfig({
     globals: true,
     clearMocks: true,
     setupFiles: './src/test/setup.ts',
+    poolOptions: {
+      // Node 23+ ships an experimental localStorage global that shadows
+      // jsdom's working one inside vitest workers; turn it off there.
+      forks: { execArgv: ['--no-experimental-webstorage'] },
+    },
   },
 })
