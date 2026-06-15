@@ -8,6 +8,8 @@ import datetime as dt
 import os
 
 import jwt
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 
 # Argon2 is the current best-practice password hashing algorithm.
@@ -46,3 +48,19 @@ def make_token(user_id, tenant_id, role: str) -> str:
 def read_token(token: str) -> dict:
     """Verify a token's signature + expiry and return its contents."""
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+
+
+_bearer = HTTPBearer(auto_error=False)
+
+
+def current_claims(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> dict:
+    """Verify the caller's wristband (JWT) on an incoming request and return
+    its contents. Raises 401 if it is missing, invalid, or expired."""
+    if creds is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        return read_token(creds.credentials)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
