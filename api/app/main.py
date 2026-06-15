@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .auth import router as auth_router
+from .hierarchy import router as hierarchy_router
 from .db import db_ok
 
 app = FastAPI(title="Intelli API", version="0.0.0")
@@ -22,6 +23,7 @@ app.add_middleware(
 
 
 app.include_router(auth_router)
+app.include_router(hierarchy_router)
 
 
 @app.get("/health")
