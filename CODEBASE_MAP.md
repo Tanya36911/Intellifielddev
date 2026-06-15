@@ -95,7 +95,8 @@ it. You rarely edit them by hand.
 | `package.json` (root) | The project's ID card plus a list of command shortcuts (like `pnpm dev:admin` and `pnpm test:admin`). |
 | `pnpm-workspace.yaml` | Tells the tooling that `apps/*` and `packages/*` are all part of one project, so they can share code. |
 | `.gitignore` | A list of things git should NOT save (downloaded libraries, build leftovers, secrets). |
-| `.env.example` | A template showing which secret settings exist (like the database address), without real secret values. You copy it to `.env` for real values. |
+| `.env` | Your LOCAL secrets (database password, login secret). Never committed to git. Docker reads it to start things. The backend reads secrets only from the environment (via `api/app/config.py`), never from hardcoded values. |
+| `.env.example` | A template showing which secret settings exist, without real values. A new teammate copies it to `.env` and fills in real values. |
 | `README.md` | The short technical readme for developers. |
 | `START_HERE.md` | Your plain-English "how to run it" guide. |
 | `CONTEXT.md` | The short build-status + history for a fresh AI chat or teammate. |

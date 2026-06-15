@@ -145,6 +145,7 @@ intelli-app/
 │   ├── pyproject.toml   List of backend libraries it needs
 │   ├── app/
 │   │   ├── main.py      Starts the backend; lists its web addresses
+│   │   ├── config.py    Reads all secrets from the environment (one place)
 │   │   ├── db.py        Connects to the database
 │   │   ├── security.py  Password scrambling + wristbands + "who is calling"
 │   │   ├── auth.py      The /auth/login check
@@ -213,7 +214,8 @@ where we left off.
 - Product catalog (company-wide to view, admin-only to edit): DONE and tested
   (backend robot green: 29 backend checks, plus 27 frontend checks).
 - Phases 1, 2, and 3a complete. NEXT: Phase 3b (surveys + versions + pass rules).
-- One pre-launch note: before real customer data, the login token's secret key
-  must be changed from its development placeholder to a long random secret set
-  in the environment.
+- Secrets are now read from a local `.env` file (never committed) through one
+  config file; the code has no weak built-in fallbacks. Remaining pre-launch
+  step: in production, set a fresh long random `JWT_SECRET` and database password
+  in the real environment (the values in `.env` are dev-only).
 - Everything is committed to git, so any step can be undone.

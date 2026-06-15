@@ -83,13 +83,22 @@ endpoints. The first two:
 - **Wristbands (tokens).** After a correct login, it creates a signed token
   (a JWT) that says who you are, your tenant (company), and your role, and
   stamps it to expire in 12 hours. The signature means nobody can forge or
-  tamper with one. Later requests show this wristband to prove who they are.
+  tamper with one. Later requests show this wristband to prove who they are. The
+  signing secret is read from `config.py` (the environment), never hardcoded.
+
+### app/config.py  (the one place secrets are read)
+Reads every secret and environment-specific setting (the database address and
+the login secret) from the environment, in one place. Nothing sensitive is
+hardcoded in the rest of the code. If a required secret is missing, the app
+refuses to start with a clear message, rather than silently using a weak
+default. In development these values come from your `.env` file (which is never
+committed); in production they come from the deploy environment.
 
 ### app/db.py  (the phone line to the pantry)
 Opens and holds the connection to the database, and offers a tiny "is the
 database reachable?" check. Every other file that needs data borrows this
-connection instead of opening its own. The database address is read from a
-secret setting (so it can differ between your laptop and a real server).
+connection instead of opening its own. The database address comes from
+`config.py` (which reads it from the environment).
 
 ### app/scope.py  (the scope guard: you only see your own branch)
 The single checkpoint that keeps companies and branches separate. For any

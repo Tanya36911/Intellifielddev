@@ -75,3 +75,12 @@ fast-follow, never the headline.
   harness SQL splitter (strip comments before splitting on ';', a migration comment had a
   semicolon). Tests green (29 backend total): company isolation, admin add/edit, non-admin 403, no
   cross-company edit, auth required. Phase 3a COMPLETE; Phase 3b (surveys) next.
+- 2026-06-15: Config hardening (backend-team suggestions). New api/app/config.py centralizes all
+  secrets, read from the environment with NO baked-in defaults (missing required secret = app
+  refuses to start; test_config covers this). db.py + security.py now import from config. Secrets
+  (POSTGRES_PASSWORD, JWT_SECRET) live in a gitignored .env; docker-compose substitutes them and
+  pins TZ=UTC on every service. The dev JWT_SECRET is now long enough that the short-key warning is
+  gone. 32 backend tests green. Confirmed already-present (per teammate's list): SQL stops on error
+  (dbmate + harness) and scripts run in transactions (dbmate, seed, writes via engine.begin); UTC
+  was already real via timestamptz + UTC Postgres, now also pinned explicitly. Remaining pre-launch:
+  set fresh strong secrets in the production environment.
