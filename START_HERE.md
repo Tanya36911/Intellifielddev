@@ -111,6 +111,7 @@ intelli-app/
 ├── CONTEXT.md           Short context + progress log (for a new AI chat)
 ├── README.md            Quick technical readme
 ├── CODEBASE_MAP.md      PLAIN-ENGLISH MAP OF THE CODE (backend vs frontend)
+├── CHECKING_THE_WORK.md HOW TO CHECK/TEST THE WORK YOURSELF (no coding needed)
 ├── docs/
 │   └── superpowers/        Design write-ups (specs/) + build plans (plans/)
 ├── docker-compose.yml   Recipe that runs the backend + database together
@@ -155,6 +156,10 @@ intelli-app/
 folders are the backend and which are the frontend, then each folder has its
 own README that walks through every file. The backend one
 ([api/README.md](api/README.md)) assumes you know nothing about backends.
+
+**Want to check that the work is correct (test me)?** Open
+[CHECKING_THE_WORK.md](CHECKING_THE_WORK.md). It shows you, with no coding, how
+to run the checks, what "good" and "bad" look like, and how to undo anything.
 
 ---
 
