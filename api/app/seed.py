@@ -106,6 +106,20 @@ def _user(conn, tenant_id, email, name, role, node):
     return user_id
 
 
+def _sku(conn, tenant_id, line, variant, upc, color, status="active"):
+    """Insert (or update) one catalog product."""
+    conn.execute(
+        text(
+            "insert into skus (tenant_id, line, variant, upc, color, status, reference_images) "
+            "values (:tid, :line, :variant, :upc, :color, :status, '[]'::jsonb) "
+            "on conflict (tenant_id, upc) do update set line = excluded.line, "
+            "variant = excluded.variant, color = excluded.color, status = excluded.status"
+        ),
+        {"tid": tenant_id, "line": line, "variant": variant, "upc": upc,
+         "color": color, "status": status},
+    )
+
+
 def run() -> None:
     with engine.begin() as conn:
         # ----- Lumen Beauty -----
@@ -125,6 +139,11 @@ def run() -> None:
         _user(conn, lumen, "marcus@lumenbeauty.com", "Marcus Bell", "rep", bayarea)
         _user(conn, lumen, "newbie@lumenbeauty.com", "Newbie NoPin", "rep", None)
 
+        _sku(conn, lumen, "Velvet Lip", "Rosewood", "LUM-VL-ROSE", "#9B5B5B")
+        _sku(conn, lumen, "Velvet Lip", "Mauve", "LUM-VL-MAUVE", "#8B5E83")
+        _sku(conn, lumen, "Velvet Lip", "Coral", "LUM-VL-CORAL", "#E5734D")
+        _sku(conn, lumen, "Silk Foundation", "Ivory", "LUM-SF-IVORY", "#E8D3B8")
+
         # ----- Acme Cosmetics (proves cross-tenant isolation) -----
         acme = _tenant(conn, "Acme Cosmetics", "acme")
         _levels(conn, acme)
@@ -135,7 +154,9 @@ def run() -> None:
 
         _user(conn, acme, "avery@acme.com", "Avery Stone", "admin", a_root)
 
-    print("Seeded Lumen (8 nodes) + Acme (4 nodes) + 5 users with pins.")
+        _sku(conn, acme, "Glow Serum", "Original", "ACM-GS-ORIG", "#D8C7A0")
+
+    print("Seeded Lumen (8 nodes, 4 products) + Acme (4 nodes, 1 product) + 5 users with pins.")
 
 
 if __name__ == "__main__":
