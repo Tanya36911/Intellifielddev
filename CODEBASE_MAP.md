@@ -27,6 +27,12 @@ The golden rule: the dining room never reaches into the pantry itself. It
 always asks the waiter. So the frontend never talks to the database directly,
 only to the backend. This keeps the data safe and the rules in one place.
 
+As of Phase 2, the backend also enforces "scope follows the pin": every person
+is pinned to one spot on their company's org tree and can see only that spot and
+everything below it, never another company and never a sibling branch. That rule
+lives in one file ([api/app/scope.py](api/app/scope.py)) so no screen can ever
+forget it.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

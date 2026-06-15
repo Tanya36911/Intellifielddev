@@ -69,7 +69,9 @@ password arrive, it:
    would leak a hint, so we never do).
 
 ### app/security.py  (the safe and the wristband machine)
-Two security jobs live here, kept separate from everything else on purpose:
+Three security jobs live here, kept separate from everything else on purpose
+(the third, `current_claims`, was added in Phase 2: it verifies the caller's
+wristband on each incoming request and is what the scope guard relies on):
 - **Password scrambling.** Passwords are never stored as the real text. They
   are run through a one-way scrambler called Argon2. You can check a guess
   against the scramble, but you can never un-scramble it back to the password.
@@ -86,11 +88,30 @@ database reachable?" check. Every other file that needs data borrows this
 connection instead of opening its own. The database address is read from a
 secret setting (so it can differ between your laptop and a real server).
 
+### app/scope.py  (the scope guard: you only see your own branch)
+The single checkpoint that keeps companies and branches separate. For any
+request that reads org data, it reads the caller's wristband, looks up the node
+they are pinned to, and hands back a ScopedRepo: the only object allowed to read
+the scoped tables. Every query the ScopedRepo runs is automatically limited to
+the caller's company and the part of the tree at or below their pin. Because the
+filter lives only here, no screen can forget it. A person with no pin sees
+nothing (the safe default).
+
+### app/hierarchy.py  (the org-tree API)
+Defines `GET /nodes`, which returns the slice of the org tree the caller is
+allowed to see, using the ScopedRepo. This is the live proof the scope guard
+works end to end.
+
 ### app/seed.py  (puts the demo data in)
-A one-time helper that creates the demo company "Lumen Beauty" and the demo
-user `dana@lumenbeauty.com` (password `demo1234`) so you have someone to log in
-as. It is safe to run twice; it will not create duplicates. You run it with the
-command in START_HERE.md after the database is set up.
+Creates two demo companies and their org trees so you can log in and so the
+isolation tests have a known world to check: "Lumen Beauty" (8 spots: regions,
+districts, stores with CVS/Walmart labels) and "Acme Cosmetics" (4 spots, used
+to prove one company cannot see another). It also creates the demo people and
+pins each to a spot: `dana@lumenbeauty.com` (admin, sees all of Lumen),
+`sarah@lumenbeauty.com` (manager at Central), `marcus@lumenbeauty.com` (rep at
+Bay Area), `newbie@lumenbeauty.com` (no pin, sees nothing), and
+`avery@acme.com` (admin of Acme). All use password `demo1234`. Safe to run
+twice. Run it with the command in START_HERE.md after the database is set up.
 
 ### app/__init__.py  (a Python formality)
 An empty file whose mere presence tells Python "treat this folder as one
@@ -127,6 +148,17 @@ That is the entire backend as it stands today. Future phases add more desks
 with `db.py` and `security.py` shared underneath.
 
 ---
+
+## The backend's test robot (tests/)
+
+The `tests/` folder holds the backend's automated checks (using pytest, the
+standard Python test tool). They run against a throwaway copy of the database
+so they never touch your real data. The most important ones are the isolation
+checks in `test_scope_isolation.py` and `test_nodes_api.py`: they prove one
+company sees zero of another, a manager sees zero of a sibling region, and a rep
+sees only their own stores, both directly and through the real API. Run them
+with `pnpm test:api` (the backend must be running). These are the mandatory gate
+for Phase 2: nothing builds on top until they pass.
 
 ## A note on the database
 

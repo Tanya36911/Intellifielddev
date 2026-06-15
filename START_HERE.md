@@ -40,8 +40,20 @@ open a brand-new chat, read this file first (and tell the assistant to, too).
   (one shared place that remembers who is signed in), the brand fonts, and
   a **testing robot** (27 automated checks that re-run on demand).
 
-**What's NEXT:** Phase 2, the org hierarchy + the scope guard ("you only see
-your own branch"), with its mandatory isolation tests.
+**Phase 2 - the org chart + the "see only your branch" rule (done):**
+- Every company now has an org tree (regions, districts, stores), and each
+  person is pinned to one spot. A new safety checkpoint guarantees you can see
+  only your spot and everything below it, never another company's data and never
+  a sibling branch. This is the security backbone of the whole product.
+- Chain (CVS, Walmart) is a label on each store, so you can view and target
+  stores by chain across the company.
+- Proven by a backend test robot whose isolation checks must pass: one company
+  sees zero of another, a regional manager sees zero of a sibling region, a rep
+  sees only their stores.
+- This phase has no new screen. The org-chart screens come in a later phase.
+
+**What's NEXT:** Phase 3, the catalog (products/SKUs) and surveys with
+versioning.
 
 ---
 
@@ -96,9 +108,11 @@ for next time).
 | Stop backend + database | `docker compose down` |
 | See the Admin web app | `pnpm dev:admin` (then open http://localhost:5173) |
 | Apply new database changes | `docker compose run --rm migrate up` |
-| Re-create the demo user | `docker compose exec api python -m app.seed` |
-| Rebuild backend after code changes | `docker compose up -d --build api` |
+| Re-create the demo data (companies, tree, users) | `docker compose exec api python -m app.seed` |
+| Apply backend code changes | `docker compose restart api` (code is now live-mounted) |
+| Rebuild backend (only when libraries change) | `docker compose up -d --build api` |
 | Run the testing robot (frontend checks) | `pnpm test:admin` |
+| Run the testing robot (backend checks) | `pnpm test:api` (backend must be running) |
 | See what changed in git | `git status` |
 
 ---
@@ -121,12 +135,15 @@ intelli-app/
 │   ├── README.md        Plain-English guide to every backend file
 │   ├── Dockerfile       Recipe to build the backend's box
 │   ├── pyproject.toml   List of backend libraries it needs
-│   └── app/
-│       ├── main.py      Starts the backend; lists its web addresses
-│       ├── db.py        Connects to the database
-│       ├── security.py  Password scrambling (hash) + login wristbands (tokens)
-│       ├── auth.py      The /auth/login check
-│       └── seed.py      Creates the demo company + user
+│   ├── app/
+│   │   ├── main.py      Starts the backend; lists its web addresses
+│   │   ├── db.py        Connects to the database
+│   │   ├── security.py  Password scrambling + wristbands + "who is calling"
+│   │   ├── auth.py      The /auth/login check
+│   │   ├── scope.py     The "see only your branch" guard (scope follows pin)
+│   │   ├── hierarchy.py GET /nodes (the scoped org-tree API)
+│   │   └── seed.py      Creates the demo companies, tree, and users
+│   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
 ├── db/                  THE DATABASE shape (not the data itself)
 │   ├── README.md        Plain-English guide to migrations + schema
@@ -182,7 +199,11 @@ where we left off.
 ---
 
 ## 7. Where we are right now
-- Backend login: DONE and tested.
-- Login screen (frontend): DONE and tested (27 automated checks).
-- Phase 1 is complete. NEXT: Phase 2, hierarchy + scope guard (isolation tests).
+- Backend login + Admin login screen: DONE and tested.
+- Org hierarchy + "see only your branch" scope guard: DONE and tested (backend
+  isolation robot green: 18 backend checks, plus 27 frontend checks).
+- Phases 1 and 2 complete. NEXT: Phase 3 (catalog + surveys + versions).
+- One pre-launch note: before real customer data, the login token's secret key
+  must be changed from its development placeholder to a long random secret set
+  in the environment.
 - Everything is committed to git, so any step can be undone.

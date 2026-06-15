@@ -37,6 +37,14 @@ The first renovation order. It creates the two tables Phase 1 needs:
 The long number at the front of the filename is just a timestamp, so the files
 apply in the right order.
 
+### migrations/20260615000001_create_hierarchy.sql
+The second renovation order. It adds the org chart: **org_level_definitions**
+(the level names per company, like Company / Region / District / Store),
+**nodes** (the tree itself, each row carrying a "path" that makes "everything
+under here" a fast lookup, plus store-only columns including chain), and
+**assignments** (the pin: which user sits at which node). These are what the
+scope guard reads to decide who can see what.
+
 ### schema.sql
 An automatically-generated snapshot of what the pantry looks like right now,
 after all migrations have been applied. You do not edit this by hand; dbmate
@@ -57,7 +65,8 @@ From START_HERE.md's cheat sheet:
 
 ## What comes later
 
-Phase 2 adds the hierarchy (the company org tree) and the scope guard, which
-means new migrations here (nodes, assignments) and new rules in the backend.
-Each new table will arrive as its own numbered migration file, and this README
-gets a new entry describing it.
+Phase 2 (the hierarchy + scope guard) is now built (see the second migration
+above). Phase 3 adds the catalog and surveys, which means new migrations here
+(skus, surveys, survey_versions) and new rules in the backend. Each new table
+arrives as its own numbered migration file, and this README gets a new entry
+describing it.

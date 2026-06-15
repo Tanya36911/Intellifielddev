@@ -25,7 +25,7 @@ fast-follow, never the headline.
 ## Build order (gated phases)
 - [x] **Phase 0** - monorepo + Docker (API + Postgres) + shared tokens + blank Admin app. Verified.
 - [x] **Phase 1** - tenancy + auth. Done: backend login + Admin login screen. Gate met: log in works; only your own tenant's user comes back. (Full cross-tenant data isolation is Phase 2's gate.)
-- [ ] **Phase 2** - hierarchy + scope guard. Gate (MANDATORY): isolation tests pass.
+- [x] **Phase 2** - hierarchy + scope guard. Done: org_level_definitions, nodes (materialized path), assignments; one shared ScopedRepo enforces tenant + pinned-subtree on every query; GET /nodes. Gate MET: isolation tests pass (tenant, sibling region, rep, admin reach, no-pin), both at the repo level and through the API.
 - [ ] **Phase 3** - catalog + surveys + versions + assignments.
 - [ ] **Phase 4** - responses + analytics + payroll + export.
 - [ ] **Phase 5** - Field app + offline sync.
@@ -55,3 +55,13 @@ fast-follow, never the headline.
   loaded, Vitest + Testing Library harness (27 tests, all green). Verified: full build passes,
   live backend returns Dana's token on the demo login and 401 on a wrong password. Spec + plan
   in docs/superpowers/. Phase 1 COMPLETE; Phase 2 (hierarchy + scope guard) next.
+- 2026-06-15: Phase 2 - org hierarchy + scope-follows-pin guard. Migration for
+  org_level_definitions + nodes (materialized text path, prefix-indexed) + assignments. Shared
+  FastAPI ScopedRepo auto-filters every scoped query to tenant + pinned-node subtree;
+  current_claims verifies the JWT per request; GET /nodes is the first scoped endpoint. Seed
+  builds a 2-tenant world (Lumen 8 nodes, Acme 4) with 5 pinned/unpinned users. Backend test
+  harness added (pytest + TestClient vs a throwaway intelli_test Postgres). MANDATORY GATE GREEN:
+  18 backend tests incl. cross-tenant, sibling-region, rep, and no-pin isolation, checked on the
+  ScopedRepo and through the API. Chain kept as a store label (parallel chain hierarchy deferred,
+  per handoff PART 8). Open pre-launch item: replace the dev JWT_SECRET with a strong env secret
+  before real client data; RLS (Layer B) still optional/later. Phase 2 COMPLETE; Phase 3 next.
