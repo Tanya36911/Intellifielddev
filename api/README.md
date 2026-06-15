@@ -69,9 +69,12 @@ password arrive, it:
    would leak a hint, so we never do).
 
 ### app/security.py  (the safe and the wristband machine)
-Three security jobs live here, kept separate from everything else on purpose
-(the third, `current_claims`, was added in Phase 2: it verifies the caller's
-wristband on each incoming request and is what the scope guard relies on):
+Four security jobs live here, kept separate from everything else on purpose. The
+third, `current_claims` (added in Phase 2), verifies the caller's wristband on
+each incoming request and is what the scope guard relies on. The fourth,
+`require_admin` (added in Phase 3a), goes one step further and blocks anyone who
+is not an admin with a "not allowed" (403); it guards the catalog write
+endpoints. The first two:
 - **Password scrambling.** Passwords are never stored as the real text. They
   are run through a one-way scrambler called Argon2. You can check a guess
   against the scramble, but you can never un-scramble it back to the password.
@@ -95,12 +98,20 @@ they are pinned to, and hands back a ScopedRepo: the only object allowed to read
 the scoped tables. Every query the ScopedRepo runs is automatically limited to
 the caller's company and the part of the tree at or below their pin. Because the
 filter lives only here, no screen can forget it. A person with no pin sees
-nothing (the safe default).
+nothing (the safe default). As of Phase 3a the ScopedRepo also lists, adds, and
+edits catalog products, filtered by company only (the catalog is company-wide
+reference data, not branch-scoped).
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
 allowed to see, using the ScopedRepo. This is the live proof the scope guard
 works end to end.
+
+### app/catalog.py  (the product catalog API)
+Defines the product endpoints: `GET /skus` (any signed-in person in the company
+can view) and `POST /skus` + `PATCH /skus/{id}` (admins only, guarded by
+require_admin). All go through the ScopedRepo, so they only ever touch the
+caller's own company's products.
 
 ### app/seed.py  (puts the demo data in)
 Creates two demo companies and their org trees so you can log in and so the
@@ -110,8 +121,10 @@ to prove one company cannot see another). It also creates the demo people and
 pins each to a spot: `dana@lumenbeauty.com` (admin, sees all of Lumen),
 `sarah@lumenbeauty.com` (manager at Central), `marcus@lumenbeauty.com` (rep at
 Bay Area), `newbie@lumenbeauty.com` (no pin, sees nothing), and
-`avery@acme.com` (admin of Acme). All use password `demo1234`. Safe to run
-twice. Run it with the command in START_HERE.md after the database is set up.
+`avery@acme.com` (admin of Acme). All use password `demo1234`. As of Phase 3a it
+also seeds demo products: 4 for Lumen (Velvet Lip in three shades plus a Silk
+Foundation) and 1 for Acme. Safe to run twice. Run it with the command in
+START_HERE.md after the database is set up.
 
 ### app/__init__.py  (a Python formality)
 An empty file whose mere presence tells Python "treat this folder as one

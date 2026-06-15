@@ -52,8 +52,16 @@ open a brand-new chat, read this file first (and tell the assistant to, too).
   sees only their stores.
 - This phase has no new screen. The org-chart screens come in a later phase.
 
-**What's NEXT:** Phase 3, the catalog (products/SKUs) and surveys with
-versioning.
+**Phase 3a - the product catalog (done):**
+- Each company now has a product list (its "SKUs", meaning product variants
+  like Velvet Lip in Rosewood vs Mauve), with barcode, color, an
+  active/discontinued status, and optional reference photo links.
+- Everyone in a company can view the catalog; only admins can add or edit
+  products. One company never sees another's catalog.
+- This is the foundation for surveys (Phase 3b), which ask questions about these
+  exact products.
+
+**What's NEXT:** Phase 3b, surveys (with versioning and pass/fail rules).
 
 ---
 
@@ -142,7 +150,8 @@ intelli-app/
 │   │   ├── auth.py      The /auth/login check
 │   │   ├── scope.py     The "see only your branch" guard (scope follows pin)
 │   │   ├── hierarchy.py GET /nodes (the scoped org-tree API)
-│   │   └── seed.py      Creates the demo companies, tree, and users
+│   │   ├── catalog.py   GET/POST/PATCH /skus (the product catalog API)
+│   │   └── seed.py      Creates the demo companies, tree, users, products
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
 ├── db/                  THE DATABASE shape (not the data itself)
@@ -200,9 +209,10 @@ where we left off.
 
 ## 7. Where we are right now
 - Backend login + Admin login screen: DONE and tested.
-- Org hierarchy + "see only your branch" scope guard: DONE and tested (backend
-  isolation robot green: 18 backend checks, plus 27 frontend checks).
-- Phases 1 and 2 complete. NEXT: Phase 3 (catalog + surveys + versions).
+- Org hierarchy + "see only your branch" scope guard: DONE and tested.
+- Product catalog (company-wide to view, admin-only to edit): DONE and tested
+  (backend robot green: 29 backend checks, plus 27 frontend checks).
+- Phases 1, 2, and 3a complete. NEXT: Phase 3b (surveys + versions + pass rules).
 - One pre-launch note: before real customer data, the login token's secret key
   must be changed from its development placeholder to a long random secret set
   in the environment.

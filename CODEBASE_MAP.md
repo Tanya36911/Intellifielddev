@@ -33,6 +33,11 @@ everything below it, never another company and never a sibling branch. That rule
 lives in one file ([api/app/scope.py](api/app/scope.py)) so no screen can ever
 forget it.
 
+As of Phase 3a, the backend also holds each company's product catalog (its
+SKUs, meaning product variants like Velvet Lip in Rosewood vs Mauve). Everyone
+in a company can view the catalog; only admins can add or edit it. Like
+everything else, one company never sees another's.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

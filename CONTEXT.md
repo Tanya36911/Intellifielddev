@@ -26,7 +26,9 @@ fast-follow, never the headline.
 - [x] **Phase 0** - monorepo + Docker (API + Postgres) + shared tokens + blank Admin app. Verified.
 - [x] **Phase 1** - tenancy + auth. Done: backend login + Admin login screen. Gate met: log in works; only your own tenant's user comes back. (Full cross-tenant data isolation is Phase 2's gate.)
 - [x] **Phase 2** - hierarchy + scope guard. Done: org_level_definitions, nodes (materialized path), assignments; one shared ScopedRepo enforces tenant + pinned-subtree on every query; GET /nodes. Gate MET: isolation tests pass (tenant, sibling region, rep, admin reach, no-pin), both at the repo level and through the API.
-- [ ] **Phase 3** - catalog + surveys + versions + assignments.
+- [~] **Phase 3** - catalog + surveys + versions + assignments. Split into 3a + 3b.
+  - [x] **Phase 3a** - catalog (skus): company-wide list, admin-only add/edit, company isolation. Gate met (tests green).
+  - [ ] **Phase 3b** - surveys + immutable versions + assignments + structured pass conditions.
 - [ ] **Phase 4** - responses + analytics + payroll + export.
 - [ ] **Phase 5** - Field app + offline sync.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
@@ -65,3 +67,11 @@ fast-follow, never the headline.
   ScopedRepo and through the API. Chain kept as a store label (parallel chain hierarchy deferred,
   per handoff PART 8). Open pre-launch item: replace the dev JWT_SECRET with a strong env secret
   before real client data; RLS (Layer B) still optional/later. Phase 2 COMPLETE; Phase 3 next.
+- 2026-06-15: Phase 3a - product catalog. Migration for skus (tenant_id, line, variant, upc,
+  color, status, reference_images jsonb; unique per tenant by upc). ScopedRepo gained company-wide
+  list_skus/create_sku/update_sku (tenant-only filter, not branch path). New require_admin
+  dependency (403 for non-admins). catalog.py: GET /skus (any tenant user), POST/PATCH /skus
+  (admin only) with Pydantic validation. Seed adds 4 Lumen + 1 Acme products. Also fixed the test
+  harness SQL splitter (strip comments before splitting on ';', a migration comment had a
+  semicolon). Tests green (29 backend total): company isolation, admin add/edit, non-admin 403, no
+  cross-company edit, auth required. Phase 3a COMPLETE; Phase 3b (surveys) next.

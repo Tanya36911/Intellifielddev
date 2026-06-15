@@ -31,8 +31,9 @@ forgets you". If I ever break one of these by accident, this robot goes red.
 The backend now has its own robot too. With the backend running, run
 `pnpm test:api` (or `docker compose exec api pytest -q`). GOOD looks like all
 tests passing, including the isolation checks that prove one company cannot see
-another company's data and a manager cannot see a sibling region. If any go red,
-copy the text to me.
+another company's data and a manager cannot see a sibling region. As of Phase 3a
+these also cover the product catalog: one company cannot see another's products,
+and only admins can add or edit products. If any go red, copy the text to me.
 
 ### Check 2: The build (catches typos and broken wiring)
 This assembles the app for real. If any piece is mistyped or points at

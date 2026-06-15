@@ -45,6 +45,13 @@ under here" a fast lookup, plus store-only columns including chain), and
 **assignments** (the pin: which user sits at which node). These are what the
 scope guard reads to decide who can see what.
 
+### migrations/20260615000002_create_skus.sql
+The third renovation order. It adds **skus**, the product catalog: one row per
+sellable variant (line, variant, UPC barcode, color, active/discontinued status,
+and a list of reference photo links). Each product belongs to one company and is
+unique per company by barcode. This is company-wide reference data (everyone in
+the company sees all of it), unlike the org tree which is branch-scoped.
+
 ### schema.sql
 An automatically-generated snapshot of what the pantry looks like right now,
 after all migrations have been applied. You do not edit this by hand; dbmate
@@ -65,8 +72,8 @@ From START_HERE.md's cheat sheet:
 
 ## What comes later
 
-Phase 2 (the hierarchy + scope guard) is now built (see the second migration
-above). Phase 3 adds the catalog and surveys, which means new migrations here
-(skus, surveys, survey_versions) and new rules in the backend. Each new table
-arrives as its own numbered migration file, and this README gets a new entry
-describing it.
+Phase 2 (hierarchy + scope guard) and Phase 3a (the product catalog, the third
+migration above) are now built. Phase 3b adds surveys, which means new migrations
+here (surveys, survey_versions, survey_assignments) and new rules in the backend.
+Each new table arrives as its own numbered migration file, and this README gets a
+new entry describing it.
