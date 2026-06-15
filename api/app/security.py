@@ -64,3 +64,11 @@ def current_claims(
         return read_token(creds.credentials)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def require_admin(claims: dict = Depends(current_claims)) -> dict:
+    """Allow only admins past. Returns the caller's claims, or raises 403 for
+    any non-admin (managers and reps). Used on catalog write endpoints."""
+    if claims.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    return claims
