@@ -23,11 +23,15 @@ MIGRATIONS = pathlib.Path("/app/db/migrations")
 
 
 def _statements(sql: str):
-    """Yield individual SQL statements, dropping comment-only lines."""
-    for chunk in sql.split(";"):
-        lines = [ln for ln in chunk.splitlines() if ln.strip() and not ln.strip().startswith("--")]
-        if lines:
-            yield "\n".join(lines)
+    """Yield individual SQL statements. Strips full-line comments FIRST (so a
+    semicolon inside a comment cannot split a statement), then splits on ';'."""
+    code = "\n".join(
+        ln for ln in sql.splitlines()
+        if ln.strip() and not ln.strip().startswith("--")
+    )
+    for chunk in code.split(";"):
+        if chunk.strip():
+            yield chunk
 
 
 def _build_test_db() -> None:
