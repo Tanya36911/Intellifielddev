@@ -1,4 +1,11 @@
--- migrate:up
+-- migrate:up transaction:false
+-- transaction:false tells dbmate not to add its own transaction, because this
+-- script manages its own (BEGIN/COMMIT below). That makes the file safe to run
+-- either by dbmate or by hand with psql. Error-stop is enforced by the runner
+-- (the deploy script uses psql -v ON_ERROR_STOP=1, and dbmate aborts on error);
+-- a psql \set cannot live here without breaking dbmate.
+begin;
+set local timezone = 'UTC';
 
 -- A tenant = one brand/company using Intelli (e.g. Lumen Beauty, Revlon).
 -- EVERYTHING in the system belongs to exactly one tenant.
@@ -23,6 +30,11 @@ create table users (
     unique (tenant_id, email)
 );
 
--- migrate:down
+commit;
+
+-- migrate:down transaction:false
+begin;
+set local timezone = 'UTC';
 drop table users;
 drop table tenants;
+commit;

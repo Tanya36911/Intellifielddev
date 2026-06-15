@@ -1,4 +1,9 @@
--- migrate:up
+-- migrate:up transaction:false
+-- transaction:false: dbmate skips its own transaction so this file can manage
+-- its own (BEGIN/COMMIT), making it safe under dbmate or hand-run psql.
+-- Error-stop is enforced by the runner (deploy script: psql -v ON_ERROR_STOP=1).
+begin;
+set local timezone = 'UTC';
 
 -- The names of the org-chart levels for a tenant (configurable per tenant).
 -- Lumen example: 0 Company, 1 Region, 2 District, 3 Store.
@@ -48,7 +53,12 @@ create table assignments (
     unique (tenant_id, user_id)
 );
 
--- migrate:down
+commit;
+
+-- migrate:down transaction:false
+begin;
+set local timezone = 'UTC';
 drop table assignments;
 drop table nodes;
 drop table org_level_definitions;
+commit;

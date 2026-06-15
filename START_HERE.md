@@ -115,7 +115,7 @@ for next time).
 | Start backend + database | `docker compose up -d` |
 | Stop backend + database | `docker compose down` |
 | See the Admin web app | `pnpm dev:admin` (then open http://localhost:5173) |
-| Apply new database changes | `docker compose run --rm migrate up` |
+| Apply new database changes | `bash scripts/db-migrate.sh` (or `docker compose run --rm migrate up`) |
 | Re-create the demo data (companies, tree, users) | `docker compose exec api python -m app.seed` |
 | Apply backend code changes | `docker compose restart api` (code is now live-mounted) |
 | Rebuild backend (only when libraries change) | `docker compose up -d --build api` |

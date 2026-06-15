@@ -84,3 +84,12 @@ fast-follow, never the headline.
   (dbmate + harness) and scripts run in transactions (dbmate, seed, writes via engine.begin); UTC
   was already real via timestamptz + UTC Postgres, now also pinned explicitly. Remaining pre-launch:
   set fresh strong secrets in the production environment.
+- 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
+  self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
+  timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR
+  hand-run psql. Stop-on-error is enforced by the runner (dbmate aborts; new scripts/db-migrate.sh
+  uses set -e; manual psql uses -v ON_ERROR_STOP=1) since psql \set is not valid inside a dbmate
+  file. conftest now applies each migration as one whole script (removed the home-grown
+  semicolon splitter; Postgres parses statement boundaries). Verified: 32 backend tests green,
+  dbmate down+up of the latest migration succeeds with the new format, schema unchanged. Authoring
+  rule recorded in db/README: never edit an already-applied migration in production; add a new one.

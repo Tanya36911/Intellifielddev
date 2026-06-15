@@ -20,6 +20,37 @@ We use a tool called **dbmate** to run them (chosen by the team; see
 TECH_STACK.txt). Each migration has an "up" part (make the change) and a "down"
 part (undo it).
 
+### How dbmate runs them (no manual picking)
+dbmate keeps a hidden list of which migrations have already been applied (a table
+called `schema_migrations`). When you run "up", dbmate looks at the files,
+compares them to that list, and applies only the new ones, in number order. So:
+- You never choose which files to run; dbmate works it out.
+- Running "up" again when nothing is new is a harmless no-op (it will not
+  re-apply or double-create anything).
+- It is the same one command everywhere: locally, and in a deploy script.
+
+### The script-authoring standard (every migration self-protects)
+Each migration file is written to be safe on its own, not just safe because
+dbmate runs it:
+- It starts with `-- migrate:up transaction:false`. This tells dbmate "do not
+  add your own transaction, this file manages its own."
+- It then does `begin;` ... `commit;` around the real work, so the whole file is
+  all-or-nothing: if any one statement fails, nothing is left half-applied. This
+  holds whether dbmate runs it or someone runs it by hand with psql.
+- It sets `set local timezone = 'UTC';` at the top, so any time-based values are
+  written in UTC. (For pure table-creation this is belt-and-suspenders; it
+  matters for any future script that inserts data.)
+- **Stop-on-error** is enforced by the runner, not a line in the file: dbmate
+  aborts the transaction on the first error, the deploy script uses `set -e`, and
+  a by-hand psql run should use `psql -v ON_ERROR_STOP=1`. (The psql `\set`
+  command is not SQL and cannot live inside a dbmate file without breaking it.)
+
+**Rule once you are in production:** never edit a migration that has already been
+applied; add a new one. Editing an applied migration does not re-run it (dbmate
+already recorded it as done), so the change would silently not take effect. We
+only edited the existing files now because this is still pre-production and the
+resulting tables are identical.
+
 ---
 
 ## Every file in this folder
@@ -65,6 +96,8 @@ shape at a glance and for setting up a fresh database fast.
 From START_HERE.md's cheat sheet:
 
 - Apply pending migrations: `docker compose run --rm migrate up`
+  (or the deploy-safe wrapper: `bash scripts/db-migrate.sh`, which adds
+  stop-on-the-first-error and is the same command a deploy would use)
 - (Re)create the demo company + user afterwards:
   `docker compose exec api python -m app.seed`
 

@@ -22,29 +22,19 @@ os.environ["DATABASE_URL"] = "postgresql+psycopg://intelli:intelli_dev@db:5432/i
 MIGRATIONS = pathlib.Path("/app/db/migrations")
 
 
-def _statements(sql: str):
-    """Yield individual SQL statements. Strips full-line comments FIRST (so a
-    semicolon inside a comment cannot split a statement), then splits on ';'."""
-    code = "\n".join(
-        ln for ln in sql.splitlines()
-        if ln.strip() and not ln.strip().startswith("--")
-    )
-    for chunk in code.split(";"):
-        if chunk.strip():
-            yield chunk
-
-
 def _build_test_db() -> None:
     # Fresh, empty test database (force-close any open connections).
     with psycopg.connect(f"{_ADMIN} dbname=intelli", autocommit=True) as conn:
         conn.execute("drop database if exists intelli_test with (force)")
         conn.execute("create database intelli_test")
-    # Apply every migration's up-section, in filename order.
+    # Apply every migration's up-section as a whole script, in filename order.
+    # Each migration manages its own BEGIN/COMMIT, so we hand the entire block to
+    # Postgres, which parses comments and statement boundaries correctly (no
+    # home-grown semicolon splitting).
     with psycopg.connect(f"{_ADMIN} dbname=intelli_test", autocommit=True) as conn:
         for path in sorted(MIGRATIONS.glob("*.sql")):
             up = path.read_text().split("-- migrate:down")[0]
-            for stmt in _statements(up):
-                conn.execute(stmt)
+            conn.execute(up)
 
 
 @pytest.fixture(scope="session", autouse=True)

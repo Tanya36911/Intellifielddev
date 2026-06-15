@@ -1,4 +1,9 @@
--- migrate:up
+-- migrate:up transaction:false
+-- transaction:false: dbmate skips its own transaction so this file can manage
+-- its own (BEGIN/COMMIT), making it safe under dbmate or hand-run psql.
+-- Error-stop is enforced by the runner (deploy script: psql -v ON_ERROR_STOP=1).
+begin;
+set local timezone = 'UTC';
 
 -- The product catalog. One row per sellable variant ("SKU"), e.g. Lumen's
 -- Velvet Lip in Rosewood. Company-wide (every user in the tenant sees all of
@@ -19,5 +24,10 @@ create table skus (
 
 create index skus_tenant_idx on skus (tenant_id);
 
--- migrate:down
+commit;
+
+-- migrate:down transaction:false
+begin;
+set local timezone = 'UTC';
 drop table skus;
+commit;
