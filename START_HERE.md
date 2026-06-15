@@ -134,6 +134,8 @@ intelli-app/
 ├── README.md            Quick technical readme
 ├── CODEBASE_MAP.md      PLAIN-ENGLISH MAP OF THE CODE (backend vs frontend)
 ├── CHECKING_THE_WORK.md HOW TO CHECK/TEST THE WORK YOURSELF (no coding needed)
+├── DEMO.md              MEETING GUIDE: what to tell + show supervisors
+├── scripts/demo.sh      One-command live demo of the security boundary
 ├── docs/
 │   └── superpowers/        Design write-ups (specs/) + build plans (plans/)
 ├── docker-compose.yml   Recipe that runs the backend + database together
