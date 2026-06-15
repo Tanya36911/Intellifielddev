@@ -76,6 +76,24 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: skus; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.skus (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    line text NOT NULL,
+    variant text NOT NULL,
+    upc text NOT NULL,
+    color text,
+    status text DEFAULT 'active'::text NOT NULL,
+    reference_images jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT skus_status_check CHECK ((status = ANY (ARRAY['active'::text, 'discontinued'::text])))
+);
+
+
+--
 -- Name: tenants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -160,6 +178,22 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: skus skus_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.skus
+    ADD CONSTRAINT skus_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: skus skus_tenant_id_upc_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.skus
+    ADD CONSTRAINT skus_tenant_id_upc_key UNIQUE (tenant_id, upc);
+
+
+--
 -- Name: tenants tenants_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -203,6 +237,13 @@ CREATE INDEX nodes_path_idx ON public.nodes USING btree (path text_pattern_ops);
 --
 
 CREATE INDEX nodes_tenant_parent_idx ON public.nodes USING btree (tenant_id, parent_id);
+
+
+--
+-- Name: skus_tenant_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX skus_tenant_idx ON public.skus USING btree (tenant_id);
 
 
 --
@@ -254,6 +295,14 @@ ALTER TABLE ONLY public.org_level_definitions
 
 
 --
+-- Name: skus skus_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.skus
+    ADD CONSTRAINT skus_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
 -- Name: users users_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -274,4 +323,5 @@ ALTER TABLE ONLY public.users
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20260613000001'),
-    ('20260615000001');
+    ('20260615000001'),
+    ('20260615000002');
