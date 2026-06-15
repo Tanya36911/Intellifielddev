@@ -197,16 +197,22 @@ to run the checks, what "good" and "bad" look like, and how to undo anything.
 When you start a new session, **open Claude Code with the `intelli-app` folder**
 (not the prototype folder), and paste this as your first message:
 
-> Read START_HERE.md and CONTEXT.md in this repo first, then TECH_STACK.txt and
-> Intelli_Complete_Handoff.md in the sibling ../hi-fi-intelli repo. We just
-> finished Phase 1 backend (login works on the API). The next task is the Admin
-> login screen. My name is Tanya - always address me as Tanya, explain
-> everything in plain non-coder terms, commit to git after each change, no em
-> dashes, and keep START_HERE.md's progress + file structure updated.
+> Read START_HERE.md, CONTEXT.md, and CODEBASE_MAP.md in this repo first, then
+> TECH_STACK.txt and Intelli_Complete_Handoff.md in the sibling ../hi-fi-intelli
+> repo. Phases 0, 1, 2, and 3a are done (monorepo + Docker; login backend + Admin
+> login screen; org hierarchy + the scope-follows-pin security guard; the product
+> catalog), plus a config-hardening pass and a DB-script-hardening pass. The next
+> task is Phase 3b: surveys, with immutable versions, survey assignments to org
+> nodes, and structured pass/fail conditions (see handoff PART 6). My name is
+> Tanya. Always address me as Tanya, explain everything in plain non-coder terms,
+> design and let me approve before building, build test-first, commit to git after
+> each change, no em dashes, and keep all the docs updated (START_HERE.md,
+> CONTEXT.md, CODEBASE_MAP.md, the per-folder READMEs, and the handoff CHANGELOG).
 
 That paragraph hands the new chat: where the docs are, what's done, what's next,
 and how you like to work. With it plus these files, a fresh chat picks up right
-where we left off.
+where we left off. (Your working preferences are also saved in the assistant's
+project memory, so a new chat in this folder already knows them.)
 
 ---
 
