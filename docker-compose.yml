@@ -21,6 +21,12 @@ services:
     container_name: intelli-api
     environment:
       DATABASE_URL: postgresql+psycopg://intelli:intelli_dev@db:5432/intelli
+    volumes:
+      # Live code + tests + migrations, so tests can run in-container and
+      # code changes need only a restart, not a full rebuild.
+      - ./api/app:/app/app
+      - ./api/tests:/app/tests
+      - ./db:/app/db:ro
     ports:
       - "8000:8000"
     depends_on:
