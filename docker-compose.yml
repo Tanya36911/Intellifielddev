@@ -4,8 +4,10 @@ services:
     container_name: intelli-db
     environment:
       POSTGRES_USER: intelli
-      POSTGRES_PASSWORD: intelli_dev
+      # Read from .env (never hardcoded). Compose fails with this message if unset.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
       POSTGRES_DB: intelli
+      TZ: UTC
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +22,10 @@ services:
     build: ./api
     container_name: intelli-api
     environment:
-      DATABASE_URL: postgresql+psycopg://intelli:intelli_dev@db:5432/intelli
+      # Built from the .env password; username/host/db are not secret.
+      DATABASE_URL: postgresql+psycopg://intelli:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/intelli
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (copy .env.example)}
+      TZ: UTC
     volumes:
       # Live code + tests + migrations, so tests can run in-container and
       # code changes need only a restart, not a full rebuild.
@@ -39,7 +44,8 @@ services:
     image: ghcr.io/amacneil/dbmate:2
     profiles: ["tools"]
     environment:
-      DATABASE_URL: postgres://intelli:intelli_dev@db:5432/intelli?sslmode=disable
+      DATABASE_URL: postgres://intelli:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/intelli?sslmode=disable
+      TZ: UTC
     volumes:
       - ./db:/db
     depends_on:

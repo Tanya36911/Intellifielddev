@@ -3,14 +3,9 @@
 Phase 0 only proves the API can reach Postgres. The real schema, the
 ScopedRepo (scope-follows-pin), and migrations arrive in Phases 1-2.
 """
-import os
-
 from sqlalchemy import create_engine, text
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg://intelli:intelli_dev@localhost:5432/intelli",
-)
+from .config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 

@@ -5,20 +5,16 @@ On login we hash the attempt and compare. A JWT is a signed token the client
 sends on later requests to prove who it is (and which tenant + role).
 """
 import datetime as dt
-import os
 
 import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 
+from .config import JWT_ALG, JWT_SECRET, TOKEN_HOURS
+
 # Argon2 is the current best-practice password hashing algorithm.
 _pwd = CryptContext(schemes=["argon2"], deprecated="auto")
-
-# In production this secret comes from the environment and is long + random.
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
-JWT_ALG = "HS256"
-TOKEN_HOURS = 12
 
 
 def hash_password(plain: str) -> str:
