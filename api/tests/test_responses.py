@@ -312,3 +312,15 @@ def test_store_path_snapshot_is_frozen(client, login):
     finally:
         from app.seed import run
         run()  # idempotently restores sf's real path so later tests are unaffected
+
+
+def test_submit_foreign_tenant_version_400(client, login):
+    # A Lumen user cannot submit against another company's (Acme's) version.
+    acme_vid = _scalar(
+        "select v.id from survey_versions v join surveys s on s.id = v.survey_id "
+        "where s.name = 'Glow Serum Check' and v.published_at is not null limit 1"
+    )
+    token = login("marcus@lumenbeauty.com")
+    resp = _submit(client, token, acme_vid, _node_id("sf"), [])
+    assert resp.status_code == 400, resp.text
+    assert "published" in resp.json()["detail"].lower()
