@@ -158,7 +158,7 @@ def _survey(conn, tenant_id, name, type_, questions, assign_node=None, created_b
     return survey_id
 
 
-def _response(conn, tenant_id, survey_name, store_code, user_email, answers):
+def _response(conn, tenant_id, survey_name, store_code, user_email, answers, submitted_at=None):
     """Insert one demo response with its atomic answer rows. Idempotent: if this
     user already has a response for this store+version, do nothing."""
     version_id = conn.execute(
@@ -193,22 +193,24 @@ def _response(conn, tenant_id, survey_name, store_code, user_email, answers):
         return existing
     resp_id = conn.execute(
         text(
-            "insert into responses (tenant_id, survey_version_id, store_node_id, store_path, user_id) "
-            "values (:tid, :vid, :nid, :spath, :uid) returning id"
+            "insert into responses (tenant_id, survey_version_id, store_node_id, store_path, "
+            "user_id, submitted_at) values (:tid, :vid, :nid, :spath, :uid, "
+            "coalesce(cast(:sub as timestamptz), now())) returning id"
         ),
-        {"tid": tenant_id, "vid": version_id, "nid": store["id"],
-         "spath": store["path"], "uid": user_id},
+        {"tid": tenant_id, "vid": version_id, "nid": store["id"], "spath": store["path"],
+         "uid": user_id, "sub": submitted_at},
     ).scalar()
     for a in answers:
         conn.execute(
             text(
                 "insert into response_items (response_id, tenant_id, store_node_id, store_path, "
-                "survey_version_id, question_id, sku_id, value) values (:rid, :tid, :nid, :spath, "
-                ":vid, :qid, :sku, cast(:val as jsonb))"
+                "survey_version_id, submitted_at, question_id, sku_id, value) values (:rid, :tid, "
+                ":nid, :spath, :vid, coalesce(cast(:sub as timestamptz), now()), :qid, :sku, "
+                "cast(:val as jsonb))"
             ),
             {"rid": resp_id, "tid": tenant_id, "nid": store["id"], "spath": store["path"],
-             "vid": version_id, "qid": a["question_id"], "sku": a.get("sku_id"),
-             "val": json.dumps(a["value"])},
+             "vid": version_id, "sub": submitted_at, "qid": a["question_id"],
+             "sku": a.get("sku_id"), "val": json.dumps(a["value"])},
         )
     return resp_id
 
@@ -256,6 +258,18 @@ def run() -> None:
             [{"question_id": "q1", "sku_id": str(rose), "value": 3},
              {"question_id": "q2", "value": True}],
         )
+        # Oakland: Rosewood out of stock (0) -> shows in the OOS report.
+        _response(
+            conn, lumen, "Velvet Lip Shelf Check", "oakland", "marcus@lumenbeauty.com",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 0},
+             {"question_id": "q2", "value": False}],
+        )
+        # An earlier SF reading so the facings trend has more than one point.
+        _response(
+            conn, lumen, "Velvet Lip Shelf Check", "sf", "dana@lumenbeauty.com",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 6}],
+            submitted_at="2026-06-10T09:00:00Z",
+        )
 
         # ----- Acme Cosmetics (proves cross-tenant isolation) -----
         acme = _tenant(conn, "Acme Cosmetics", "acme")
@@ -280,7 +294,7 @@ def run() -> None:
             [{"question_id": "q1", "value": True}],
         )
 
-    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 1 response) + Acme (4 nodes, 1 product, 1 survey, 1 response) + 5 users with pins.")
+    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 3 responses) + Acme (4 nodes, 1 product, 1 survey, 1 response) + 5 users with pins.")
 
 
 if __name__ == "__main__":
