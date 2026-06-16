@@ -3,6 +3,7 @@
 a named count question, and a facings trend. Everything is branch-scoped through
 the ScopedRepo and computed live (pass/fail is never stored).
 """
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -49,3 +50,23 @@ def oos(
     if rows is None:
         raise HTTPException(status_code=404, detail="Node or version not found in your scope")
     return {"rows": rows, "count": len(rows)}
+
+
+@router.get("/trend")
+def trend(
+    survey_version_id: UUID,
+    question_id: str,
+    sku_id: UUID,
+    node_id: UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+) -> dict:
+    try:
+        result = repo.facings_trend(survey_version_id, question_id, sku_id,
+                                    node_id, date_from, date_to)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if result is None:
+        raise HTTPException(status_code=404, detail="Node or version not found in your scope")
+    return result

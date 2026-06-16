@@ -245,3 +245,47 @@ def test_oos_company_isolation(client, login):
     sku_ids = {r["sku_id"] for r in body["rows"]}
     assert str(acme_sku) in sku_ids
     assert str(lumen_sku) not in sku_ids
+
+
+def test_trend_returns_points_and_daily_avg(client, login):
+    dana = login("dana@lumenbeauty.com")
+    marcus = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Trend Survey", q, "bayarea")
+    _submit(client, marcus, vid, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 4}])
+    _submit(client, marcus, vid, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 8}])
+    body = client.get("/analytics/trend", headers=_auth(dana),
+                      params={"survey_version_id": vid, "question_id": "q1",
+                              "sku_id": str(rose)}).json()
+    assert len(body["points"]) == 2
+    assert [p["value"] for p in body["points"]] == [4, 8]
+    assert len(body["daily_avg"]) == 1
+    assert body["daily_avg"][0]["avg"] == 6.0
+
+
+def test_trend_respects_date_range(client, login):
+    dana = login("dana@lumenbeauty.com")
+    marcus = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Trend Range", q, "bayarea")
+    _submit(client, marcus, vid, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    body = client.get("/analytics/trend", headers=_auth(dana),
+                      params={"survey_version_id": vid, "question_id": "q1", "sku_id": str(rose),
+                              "date_from": "2000-01-01T00:00:00Z",
+                              "date_to": "2000-01-02T00:00:00Z"}).json()
+    assert body["points"] == []
+
+
+def test_trend_sku_not_on_question_400(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rose, ivory = _sku_id("LUM-VL-ROSE"), _sku_id("LUM-SF-IVORY")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Trend Bad Sku", q, "bayarea")
+    resp = client.get("/analytics/trend", headers=_auth(dana),
+                      params={"survey_version_id": vid, "question_id": "q1", "sku_id": str(ivory)})
+    assert resp.status_code == 400, resp.text

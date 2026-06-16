@@ -7,6 +7,7 @@ it automatically limits every query to the caller's tenant and the subtree
 under their pinned node, so no endpoint can forget the filter.
 """
 import json
+from datetime import timezone
 
 from fastapi import Depends
 from sqlalchemy import text
@@ -812,6 +813,54 @@ class ScopedRepo:
         return [{"sku_id": str(r["sku_id"]), "line": r["line"], "variant": r["variant"],
                  "oos_store_count": r["oos_store_count"],
                  "reporting_store_count": r["reporting_store_count"]} for r in rows]
+
+    def facings_trend(self, survey_version_id, question_id, sku_id,
+                      node_id=None, date_from=None, date_to=None):
+        """Time-series of a per-product count answer across a node's stores (all
+        responses, not just latest), plus a per-UTC-day average. None if
+        node/version not in scope (-> 404); raises ValueError for a bad question
+        or a sku not on the question (-> 400)."""
+        if self.scope_path is None:
+            return None
+        with engine.connect() as conn:
+            base = self._base_path_in_scope(conn, node_id)
+            if base is None:
+                return None
+            questions = self._version_questions(conn, survey_version_id)
+            if questions is None:
+                return None
+            q = _count_question(questions, question_id)  # raises ValueError if invalid
+            if str(sku_id) not in {str(s) for s in (q.get("sku_ids") or [])}:
+                raise ValueError(f"sku {sku_id} is not on question {question_id}")
+            df_str = date_from.isoformat() if date_from is not None else None
+            dt_str = date_to.isoformat() if date_to is not None else None
+            df_clause = "and ri.submitted_at >= cast(:df as timestamptz) " if df_str else ""
+            dt_clause = "and ri.submitted_at <= cast(:dt as timestamptz) " if dt_str else ""
+            rows = conn.execute(
+                text("select ri.submitted_at, ri.store_node_id, n.name as store_name, ri.value "
+                     "from response_items ri join nodes n on n.id = ri.store_node_id "
+                     "where ri.survey_version_id = cast(:vid as uuid) "
+                     "and ri.tenant_id = cast(:tid as uuid) "
+                     "and ri.question_id = :qid and ri.sku_id = cast(:sku as uuid) "
+                     "and n.path like :base || '%' "
+                     + df_clause + dt_clause +
+                     # ri.id is a stable tiebreaker for rows sharing a timestamp.
+                     "order by ri.submitted_at, ri.id"),
+                {"vid": str(survey_version_id), "tid": str(self.tenant_id), "qid": question_id,
+                 "sku": str(sku_id), "base": base, "df": df_str, "dt": dt_str},
+            ).mappings().all()
+        points = [{"submitted_at": r["submitted_at"], "store_node_id": str(r["store_node_id"]),
+                   "store_name": r["store_name"], "value": r["value"]} for r in rows]
+        by_day: dict = {}
+        for r in rows:
+            # Bucket by UTC date explicitly (the docstring promises UTC), so the
+            # bucket is correct regardless of the process/session timezone.
+            day = r["submitted_at"].astimezone(timezone.utc).date().isoformat()
+            # value is a jsonb number (int/float); 4a validation guarantees numeric.
+            by_day.setdefault(day, []).append(float(r["value"]))
+        daily_avg = [{"date": d, "avg": round(sum(v) / len(v), 1)}
+                     for d, v in sorted(by_day.items())]
+        return {"points": points, "daily_avg": daily_avg}
 
 
 def _count_question(questions, question_id):
