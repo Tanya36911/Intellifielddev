@@ -68,3 +68,11 @@ def require_admin(claims: dict = Depends(current_claims)) -> dict:
     if claims.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admins only")
     return claims
+
+
+def require_manager_or_admin(claims: dict = Depends(current_claims)) -> dict:
+    """Allow admins and managers past; reps get 403. Used on assignment writes
+    (the ScopedRepo still limits a manager to their own branch)."""
+    if claims.get("role") not in ("admin", "manager"):
+        raise HTTPException(status_code=403, detail="Managers or admins only")
+    return claims

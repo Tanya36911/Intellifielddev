@@ -15,6 +15,22 @@ from .db import engine
 from .security import current_claims
 
 
+class PublishedVersionError(Exception):
+    """Tried to edit a version that is already published (frozen)."""
+
+
+class NoDraftError(Exception):
+    """Tried to publish a survey that has no current draft version."""
+
+
+class DraftExistsError(Exception):
+    """Tried to start a new version while an unpublished draft already exists."""
+
+
+class VersionNotPublishedError(Exception):
+    """Tried to assign a survey version that is missing or not published."""
+
+
 class ScopedRepo:
     """The only object allowed to read scoped tables. tenant_id and scope_path
     are baked in; a scope_path of None means the caller sees nothing."""
@@ -101,6 +117,84 @@ class ScopedRepo:
                     params,
                 ).mappings().first()
         return dict(row) if row else None
+
+    # ----- surveys (company-wide: filtered by tenant only) -----
+
+    _SURVEY_COLS = "id, name, type, status, created_at"
+    _VERSION_COLS = "id, survey_id, version_number, questions, published_at, created_at"
+
+    def _check_sku_ids(self, conn, questions: list[dict]) -> None:
+        """Raise ValueError if any question references a SKU id that is not one
+        of this company's products."""
+        wanted = {sid for q in questions for sid in (q.get("sku_ids") or [])}
+        if not wanted:
+            return
+        found = conn.execute(
+            text(
+                "select id from skus where tenant_id = cast(:tid as uuid) "
+                "and id = any(cast(:ids as uuid[]))"
+            ),
+            {"tid": str(self.tenant_id), "ids": [str(s) for s in wanted]},
+        ).scalars().all()
+        missing = {str(s) for s in wanted} - {str(f) for f in found}
+        if missing:
+            raise ValueError(f"unknown sku_ids for this company: {sorted(missing)}")
+
+    def list_surveys(self) -> list[dict]:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    f"select {self._SURVEY_COLS} from surveys "
+                    "where tenant_id = cast(:tid as uuid) order by name"
+                ),
+                {"tid": str(self.tenant_id)},
+            ).mappings().all()
+        return [dict(r) for r in rows]
+
+    def get_survey(self, survey_id) -> dict | None:
+        with engine.connect() as conn:
+            survey = conn.execute(
+                text(
+                    f"select {self._SURVEY_COLS} from surveys "
+                    "where id = cast(:id as uuid) and tenant_id = cast(:tid as uuid)"
+                ),
+                {"id": str(survey_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if survey is None:
+                return None
+            versions = conn.execute(
+                text(
+                    f"select {self._VERSION_COLS} from survey_versions "
+                    "where survey_id = cast(:id as uuid) order by version_number"
+                ),
+                {"id": str(survey_id)},
+            ).mappings().all()
+        result = dict(survey)
+        result["versions"] = [dict(v) for v in versions]
+        return result
+
+    def create_survey(self, name, type_, questions: list[dict]) -> dict:
+        with engine.begin() as conn:
+            self._check_sku_ids(conn, questions)
+            survey = conn.execute(
+                text(
+                    "insert into surveys (tenant_id, name, type) "
+                    "values (cast(:tid as uuid), :name, :type) "
+                    f"returning {self._SURVEY_COLS}"
+                ),
+                {"tid": str(self.tenant_id), "name": name, "type": type_},
+            ).mappings().first()
+            version = conn.execute(
+                text(
+                    "insert into survey_versions (survey_id, version_number, questions) "
+                    "values (cast(:sid as uuid), 1, cast(:q as jsonb)) "
+                    f"returning {self._VERSION_COLS}"
+                ),
+                {"sid": str(survey["id"]), "q": json.dumps(questions)},
+            ).mappings().first()
+        result = dict(survey)
+        result["versions"] = [dict(version)]
+        return result
 
 
 def scope_path_for(tenant_id: str, user_id: str) -> str | None:
