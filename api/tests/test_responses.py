@@ -222,3 +222,56 @@ def test_empty_multi_choice_rejected(client, login):
     ])
     assert resp.status_code == 400, resp.text
     assert "option" in resp.json()["detail"].lower()
+
+
+def _seeded_lumen_response_id():
+    return _scalar(
+        "select r.id from responses r join survey_versions v on v.id = r.survey_version_id "
+        "join surveys s on s.id = v.survey_id where s.name = 'Velvet Lip Shelf Check' "
+        "order by r.submitted_at limit 1"
+    )
+
+
+def test_list_requires_auth(client):
+    assert client.get("/responses").status_code == 401
+
+
+def test_list_is_scoped_to_branch(client, login):
+    # Marcus (Bay Area) submits, then sees his own response in the list.
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    _submit(client, token, _lumen_version_id(), _node_id("sf"),
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    listed = client.get("/responses", headers={"Authorization": f"Bearer {token}"})
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["count"] >= 1
+    assert all("overall" in r for r in listed.json()["responses"])
+
+
+def test_company_isolation(client, login):
+    # Avery (Acme) never sees a Lumen response, by list or by direct id.
+    lumen_id = _seeded_lumen_response_id()
+    avery = login("avery@acme.com")
+    listed = client.get("/responses", headers={"Authorization": f"Bearer {avery}"}).json()
+    assert all(str(r["id"]) != str(lumen_id) for r in listed["responses"])
+    direct = client.get(f"/responses/{lumen_id}", headers={"Authorization": f"Bearer {avery}"})
+    assert direct.status_code == 404, direct.text
+
+
+def test_sibling_region_manager_sees_zero(client, login):
+    # Marcus (Bay Area, West) submits; Sarah (Central) must not see it.
+    marcus = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    created = _submit(client, marcus, _lumen_version_id(), _node_id("sf"),
+                      [{"question_id": "q1", "sku_id": str(rose), "value": 5}]).json()
+    sarah = login("sarah@lumenbeauty.com")
+    direct = client.get(f"/responses/{created['id']}",
+                        headers={"Authorization": f"Bearer {sarah}"})
+    assert direct.status_code == 404, direct.text
+
+
+def test_no_pin_user_sees_nothing(client, login):
+    token = login("newbie@lumenbeauty.com")  # rep with no pin
+    listed = client.get("/responses", headers={"Authorization": f"Bearer {token}"})
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 0
