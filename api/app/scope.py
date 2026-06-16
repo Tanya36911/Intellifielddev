@@ -562,6 +562,128 @@ class ScopedRepo:
         result["overall"] = scored["overall"]
         return result
 
+    # ----- analytics (read-only; branch-scoped like responses) -----
+
+    def _max_level(self, conn) -> int:
+        return conn.execute(
+            text("select max(level_order) from org_level_definitions "
+                 "where tenant_id = cast(:tid as uuid)"),
+            {"tid": str(self.tenant_id)},
+        ).scalar()
+
+    def _base_path_in_scope(self, conn, node_id):
+        """The path to analyze over: the given node's path (if it is in the
+        caller's scope) or the caller's whole scope when node_id is None. Returns
+        None if node_id is given but out of scope (-> 404)."""
+        if node_id is None:
+            return self.scope_path
+        row = conn.execute(
+            text("select path from nodes where id = cast(:nid as uuid) "
+                 "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+            {"nid": str(node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+        ).mappings().first()
+        return row["path"] if row else None
+
+    def _store_ids_under(self, conn, path, maxlvl) -> list:
+        return list(conn.execute(
+            text("select id from nodes where tenant_id = cast(:tid as uuid) "
+                 "and level_order = :ml and path like :p || '%'"),
+            {"tid": str(self.tenant_id), "ml": maxlvl, "p": path},
+        ).scalars().all())
+
+    def _overall_for(self, conn, version_id, response_ids) -> dict:
+        """{response_id: overall verdict} for the given responses, scored against
+        the version's questions. Two queries + in-memory evaluation."""
+        if not response_ids:
+            return {}
+        questions = conn.execute(
+            text("select questions from survey_versions where id = cast(:vid as uuid)"),
+            {"vid": str(version_id)},
+        ).mappings().first()["questions"]
+        rows = conn.execute(
+            text("select response_id, question_id, sku_id, value from response_items "
+                 "where response_id = any(cast(:ids as uuid[]))"),
+            {"ids": [str(r) for r in response_ids]},
+        ).mappings().all()
+        by_resp: dict = {}
+        for r in rows:
+            by_resp.setdefault(r["response_id"], []).append(dict(r))
+        return {rid: evaluate_response(questions, by_resp.get(rid, []))["overall"]
+                for rid in response_ids}
+
+    def _metrics_for_stores(self, conn, version_id, store_ids):
+        """(expected, responded, scored, passed) for a version over a set of
+        store node ids, using each store's latest response."""
+        expected = len(store_ids)
+        if not store_ids:
+            return 0, 0, 0, 0
+        latest = conn.execute(
+            text("select distinct on (store_node_id) id, store_node_id from responses "
+                 "where survey_version_id = cast(:vid as uuid) "
+                 "and tenant_id = cast(:tid as uuid) "
+                 "and store_node_id = any(cast(:sids as uuid[])) "
+                 "order by store_node_id, submitted_at desc"),
+            {"vid": str(version_id), "tid": str(self.tenant_id),
+             "sids": [str(s) for s in store_ids]},
+        ).mappings().all()
+        responded = len(latest)
+        overalls = self._overall_for(conn, version_id, [r["id"] for r in latest])
+        scored = sum(1 for v in overalls.values() if v is not None)
+        passed = sum(1 for v in overalls.values() if v is True)
+        return expected, responded, scored, passed
+
+    @staticmethod
+    def _pct(numerator, denominator):
+        return round(100 * numerator / denominator, 1) if denominator else None
+
+    def assignment_compliance(self, node_id=None):
+        """Per assignment whose coverage overlaps node_id (default: whole branch),
+        completion % + pass % measured over (coverage ∩ node subtree ∩ scope).
+        Returns None if node_id is given but out of scope (-> 404)."""
+        if self.scope_path is None:
+            return []
+        with engine.connect() as conn:
+            base = self._base_path_in_scope(conn, node_id)
+            if base is None:
+                return None
+            maxlvl = self._max_level(conn)
+            assigns = conn.execute(
+                text("select a.id as assignment_id, a.survey_version_id, n.path as target_path, "
+                     "n.id as target_node_id, n.name as target_node_name, "
+                     "s.id as survey_id, s.name as survey_name "
+                     "from survey_assignments a join nodes n on n.id = a.target_node_id "
+                     "join survey_versions v on v.id = a.survey_version_id "
+                     "join surveys s on s.id = v.survey_id "
+                     "where a.tenant_id = cast(:tid as uuid) "
+                     "and (:base like n.path || '%' or n.path like :base || '%')"),
+                {"tid": str(self.tenant_id), "base": base},
+            ).mappings().all()
+            out = []
+            # N+1: each assignment runs _store_ids_under + _metrics_for_stores
+            # (2 queries). Fine for the handful of assignments per branch; revisit
+            # with a roll-up if assignment counts ever grow large.
+            for a in assigns:
+                # The WHERE filter guarantees the two paths overlap, so one is a
+                # prefix of the other; their intersection is the deeper subtree.
+                # Path length is a valid proxy for depth (each level appends
+                # "/<uuid>/"), so the longer path is the deeper, narrower one.
+                measured = a["target_path"] if len(a["target_path"]) >= len(base) else base
+                store_ids = self._store_ids_under(conn, measured, maxlvl)
+                expected, responded, scored, passed = self._metrics_for_stores(
+                    conn, a["survey_version_id"], store_ids)
+                out.append({
+                    "assignment_id": a["assignment_id"],
+                    "survey_id": a["survey_id"], "survey_name": a["survey_name"],
+                    "survey_version_id": a["survey_version_id"],
+                    "target_node_id": a["target_node_id"],
+                    "target_node_name": a["target_node_name"],
+                    "expected": expected, "responded": responded,
+                    "scored": scored, "passed": passed,
+                    "completion_pct": self._pct(responded, expected),
+                    "pass_pct": self._pct(passed, scored),
+                })
+        return out
+
 
 def _check_value(value, q) -> None:
     """Raise ValueError if a non-blank answer value does not match its question
