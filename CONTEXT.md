@@ -31,7 +31,7 @@ fast-follow, never the headline.
   - [x] **Phase 3b** - surveys + immutable versions + assignments + structured pass conditions. Gate met (tests green).
 - [~] **Phase 4** - responses + analytics + payroll + export. Split into 4a + 4b + 4c + 4d.
   - [x] **Phase 4a** - responses + live pass/fail scoring. Gate met (tests green).
-  - [ ] **Phase 4b** - analytics (compliance %, OOS by SKU, trends).
+  - [x] **Phase 4b** - analytics (compliance %, OOS by SKU, trends). Gate met (tests green).
   - [ ] **Phase 4c** - payroll.
   - [ ] **Phase 4d** - export.
 - [ ] **Phase 5** - Field app + offline sync.
@@ -119,6 +119,20 @@ fast-follow, never the headline.
   verdicts). ScopedRepo gained create_response / list_responses / get_response. Re-visits are kept,
   never overwritten. Seed adds a Lumen response for the SF store (mix of pass/fail) and an Acme
   response. GATE GREEN: 91 backend tests + 27 frontend. Phase 4a COMPLETE; 4b (analytics) next.
+- 2026-06-16: Phase 4b - analytics (read-only reports over the 4a response rows). No new database
+  tables. New api/app/analytics.py with four GET endpoints, all branch-scoped through the shared
+  ScopedRepo and computed live (pass/fail never stored): GET /analytics/compliance returns per-survey
+  completion % (how many of the expected stores responded) and pass % (of scored responses, how many
+  passed), with an ancestor rule so a company-wide survey assigned at the company root still shows
+  correctly when viewed from a region, measured over that region's own stores only; GET
+  /analytics/compliance/drill lets a user step from a region down to its districts and stores, and at
+  a single store it shows the per-product reason for failing; GET /analytics/oos returns out-of-stock
+  counts by product (a per-product count answer of 0), using each store's latest response; GET
+  /analytics/trend returns a product's shelf-count over time (all responses), with a per-UTC-day
+  average. Pass/fail stays in the one compliance.py evaluator; out-of-stock and trend are fast
+  indexed SQL aggregates. ScopedRepo gained an analytics section. Seed enriched (an out-of-stock
+  answer at Oakland and a dated SF trend point). GATE GREEN: 111 backend tests + 27 frontend.
+  Phase 4b COMPLETE; 4c (payroll) next.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR

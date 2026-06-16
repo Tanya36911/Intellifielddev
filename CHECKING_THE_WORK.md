@@ -128,6 +128,39 @@ to me.
 What it proves: reps' answers are stored atomically, scoped to their branch,
 scored live from the survey's rules, and never visible across companies.
 
+### Check 7: Read the analytics reports (Phase 4b, at /docs)
+This proves that the compliance, out-of-stock, and trend reports are working and
+branch-scoped. At http://localhost:8000/docs, log in as Dana (admin, sees all
+of Lumen): open `POST /auth/login`, click "Try it out", enter
+`dana@lumenbeauty.com` and `demo1234`, click Execute. Copy the `token` value,
+click the green **Authorize** button at the top right, paste the token, click
+Authorize. Now every "Try it out" below runs as Dana.
+
+1. `GET /analytics/compliance` with no filters.
+   - GOOD: you see one or more rows, each with a survey name, an `expected`
+     store count, a `responded` count, a `completion_pct`, a `scored` count,
+     and a `pass_pct`. These numbers are worked out fresh each time; no stored
+     scores exist in the database.
+2. `GET /analytics/oos` with `survey_version_id` set to the Lumen "Velvet Lip
+   Shelf Check" published version id (you can find this from `GET /surveys`)
+   and `question_id` set to `q1`.
+   - GOOD: Oakland's Rosewood shade shows as out of stock (count of 0).
+3. `GET /analytics/compliance/drill` with a `node_id` set to a region's id
+   (find a node id from `GET /nodes`).
+   - GOOD: you see rows for that region's districts or stores, with their own
+     completion % and pass % numbers.
+4. `GET /analytics/compliance/drill` again, this time with a store's `node_id`.
+   - GOOD: you see the per-product reason each question failed for that store
+     (the "why it failed" view).
+
+To confirm the automated gate: run `pnpm test:api` (backend must be running).
+GOOD looks like `111 passed` at the bottom. If anything goes red, copy the
+text to me.
+
+What it proves: the response rows correctly power live compliance, out-of-stock,
+and trend reports; a manager only sees their own branch; and no report scores
+are ever stored in the database.
+
 ---
 
 ## "Is the code in the wrong place?"

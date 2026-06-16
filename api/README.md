@@ -51,8 +51,8 @@ The starting point. When the backend boots, this file runs first. It:
 - creates the application,
 - lists the two health-check addresses (`/health` and `/health/db`),
 - plugs in each feature router (login from `auth.py`, the org tree from
-  `hierarchy.py`, the catalog from `catalog.py`, surveys from `surveys.py`, and
-  responses from `responses.py`),
+  `hierarchy.py`, the catalog from `catalog.py`, surveys from `surveys.py`,
+  responses from `responses.py`, and analytics from `analytics.py`),
 - and sets the "guest list" (called CORS) that says which web addresses are
   allowed to call the backend. Right now that is the local Admin app.
 
@@ -119,7 +119,10 @@ org tree): creating, publishing, and versioning surveys, and assigning a
 published version to a node within the caller's branch. As of Phase 4a it also
 stores and retrieves responses (create_response, list_responses, get_response),
 branch-scoped so a rep can only submit for a store in their own part of the
-tree.
+tree. As of Phase 4b the ScopedRepo gained an analytics section: the four
+read-only report queries (compliance, drill, out-of-stock, trend) are also
+branch-scoped through it, so a manager can only see analytics for their own part
+of the tree.
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
@@ -178,6 +181,28 @@ across all products". Blank answers are skipped rather than failed. Because
 nothing is ever stored, changing a question's rule in the survey immediately
 changes every score for every past response the next time they are read.
 
+### app/analytics.py  (the read-only reports API)
+Defines four read-only report endpoints, all branch-scoped through the
+ScopedRepo. No new database tables were added; all numbers are computed live
+from the existing response rows each time you ask.
+
+- `GET /analytics/compliance` answers "how compliant is each survey in this
+  part of the org?" It returns, per survey version, how many stores were
+  expected to respond, how many did (completion %), and of those scored, how
+  many passed (pass %). An ancestor rule means a company-wide survey assigned
+  at the company root still shows correctly when you look from a region: it
+  measures only that region's own stores.
+- `GET /analytics/compliance/drill` lets you step down the org tree. At a
+  region you see its districts and stores; at a single store you see the
+  per-product reason each question failed. This is the "why did this store
+  fail?" view.
+- `GET /analytics/oos` counts out-of-stock by product (a product is out of
+  stock when a rep recorded a count of zero for it). It uses each store's most
+  recent response, not all responses.
+- `GET /analytics/trend` returns a product's shelf count over time (all
+  responses, not just the latest), with a per-UTC-day average so you can see
+  whether facings are improving or dropping.
+
 ### app/seed.py  (puts the demo data in)
 Creates two demo companies and their org trees so you can log in and so the
 isolation tests have a known world to check: "Lumen Beauty" (8 spots: regions,
@@ -193,7 +218,9 @@ company (Lumen's "Velvet Lip Shelf Check", published, with pass rules and a
 product link, assigned to the Central region; Acme's "Glow Serum Check"), so the
 survey tests have a known world. As of Phase 4a it also seeds one demo response
 per company (a Lumen response for the SF store with a mix of passing and failing
-answers, and an Acme response) so the response tests have a known baseline. Safe
+answers, and an Acme response) so the response tests have a known baseline. As
+of Phase 4b the seed was enriched with an out-of-stock answer at the Oakland
+store and a dated SF response to give the trend report something to plot. Safe
 to run twice. Run it with the command in START_HERE.md after the database is set
 up.
 

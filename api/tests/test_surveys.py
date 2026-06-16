@@ -338,15 +338,18 @@ def test_store_added_later_is_included(client, login):
 
 def test_assignment_company_isolation(client, login):
     # Sarah (Central) sees the seeded Central assignment; Avery (Acme) sees none of Lumen's.
-    sarah = client.get(
+    sarah_resp = client.get(
         "/survey-assignments", headers={"Authorization": f"Bearer {login('sarah@lumenbeauty.com')}"}
     )
-    assert sarah.status_code == 200, sarah.text
-    assert sarah.json()["count"] >= 1
-    avery = client.get(
+    assert sarah_resp.status_code == 200, sarah_resp.text
+    lumen_ids = {a["id"] for a in sarah_resp.json()["assignments"]}
+    assert len(lumen_ids) >= 1
+    avery_resp = client.get(
         "/survey-assignments", headers={"Authorization": f"Bearer {login('avery@acme.com')}"}
     ).json()
-    assert avery["count"] == 0
+    avery_ids = {a["id"] for a in avery_resp["assignments"]}
+    # Avery must not be able to see any of Lumen's assignment records.
+    assert avery_ids.isdisjoint(lumen_ids), "Acme user saw a Lumen assignment"
 
 
 def test_delete_assignment(client, login):

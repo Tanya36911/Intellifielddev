@@ -53,6 +53,11 @@ from the survey's rules every time you read a response (see
 database. That means fixing a question's rule immediately changes every score
 for every past response, with no data migration needed.
 
+As of Phase 4b, the backend turns those response rows into read-only compliance,
+out-of-stock, and trend reports ([api/app/analytics.py](api/app/analytics.py)).
+All reports are branch-scoped (a manager only sees their own stores) and
+computed live, with no new database tables.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

@@ -86,8 +86,16 @@ robot: the same answer scores differently when the rule changes, submissions
 are checked against the survey, you can only submit for a store in your branch,
 and re-visits are all kept.
 
-**What's NEXT:** Phase 4b (analytics: compliance %, out-of-stock by product,
-trends).
+**Phase 4b - analytics (done):** The response rows now power read-only reports:
+how compliant each part of the org is (both how many expected stores responded,
+and of those how many passed), drill-down from a region all the way to a single
+store and the exact product that failed, which products are out of stock and in
+how many stores, and how a product's shelf count is trending over time. Backend
+only, no screen yet. Proven by the test robot: the numbers add up, compliance
+changes when a rule changes, a company-wide survey shows for a region scoped to
+its own stores, and a manager only ever sees their own branch.
+
+**What's NEXT:** Phase 4c (payroll).
 
 ---
 
@@ -184,6 +192,7 @@ intelli-app/
 │   │   ├── surveys.py   Surveys + versions + assignments API (Phase 3b)
 │   │   ├── responses.py Rep answers stored as atomic rows + live pass/fail (Phase 4a)
 │   │   ├── compliance.py Pass/fail brain: given an answer + a rule, returns pass/fail (Phase 4a)
+│   │   ├── analytics.py  Read-only reports (compliance, out-of-stock, trend)
 │   │   └── seed.py      Creates the demo companies, tree, users, products, surveys, responses
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
@@ -252,10 +261,10 @@ project memory, so a new chat in this folder already knows them.)
 - Org hierarchy + "see only your branch" scope guard: DONE and tested.
 - Product catalog (company-wide to view, admin-only to edit): DONE and tested.
 - Surveys + frozen versions + assignments + pass rules: DONE and tested.
-- Responses + live pass/fail scoring: DONE and tested
-  (backend robot green: 91 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, 3b, and 4a complete. NEXT: Phase 4b (analytics: compliance
-  %, out-of-stock by product, trends).
+- Responses + live pass/fail scoring: DONE and tested.
+- Analytics (compliance %, out-of-stock by product, trends): DONE and tested
+  (backend robot green: 111 backend checks, plus 27 frontend checks).
+- Phases 1, 2, 3a, 3b, 4a, and 4b complete. NEXT: Phase 4c (payroll).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password
