@@ -275,3 +275,40 @@ def test_no_pin_user_sees_nothing(client, login):
     listed = client.get("/responses", headers={"Authorization": f"Bearer {token}"})
     assert listed.status_code == 200
     assert listed.json()["count"] == 0
+
+
+def test_revisit_keeps_both_submissions(client, login):
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    before = client.get("/responses", headers={"Authorization": f"Bearer {token}"}).json()["count"]
+    _submit(client, token, _lumen_version_id(), _node_id("oakland"),
+            [{"question_id": "q1", "sku_id": str(rose), "value": 4}])
+    _submit(client, token, _lumen_version_id(), _node_id("oakland"),
+            [{"question_id": "q1", "sku_id": str(rose), "value": 6}])
+    after = client.get("/responses", headers={"Authorization": f"Bearer {token}"}).json()["count"]
+    assert after == before + 2  # nothing overwritten
+
+
+def test_store_path_snapshot_is_frozen(client, login):
+    # The stored snapshot equals the store's path at submit time and does NOT
+    # change when the node is later re-parented. Checked at the storage level:
+    # re-parenting changes the live nodes.path, which would drop the row out of
+    # every scope, so the freeze can only be observed on the stored column.
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    created = _submit(client, token, _lumen_version_id(), _node_id("sf"),
+                      [{"question_id": "q1", "sku_id": str(rose), "value": 5}]).json()
+    snapshot = created["store_path"]
+    assert snapshot  # a snapshot was stored
+    live = _scalar("select path from nodes where code = 'sf'")
+    assert snapshot == live  # snapshot == the store's path at submit time
+    # re-parent the node; the stored snapshot must NOT move with it
+    with engine.begin() as conn:
+        conn.execute(text("update nodes set path = '/tampered/' where code = 'sf'"))
+    try:
+        frozen = _scalar("select store_path from responses where id = cast(:rid as uuid)",
+                         rid=created["id"])
+        assert frozen == snapshot  # unchanged despite the re-parent
+    finally:
+        from app.seed import run
+        run()  # idempotently restores sf's real path so later tests are unaffected
