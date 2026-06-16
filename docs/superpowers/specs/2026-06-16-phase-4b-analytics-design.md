@@ -31,17 +31,37 @@ everything else, and built on the indexes 4a already added. No new tables.
      actually submitted a response. A store that should have responded but did not
      counts against completion (this is the honest manager's view; missing work
      shows up, matching the handoff's deadline/overdue focus).
-   - *pass %* = of the stores that responded, how many passed overall.
-   - Both come with their raw counts (expected / responded / passed).
+   - *pass %* = of the stores whose latest response produced a real pass-or-fail
+     verdict, how many passed. A response that is "not scored" (the survey had no
+     applicable pass rule, so the evaluator returns no verdict) is **excluded
+     from the pass % denominator** (it would be wrong to count "nothing to score"
+     as a failure); it still counts toward completion %, because the store did
+     respond.
+   - The raw counts come too: `expected`, `responded`, `scored` (responded with a
+     determinate verdict), `passed`.
    - Zero-denominator rule (so percentages are never a divide-by-zero): if
-     `expected` is 0, `completion_pct` is `null`; if `responded` is 0,
-     `pass_pct` is `null`. The raw counts always tell the true story.
+     `expected` is 0, `completion_pct` is `null`; if `scored` is 0, `pass_pct`
+     is `null`. The raw counts always tell the true story.
 2. **Responses are matched to assignments by computation, not a stored link.** A
    response belongs to an assignment when its `survey_version_id` equals the
    assignment's and its store sits within the assignment's target-node subtree
    (path prefix). So no new column on `responses`; the link is derived, the same
    way 3b computes assignment coverage live. (This is the assignment linkage the
    4a spec deferred to 4b.)
+2b. **A node's compliance includes every survey whose coverage REACHES that
+   node, including company-wide assignments targeted ABOVE it.** Relevant
+   assignments for node N are those whose target node overlaps N's subtree, i.e.
+   the target is an ancestor-or-self of N OR sits within N (`N.path like
+   target.path || '%' OR target.path like N.path || '%'`). Crucially, every
+   metric for such an assignment is measured only over the stores that are in the
+   assignment's coverage AND under N AND within the caller's scope. So a regional
+   manager sees a company-wide survey's completion/pass **for their own region's
+   stores only**, never another region's. (Without this, a survey assigned at the
+   company root would be invisible to every manager below, which is wrong.) This
+   analytics relevance rule is intentionally broader than 3b's
+   manage-an-assignment visibility rule (which is "target node in your scope"):
+   analytics is about "which surveys reach my stores," not "which assignments do
+   I own."
 3. **Out-of-stock and trend are run for a caller-named count question.** A report
    is always scoped to a specific survey version + question id; out-of-stock means
    that per-product answer equals 0. No change to the survey schema, no
@@ -75,16 +95,23 @@ scoped tables, so no endpoint can forget the tenant + branch filter) gains a new
 clearly-labelled **analytics** section. Every query keeps the tenant +
 `path like scope_path || '%'` filter. New public methods:
 
-- `assignment_compliance(node_id=None)` - for each survey assignment in the
-  caller's scope whose target node sits within `node_id` (default: the caller's
-  whole branch), return `{assignment_id, survey_id, survey_name,
-  survey_version_id, target_node_id, target_node_name, expected, responded,
-  passed, completion_pct, pass_pct}`.
+- `assignment_compliance(node_id=None)` - for each survey assignment whose
+  coverage overlaps `node_id` (default: the caller's whole branch; see decision
+  2b: ancestors-or-self and within), return `{assignment_id, survey_id,
+  survey_name, survey_version_id, target_node_id, target_node_name, expected,
+  responded, scored, passed, completion_pct, pass_pct}`. The four counts are
+  measured over the stores in (coverage ∩ subtree of `node_id` ∩ caller scope),
+  so an ancestor-targeted (e.g. company-wide) assignment reports only this node's
+  stores. `scored` = responded stores whose latest response has a determinate
+  verdict; `pass_pct` = passed / scored (per the zero-denominator rule).
 - `compliance_drill(node_id, survey_version_id)` -
   - if `node_id` is NOT a store: for each immediate child node, the completion %
-    and pass % for that version over the child's coverage (`{node_id, name,
-    level_order, is_store, expected, responded, passed, completion_pct,
-    pass_pct}`), so a manager can navigate region -> districts -> stores;
+    and pass % for that version (`{node_id, name, level_order, is_store,
+    expected, responded, scored, passed, completion_pct, pass_pct}`), so a
+    manager can navigate region -> districts -> stores. Each child's counts are
+    measured over (that version's coverage ∩ the child's subtree ∩ caller scope),
+    so the children's `expected` sums to the parent's, consistently with the
+    top-level compliance row;
   - if `node_id` IS a store (deepest level): the store's latest response for that
     version, fully scored (`items` with per-item `pass`, per-question verdicts,
     `overall`), i.e. the per-product "why it failed"; or `{responded: false}` if
@@ -97,7 +124,8 @@ clearly-labelled **analytics** section. Every query keeps the tenant +
   date_from=None, date_to=None)` - for that product + count question across the
   node's stores, return the data points `{submitted_at, store_node_id,
   store_name, value}` over time (all responses, not just latest) plus a per-day
-  average series; honors an optional date range.
+  average series (days bucketed by UTC date; display-timezone niceties are a
+  later screen concern); honors an optional date range.
 
 Internal helpers (private, in the same analytics section):
 - `_coverage_store_paths(conn, target_path)` - the deepest-level (store) nodes
@@ -144,6 +172,13 @@ optional `submitted_at` so dated points can be seeded. Idempotent, like the rest
   is the pass threshold, scored over the same answer values, yield different
   pass % (compliance recomputes from the rule; the verdict is never stored). This
   is the Phase 4 gate ("compliance recomputes when a rule changes").
+- **Company-wide survey shows per node (the ancestor rule):** a survey assigned
+  at the company root reports compliance for a region scoped to that region's
+  stores only; a sibling region's stores never appear in the first region's
+  numbers.
+- **"Not scored" is excluded from pass %:** a store that responded to a survey
+  with no applicable pass rule raises `responded` but not `scored`, and does not
+  drag `pass_pct` down (pass_pct is null when `scored` is 0).
 - **Drill-down:** a region returns its child districts each with their %; a store
   returns the per-question / per-product why-it-failed (the failing question + its
   value vs threshold); a store that never responded returns `responded: false`.
