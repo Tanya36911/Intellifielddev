@@ -67,6 +67,41 @@ CREATE TABLE public.org_level_definitions (
 
 
 --
+-- Name: response_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.response_items (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    response_id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    store_node_id uuid NOT NULL,
+    store_path text NOT NULL,
+    survey_version_id uuid NOT NULL,
+    submitted_at timestamp with time zone DEFAULT now() NOT NULL,
+    question_id text NOT NULL,
+    sku_id uuid,
+    value jsonb NOT NULL
+);
+
+
+--
+-- Name: responses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.responses (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    survey_version_id uuid NOT NULL,
+    store_node_id uuid NOT NULL,
+    store_path text NOT NULL,
+    user_id uuid NOT NULL,
+    online boolean DEFAULT true NOT NULL,
+    submitted_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -215,6 +250,22 @@ ALTER TABLE ONLY public.org_level_definitions
 
 
 --
+-- Name: response_items response_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.response_items
+    ADD CONSTRAINT response_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: responses responses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.responses
+    ADD CONSTRAINT responses_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -317,6 +368,62 @@ CREATE INDEX nodes_tenant_parent_idx ON public.nodes USING btree (tenant_id, par
 
 
 --
+-- Name: response_items_question_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX response_items_question_idx ON public.response_items USING btree (tenant_id, question_id);
+
+
+--
+-- Name: response_items_response_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX response_items_response_idx ON public.response_items USING btree (response_id);
+
+
+--
+-- Name: response_items_sku_time_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX response_items_sku_time_idx ON public.response_items USING btree (tenant_id, sku_id, submitted_at);
+
+
+--
+-- Name: response_items_store_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX response_items_store_idx ON public.response_items USING btree (tenant_id, store_node_id);
+
+
+--
+-- Name: responses_store_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX responses_store_idx ON public.responses USING btree (store_node_id);
+
+
+--
+-- Name: responses_submitted_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX responses_submitted_idx ON public.responses USING btree (submitted_at);
+
+
+--
+-- Name: responses_tenant_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX responses_tenant_idx ON public.responses USING btree (tenant_id);
+
+
+--
+-- Name: responses_version_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX responses_version_idx ON public.responses USING btree (survey_version_id);
+
+
+--
 -- Name: skus_tenant_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -407,6 +514,78 @@ ALTER TABLE ONLY public.org_level_definitions
 
 
 --
+-- Name: response_items response_items_response_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.response_items
+    ADD CONSTRAINT response_items_response_id_fkey FOREIGN KEY (response_id) REFERENCES public.responses(id) ON DELETE CASCADE;
+
+
+--
+-- Name: response_items response_items_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.response_items
+    ADD CONSTRAINT response_items_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.skus(id);
+
+
+--
+-- Name: response_items response_items_store_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.response_items
+    ADD CONSTRAINT response_items_store_node_id_fkey FOREIGN KEY (store_node_id) REFERENCES public.nodes(id);
+
+
+--
+-- Name: response_items response_items_survey_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.response_items
+    ADD CONSTRAINT response_items_survey_version_id_fkey FOREIGN KEY (survey_version_id) REFERENCES public.survey_versions(id);
+
+
+--
+-- Name: response_items response_items_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.response_items
+    ADD CONSTRAINT response_items_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
+-- Name: responses responses_store_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.responses
+    ADD CONSTRAINT responses_store_node_id_fkey FOREIGN KEY (store_node_id) REFERENCES public.nodes(id);
+
+
+--
+-- Name: responses responses_survey_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.responses
+    ADD CONSTRAINT responses_survey_version_id_fkey FOREIGN KEY (survey_version_id) REFERENCES public.survey_versions(id);
+
+
+--
+-- Name: responses responses_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.responses
+    ADD CONSTRAINT responses_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
+-- Name: responses responses_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.responses
+    ADD CONSTRAINT responses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: skus skus_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -485,4 +664,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260613000001'),
     ('20260615000001'),
     ('20260615000002'),
-    ('20260616000001');
+    ('20260616000001'),
+    ('20260616000002');
