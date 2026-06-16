@@ -78,8 +78,16 @@ open a brand-new chat, read this file first (and tell the assistant to, too).
   cannot be edited, a manager cannot assign outside their branch, and the
   computed store coverage.
 
-**What's NEXT:** Phase 4, responses + analytics (reps' answers, compliance
-scoring, exports).
+**Phase 4a - responses + live pass/fail (done):** Reps' completed surveys are
+now stored, one tiny row per product per question per moment, and read back
+with pass/fail worked out fresh from the survey's rules (never saved, so fixing
+a rule fixes every score). Backend only, no screen yet. Proven by the test
+robot: the same answer scores differently when the rule changes, submissions
+are checked against the survey, you can only submit for a store in your branch,
+and re-visits are all kept.
+
+**What's NEXT:** Phase 4b (analytics: compliance %, out-of-stock by product,
+trends).
 
 ---
 
@@ -174,7 +182,9 @@ intelli-app/
 │   │   ├── hierarchy.py GET /nodes (the scoped org-tree API)
 │   │   ├── catalog.py   GET/POST/PATCH /skus (the product catalog API)
 │   │   ├── surveys.py   Surveys + versions + assignments API (Phase 3b)
-│   │   └── seed.py      Creates the demo companies, tree, users, products, surveys
+│   │   ├── responses.py Rep answers stored as atomic rows + live pass/fail (Phase 4a)
+│   │   ├── compliance.py Pass/fail brain: given an answer + a rule, returns pass/fail (Phase 4a)
+│   │   └── seed.py      Creates the demo companies, tree, users, products, surveys, responses
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
 ├── db/                  THE DATABASE shape (not the data itself)
@@ -241,10 +251,11 @@ project memory, so a new chat in this folder already knows them.)
 - Backend login + Admin login screen: DONE and tested.
 - Org hierarchy + "see only your branch" scope guard: DONE and tested.
 - Product catalog (company-wide to view, admin-only to edit): DONE and tested.
-- Surveys + frozen versions + assignments + pass rules: DONE and tested
-  (backend robot green: 57 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, and 3b complete. NEXT: Phase 4 (responses + analytics +
-  payroll + export).
+- Surveys + frozen versions + assignments + pass rules: DONE and tested.
+- Responses + live pass/fail scoring: DONE and tested
+  (backend robot green: 91 backend checks, plus 27 frontend checks).
+- Phases 1, 2, 3a, 3b, and 4a complete. NEXT: Phase 4b (analytics: compliance
+  %, out-of-stock by product, trends).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

@@ -29,7 +29,11 @@ fast-follow, never the headline.
 - [~] **Phase 3** - catalog + surveys + versions + assignments. Split into 3a + 3b.
   - [x] **Phase 3a** - catalog (skus): company-wide list, admin-only add/edit, company isolation. Gate met (tests green).
   - [x] **Phase 3b** - surveys + immutable versions + assignments + structured pass conditions. Gate met (tests green).
-- [ ] **Phase 4** - responses + analytics + payroll + export.
+- [~] **Phase 4** - responses + analytics + payroll + export. Split into 4a + 4b + 4c + 4d.
+  - [x] **Phase 4a** - responses + live pass/fail scoring. Gate met (tests green).
+  - [ ] **Phase 4b** - analytics (compliance %, OOS by SKU, trends).
+  - [ ] **Phase 4c** - payroll.
+  - [ ] **Phase 4d** - export.
 - [ ] **Phase 5** - Field app + offline sync.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
 
@@ -101,6 +105,20 @@ fast-follow, never the headline.
   Check"). GATE GREEN: 57 backend tests (incl. isolation, admin-only authoring, immutability,
   assign-scope, computed coverage, assign-only-published, validation) + 27 frontend. Phase 3b
   COMPLETE; Phase 4 (responses + analytics) next.
+- 2026-06-16: Phase 4a - responses + live pass/fail. Two new tables: responses (the envelope, one
+  row per submission, carrying a snapshot of the store's place in the org tree at submit time so
+  history is never re-bucketed if the store moves later) and response_items (the atomic rows, one
+  per product per question per submission, indexed for analytics). A new pure module
+  api/app/compliance.py evaluates each answer against its question's pass rule (operators: gte, lte,
+  eq, min_choices, max_choices; scopes: each, total; blank answers are not counted, not failed) and
+  returns pass/fail at read time, never storing the verdict, so changing a rule changes every score.
+  New api/app/responses.py endpoints: POST /responses (any signed-in user, only for a store in
+  their own branch, survey version must be published, answers are checked against the survey,
+  blanks allowed, rejected answer shapes give 400, atomic explode into response_items); GET /responses
+  (branch-scoped list with live pass/fail verdicts); GET /responses/{id} (single response with live
+  verdicts). ScopedRepo gained create_response / list_responses / get_response. Re-visits are kept,
+  never overwritten. Seed adds a Lumen response for the SF store (mix of pass/fail) and an Acme
+  response. GATE GREEN: 91 backend tests + 27 frontend. Phase 4a COMPLETE; 4b (analytics) next.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR

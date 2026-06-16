@@ -97,6 +97,23 @@ The fourth renovation order. It adds the three survey tables:
   optional deadline. Which stores it covers is NOT stored here; it is computed
   live from the node's path, so a store added later is automatically included.
 
+### migrations/20260616000002_create_responses.sql
+The fifth renovation order. It adds the two tables that hold reps' completed
+surveys:
+- **responses**: the envelope. One row per submission. Stores who submitted it,
+  which survey version they used, which store they visited, and a snapshot
+  (called `store_path`) of the store's place in the org tree at the moment of
+  submission. That snapshot is important: if the store is ever moved to a
+  different region later, the old response still shows it under the right region
+  history. There is deliberately NO pass/fail column here; that is always
+  recomputed fresh from the rules when you read.
+- **response_items**: the atomic rows. One row per product per question per
+  submission. Every individual answer lands here. The table is indexed so future
+  analytics (compliance %, out-of-stock by product) can run fast. Again, no
+  pass/fail stored: the evaluator in `api/app/compliance.py` computes it on the
+  fly. Re-visits are kept as new rows rather than overwriting old ones, so the
+  full history is preserved.
+
 ### schema.sql
 An automatically-generated snapshot of what the pantry looks like right now,
 after all migrations have been applied. You do not edit this by hand; dbmate
@@ -119,8 +136,8 @@ From START_HERE.md's cheat sheet:
 
 ## What comes later
 
-Phase 2 (hierarchy + scope guard), Phase 3a (the product catalog), and Phase 3b
-(surveys, versions, assignments, the fourth migration above) are now built. The
-next phase (responses + analytics) will add more tables here, for example one for
-the answers reps submit. Each new table arrives as its own numbered migration
-file, and this README gets a new entry describing it.
+Phases 2 (hierarchy + scope guard), 3a (the product catalog), 3b (surveys,
+versions, assignments), and 4a (responses, response items, the fifth migration
+above) are now built. The next phase (4b analytics) will add query support on
+top of the response_items table. Each new table arrives as its own numbered
+migration file, and this README gets a new entry describing it.

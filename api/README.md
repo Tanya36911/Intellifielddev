@@ -51,7 +51,8 @@ The starting point. When the backend boots, this file runs first. It:
 - creates the application,
 - lists the two health-check addresses (`/health` and `/health/db`),
 - plugs in each feature router (login from `auth.py`, the org tree from
-  `hierarchy.py`, the catalog from `catalog.py`, and surveys from `surveys.py`),
+  `hierarchy.py`, the catalog from `catalog.py`, surveys from `surveys.py`, and
+  responses from `responses.py`),
 - and sets the "guest list" (called CORS) that says which web addresses are
   allowed to call the backend. Right now that is the local Admin app.
 
@@ -115,7 +116,10 @@ edits catalog products, filtered by company only (the catalog is company-wide
 reference data, not branch-scoped). As of Phase 3b it also handles surveys
 (company-wide, like the catalog) and survey assignments (branch-scoped, like the
 org tree): creating, publishing, and versioning surveys, and assigning a
-published version to a node within the caller's branch.
+published version to a node within the caller's branch. As of Phase 4a it also
+stores and retrieves responses (create_response, list_responses, get_response),
+branch-scoped so a rep can only submit for a store in their own part of the
+tree.
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
@@ -148,6 +152,32 @@ assignment covers, computed from the node's tree path, so stores added later are
 included automatically. Question and pass-rule shapes are checked on save, and a
 question can never link to another company's product.
 
+### app/responses.py  (the responses API)
+Defines the endpoints for storing and reading reps' completed surveys. When a
+rep finishes a survey in a store, `POST /responses` takes their answers and
+saves them as a set of atomic rows, one row per product per question per
+submission. Any signed-in user may submit, but only for a store inside their
+own branch (the scope guard is enforced); the survey version must be published.
+The endpoint checks each answer against the survey's shape (blanks are allowed
+as "skipped", but an answer with the wrong shape gives a 400 error), then
+writes every answer in one all-or-nothing operation. Each response also saves a
+snapshot of the store's place in the org tree at that moment, so the history is
+correct even if the store is moved later. Re-visits add a fresh row and never
+overwrite the old one. `GET /responses` lists responses in the caller's branch
+(with pass/fail worked out live); `GET /responses/{id}` returns one response in
+full, same live scoring. All go through the ScopedRepo.
+
+### app/compliance.py  (the pure pass/fail evaluator)
+Given a rep's answer and a question's pass rule, this module returns whether the
+answer passes, fails, or was not counted (because it was blank). It has no
+database and no side effects: it is a straightforward function that applies a
+rule to a number or a list of choices. Supported operators: at-least (gte),
+at-most (lte), exactly-equal (eq), at-least-N-choices (min_choices), and
+at-most-N-choices (max_choices). The scope can be "each product" or "total
+across all products". Blank answers are skipped rather than failed. Because
+nothing is ever stored, changing a question's rule in the survey immediately
+changes every score for every past response the next time they are read.
+
 ### app/seed.py  (puts the demo data in)
 Creates two demo companies and their org trees so you can log in and so the
 isolation tests have a known world to check: "Lumen Beauty" (8 spots: regions,
@@ -161,8 +191,11 @@ also seeds demo products: 4 for Lumen (Velvet Lip in three shades plus a Silk
 Foundation) and 1 for Acme. As of Phase 3b it also seeds one demo survey per
 company (Lumen's "Velvet Lip Shelf Check", published, with pass rules and a
 product link, assigned to the Central region; Acme's "Glow Serum Check"), so the
-survey tests have a known world. Safe to run twice. Run it with the command in
-START_HERE.md after the database is set up.
+survey tests have a known world. As of Phase 4a it also seeds one demo response
+per company (a Lumen response for the SF store with a mix of passing and failing
+answers, and an Acme response) so the response tests have a known baseline. Safe
+to run twice. Run it with the command in START_HERE.md after the database is set
+up.
 
 ### app/__init__.py  (a Python formality)
 An empty file whose mere presence tells Python "treat this folder as one

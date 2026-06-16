@@ -99,6 +99,35 @@ first log in: open `POST /auth/login`, "Try it out", use `dana@lumenbeauty.com` 
 What it proves: surveys freeze when published, editing makes a new version, and
 assignment coverage is computed from the tree.
 
+### Check 6: Submit and score a response (Phase 4a, at /docs)
+This proves that reps' answers are stored and scored correctly, with no coding.
+At http://localhost:8000/docs, log in first: open `POST /auth/login`, click
+"Try it out", enter email `marcus@lumenbeauty.com` and password `demo1234`,
+click Execute. Copy the `token` value from the response. Click the green
+**Authorize** button at the top right, paste the token, click Authorize. Now
+every "Try it out" below runs as Marcus.
+
+1. `POST /responses` - fill in the store id for the SF store, the id of
+   Lumen's published "Velvet Lip Shelf Check" version, and one or two answers.
+   - GOOD: you get a `201` response with an `id` and an `overall` field showing
+     pass or fail, and each answer has its own `pass` field.
+   - BAD: a `400` means an answer shape is wrong; a `403` means you picked a
+     store outside Marcus's branch.
+2. `GET /responses/{id}` with the id from step 1.
+   - GOOD: the full response comes back with `overall` and per-item `pass`
+     fields. The scores are computed fresh from the survey's rules, not saved.
+3. To confirm branch isolation: log out and log in as `avery@acme.com` /
+   `demo1234` (an Acme admin). Try `GET /responses/{id}` using the Lumen
+   response id from step 2.
+   - GOOD: you get a `404` (Acme cannot read Lumen's responses).
+
+To confirm the automated gate: run `pnpm test:api` (backend must be running).
+GOOD looks like `91 passed` at the bottom. If anything goes red, copy the text
+to me.
+
+What it proves: reps' answers are stored atomically, scoped to their branch,
+scored live from the survey's rules, and never visible across companies.
+
 ---
 
 ## "Is the code in the wrong place?"

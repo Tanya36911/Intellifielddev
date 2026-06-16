@@ -45,6 +45,14 @@ Admins build surveys; admins and branch managers assign them; which stores an
 assignment covers is worked out live from the tree, so stores added later are
 included automatically.
 
+As of Phase 4a, the backend stores reps' completed surveys as atomic rows, one
+tiny row per product per question per submission (see
+[api/app/responses.py](api/app/responses.py)). Pass/fail is worked out fresh
+from the survey's rules every time you read a response (see
+[api/app/compliance.py](api/app/compliance.py)), and is never saved to the
+database. That means fixing a question's rule immediately changes every score
+for every past response, with no data migration needed.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+
