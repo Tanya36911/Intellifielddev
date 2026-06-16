@@ -160,3 +160,48 @@ def archive_survey(
     if archived is None:
         raise HTTPException(status_code=404, detail="Survey not found")
     return archived
+
+
+@router.get("/survey-assignments")
+def list_assignments(repo: ScopedRepo = Depends(get_scoped_repo)) -> dict:
+    assignments = repo.list_assignments()
+    return {"assignments": assignments, "count": len(assignments)}
+
+
+@router.post("/survey-assignments")
+def create_assignment(
+    body: AssignmentCreate,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(require_manager_or_admin),
+) -> dict:
+    try:
+        created = repo.create_assignment(
+            body.survey_version_id, body.target_node_id, body.deadline,
+            body.timezone_basis, claims["sub"],
+        )
+    except VersionNotPublishedError:
+        raise HTTPException(status_code=400, detail="Survey version not found or not published")
+    if created is None:
+        raise HTTPException(status_code=404, detail="Target node not found in your scope")
+    return created
+
+
+@router.get("/survey-assignments/{assignment_id}/stores")
+def assignment_stores(
+    assignment_id: UUID, repo: ScopedRepo = Depends(get_scoped_repo)
+) -> dict:
+    stores = repo.assignment_stores(assignment_id)
+    if stores is None:
+        raise HTTPException(status_code=404, detail="Assignment not found in your scope")
+    return {"stores": stores, "count": len(stores)}
+
+
+@router.delete("/survey-assignments/{assignment_id}")
+def delete_assignment(
+    assignment_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _claims: dict = Depends(require_manager_or_admin),
+) -> dict:
+    if not repo.delete_assignment(assignment_id):
+        raise HTTPException(status_code=404, detail="Assignment not found in your scope")
+    return {"deleted": True}

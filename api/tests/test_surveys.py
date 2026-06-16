@@ -214,3 +214,154 @@ def test_non_admin_cannot_publish(client, login):
         headers={"Authorization": f"Bearer {login('sarah@lumenbeauty.com')}"},
     )
     assert resp.status_code == 403, resp.text
+
+
+def _node_id(code):
+    from sqlalchemy import text
+    from app.db import engine
+    with engine.connect() as conn:
+        return conn.execute(text("select id from nodes where code = :c"), {"c": code}).scalar()
+
+
+def _published_version_id(client, token, name):
+    s = _find(client, token, name)
+    full = client.get(f"/surveys/{s['id']}", headers={"Authorization": f"Bearer {token}"}).json()
+    return next(v["id"] for v in full["versions"] if v["published_at"] is not None)
+
+
+def test_manager_can_assign_within_branch(client, login):
+    token = login("sarah@lumenbeauty.com")  # manager pinned at Central
+    vid = _published_version_id(client, login("dana@lumenbeauty.com"), "Velvet Lip Shelf Check")
+    resp = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("chicago"))},
+    )
+    assert resp.status_code == 200, resp.text
+
+
+def test_manager_cannot_assign_sibling_region(client, login):
+    token = login("sarah@lumenbeauty.com")  # Central
+    vid = _published_version_id(client, login("dana@lumenbeauty.com"), "Velvet Lip Shelf Check")
+    resp = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("west"))},
+    )
+    assert resp.status_code == 404, resp.text
+
+
+def test_admin_can_assign_anywhere(client, login):
+    token = login("dana@lumenbeauty.com")
+    vid = _published_version_id(client, token, "Velvet Lip Shelf Check")
+    resp = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("west"))},
+    )
+    assert resp.status_code == 200, resp.text
+
+
+def test_rep_cannot_assign(client, login):
+    token = login("marcus@lumenbeauty.com")  # rep
+    vid = _published_version_id(client, login("dana@lumenbeauty.com"), "Velvet Lip Shelf Check")
+    resp = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("bayarea"))},
+    )
+    assert resp.status_code == 403, resp.text
+
+
+def test_cannot_assign_draft_version(client, login):
+    token = login("dana@lumenbeauty.com")
+    draft = _create_draft(client, token, "Unpublished For Assign")
+    resp = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": draft["versions"][0]["id"], "target_node_id": str(_node_id("west"))},
+    )
+    assert resp.status_code == 400, resp.text
+
+
+def test_assignment_stores_by_path(client, login):
+    token = login("dana@lumenbeauty.com")
+    vid = _published_version_id(client, token, "Velvet Lip Shelf Check")
+    created = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("west"))},
+    ).json()
+    resp = client.get(
+        f"/survey-assignments/{created['id']}/stores",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    codes = {s["code"] for s in resp.json()["stores"]}
+    assert {"sf", "oakland"} <= codes        # West's stores are covered
+    assert "chicago-store" not in codes      # a different region's store is not
+
+
+def test_store_added_later_is_included(client, login):
+    from sqlalchemy import text
+    from app.db import engine
+    token = login("dana@lumenbeauty.com")
+    vid = _published_version_id(client, token, "Velvet Lip Shelf Check")
+    created = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("bayarea"))},
+    ).json()
+    # add a brand-new store under Bay Area AFTER the assignment exists
+    with engine.begin() as conn:
+        bay = conn.execute(
+            text("select id, path, tenant_id from nodes where code = 'bayarea'")
+        ).mappings().first()
+        nid = conn.execute(
+            text(
+                "insert into nodes (tenant_id, parent_id, level_order, name, code, chain) "
+                "values (:tid, :pid, 3, 'Late Store', 'late-store', 'CVS') returning id"
+            ),
+            {"tid": bay["tenant_id"], "pid": bay["id"]},
+        ).scalar()
+        conn.execute(
+            text("update nodes set path = :p where id = :id"),
+            {"p": f"{bay['path']}{nid}/", "id": nid},
+        )
+    resp = client.get(
+        f"/survey-assignments/{created['id']}/stores",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    codes = {s["code"] for s in resp.json()["stores"]}
+    assert "late-store" in codes  # computed live, not copied
+
+
+def test_assignment_company_isolation(client, login):
+    # Sarah (Central) sees the seeded Central assignment; Avery (Acme) sees none of Lumen's.
+    sarah = client.get(
+        "/survey-assignments", headers={"Authorization": f"Bearer {login('sarah@lumenbeauty.com')}"}
+    )
+    assert sarah.status_code == 200, sarah.text
+    assert sarah.json()["count"] >= 1
+    avery = client.get(
+        "/survey-assignments", headers={"Authorization": f"Bearer {login('avery@acme.com')}"}
+    ).json()
+    assert avery["count"] == 0
+
+
+def test_delete_assignment(client, login):
+    token = login("dana@lumenbeauty.com")
+    vid = _published_version_id(client, token, "Velvet Lip Shelf Check")
+    created = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("central"))},
+    ).json()
+    resp = client.delete(
+        f"/survey-assignments/{created['id']}", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 200, resp.text
+    again = client.delete(
+        f"/survey-assignments/{created['id']}", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert again.status_code == 404

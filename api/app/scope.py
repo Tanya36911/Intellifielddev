@@ -298,6 +298,109 @@ class ScopedRepo:
             ).mappings().first()
         return dict(row) if row else None
 
+    # ----- survey assignments (branch-scoped, like nodes) -----
+
+    _ASSIGNMENT_COLS = ("id, survey_version_id, target_node_id, deadline, "
+                        "timezone_basis, created_by, created_at")
+
+    def create_assignment(self, survey_version_id, target_node_id, deadline,
+                          timezone_basis, created_by) -> dict | None:
+        if self.scope_path is None:
+            return None
+        with engine.begin() as conn:
+            version = conn.execute(
+                text(
+                    "select v.id from survey_versions v join surveys s on s.id = v.survey_id "
+                    "where v.id = cast(:vid as uuid) and s.tenant_id = cast(:tid as uuid) "
+                    "and v.published_at is not null"
+                ),
+                {"vid": str(survey_version_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if version is None:
+                raise VersionNotPublishedError()
+            node = conn.execute(
+                text(
+                    "select id from nodes where id = cast(:nid as uuid) "
+                    "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"
+                ),
+                {"nid": str(target_node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            if node is None:
+                return None
+            row = conn.execute(
+                text(
+                    "insert into survey_assignments (tenant_id, survey_version_id, target_node_id, "
+                    "deadline, timezone_basis, created_by) values (cast(:tid as uuid), "
+                    "cast(:vid as uuid), cast(:nid as uuid), :deadline, :tzb, cast(:cb as uuid)) "
+                    f"returning {self._ASSIGNMENT_COLS}"
+                ),
+                {"tid": str(self.tenant_id), "vid": str(survey_version_id),
+                 "nid": str(target_node_id), "deadline": deadline,
+                 "tzb": timezone_basis, "cb": str(created_by)},
+            ).mappings().first()
+        return dict(row)
+
+    def list_assignments(self) -> list[dict]:
+        if self.scope_path is None:
+            return []
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "select a.id, a.survey_version_id, a.target_node_id, a.deadline, "
+                    "a.timezone_basis, a.created_by, a.created_at from survey_assignments a "
+                    "join nodes n on n.id = a.target_node_id "
+                    "where a.tenant_id = cast(:tid as uuid) and n.path like :scope || '%' "
+                    "order by a.created_at"
+                ),
+                {"tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().all()
+        return [dict(r) for r in rows]
+
+    def assignment_stores(self, assignment_id) -> list[dict] | None:
+        if self.scope_path is None:
+            return None
+        with engine.connect() as conn:
+            target = conn.execute(
+                text(
+                    "select n.path from survey_assignments a join nodes n on n.id = a.target_node_id "
+                    "where a.id = cast(:aid as uuid) and a.tenant_id = cast(:tid as uuid) "
+                    "and n.path like :scope || '%'"
+                ),
+                {"aid": str(assignment_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            if target is None:
+                return None
+            rows = conn.execute(
+                text(
+                    "select id, name, code, level_order, path, chain, address, lat, lng, tz "
+                    "from nodes where tenant_id = cast(:tid as uuid) and path like :tpath || '%' "
+                    "and level_order = (select max(level_order) from org_level_definitions "
+                    "where tenant_id = cast(:tid as uuid)) order by path"
+                ),
+                {"tid": str(self.tenant_id), "tpath": target["path"]},
+            ).mappings().all()
+        return [dict(r) for r in rows]
+
+    def delete_assignment(self, assignment_id) -> bool:
+        if self.scope_path is None:
+            return False
+        with engine.begin() as conn:
+            found = conn.execute(
+                text(
+                    "select a.id from survey_assignments a join nodes n on n.id = a.target_node_id "
+                    "where a.id = cast(:aid as uuid) and a.tenant_id = cast(:tid as uuid) "
+                    "and n.path like :scope || '%'"
+                ),
+                {"aid": str(assignment_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).first()
+            if found is None:
+                return False
+            conn.execute(
+                text("delete from survey_assignments where id = cast(:aid as uuid)"),
+                {"aid": str(assignment_id)},
+            )
+        return True
+
 
 def scope_path_for(tenant_id: str, user_id: str) -> str | None:
     """The path of the node a user is pinned to (their scope), or None if the
