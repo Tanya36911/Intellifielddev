@@ -61,7 +61,25 @@ open a brand-new chat, read this file first (and tell the assistant to, too).
 - This is the foundation for surveys (Phase 3b), which ask questions about these
   exact products.
 
-**What's NEXT:** Phase 3b, surveys (with versioning and pass/fail rules).
+**Phase 3b - surveys, frozen versions, assignments, pass rules (done):**
+- Each company can now define surveys (the checklists reps fill out in stores).
+  A survey is kept as frozen "versions": once you publish a version it can never
+  change, and editing makes a brand-new version, so past results are never
+  rewritten under your feet.
+- Each question can link to real catalog products and carry a structured pass
+  rule ("passes if 4 or more"), which is what later lets the app score
+  compliance from rules instead of guesses.
+- A survey can be assigned to a spot on the org tree. Which stores it covers is
+  worked out live from the tree, so a store added next month is automatically
+  included. Admins build surveys; admins (anywhere) and managers (within their
+  own branch) assign them; reps can view.
+- Backend only, no new screen yet (same as the catalog phase). Proven by the
+  test robot: company isolation, admin-only authoring, a published version
+  cannot be edited, a manager cannot assign outside their branch, and the
+  computed store coverage.
+
+**What's NEXT:** Phase 4, responses + analytics (reps' answers, compliance
+scoring, exports).
 
 ---
 
@@ -154,7 +172,8 @@ intelli-app/
 │   │   ├── scope.py     The "see only your branch" guard (scope follows pin)
 │   │   ├── hierarchy.py GET /nodes (the scoped org-tree API)
 │   │   ├── catalog.py   GET/POST/PATCH /skus (the product catalog API)
-│   │   └── seed.py      Creates the demo companies, tree, users, products
+│   │   ├── surveys.py   Surveys + versions + assignments API (Phase 3b)
+│   │   └── seed.py      Creates the demo companies, tree, users, products, surveys
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
 ├── db/                  THE DATABASE shape (not the data itself)
@@ -199,15 +218,16 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 
 > Read START_HERE.md, CONTEXT.md, and CODEBASE_MAP.md in this repo first, then
 > TECH_STACK.txt and Intelli_Complete_Handoff.md in the sibling ../hi-fi-intelli
-> repo. Phases 0, 1, 2, and 3a are done (monorepo + Docker; login backend + Admin
-> login screen; org hierarchy + the scope-follows-pin security guard; the product
-> catalog), plus a config-hardening pass and a DB-script-hardening pass. The next
-> task is Phase 3b: surveys, with immutable versions, survey assignments to org
-> nodes, and structured pass/fail conditions (see handoff PART 6). My name is
-> Tanya. Always address me as Tanya, explain everything in plain non-coder terms,
-> design and let me approve before building, build test-first, commit to git after
-> each change, no em dashes, and keep all the docs updated (START_HERE.md,
-> CONTEXT.md, CODEBASE_MAP.md, the per-folder READMEs, and the handoff CHANGELOG).
+> repo. Phases 0, 1, 2, 3a, and 3b are done (monorepo + Docker; login backend +
+> Admin login screen; org hierarchy + the scope-follows-pin security guard; the
+> product catalog; surveys with immutable versions, assignments to org nodes, and
+> structured pass rules), plus a config-hardening pass and a DB-script-hardening
+> pass. The next task is Phase 4: responses + analytics + payroll + export (see
+> handoff PART 6, build step 4). My name is Tanya. Always address me as Tanya,
+> explain everything in plain non-coder terms, design and let me approve before
+> building, build test-first, commit to git after each change, no em dashes, and
+> keep all the docs updated (START_HERE.md, CONTEXT.md, CODEBASE_MAP.md, the
+> per-folder READMEs, and the handoff CHANGELOG).
 
 That paragraph hands the new chat: where the docs are, what's done, what's next,
 and how you like to work. With it plus these files, a fresh chat picks up right
@@ -219,9 +239,11 @@ project memory, so a new chat in this folder already knows them.)
 ## 7. Where we are right now
 - Backend login + Admin login screen: DONE and tested.
 - Org hierarchy + "see only your branch" scope guard: DONE and tested.
-- Product catalog (company-wide to view, admin-only to edit): DONE and tested
-  (backend robot green: 29 backend checks, plus 27 frontend checks).
-- Phases 1, 2, and 3a complete. NEXT: Phase 3b (surveys + versions + pass rules).
+- Product catalog (company-wide to view, admin-only to edit): DONE and tested.
+- Surveys + frozen versions + assignments + pass rules: DONE and tested
+  (backend robot green: 57 backend checks, plus 27 frontend checks).
+- Phases 1, 2, 3a, and 3b complete. NEXT: Phase 4 (responses + analytics +
+  payroll + export).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

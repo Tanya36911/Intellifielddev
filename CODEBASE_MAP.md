@@ -38,6 +38,13 @@ SKUs, meaning product variants like Velvet Lip in Rosewood vs Mauve). Everyone
 in a company can view the catalog; only admins can add or edit it. Like
 everything else, one company never sees another's.
 
+As of Phase 3b, the backend also holds surveys (the checklists reps fill out in
+stores), kept as frozen versions so published results can never be silently
+rewritten, plus assignments that point a survey at a spot on the org tree.
+Admins build surveys; admins and branch managers assign them; which stores an
+assignment covers is worked out live from the tree, so stores added later are
+included automatically.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

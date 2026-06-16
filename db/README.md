@@ -83,6 +83,20 @@ and a list of reference photo links). Each product belongs to one company and is
 unique per company by barcode. This is company-wide reference data (everyone in
 the company sees all of it), unlike the org tree which is branch-scoped.
 
+### migrations/20260616000001_create_surveys.sql
+The fourth renovation order. It adds the three survey tables:
+- **surveys**: one row per checklist (name, type, and a status of draft /
+  published / archived). The identity of a survey; its questions live next door
+  in versions.
+- **survey_versions**: a frozen snapshot of a survey's questions (stored as
+  JSON, including each question's pass rule and any product links). A blank
+  `published_at` means it is still an editable draft; once stamped, the row is
+  treated as frozen forever, so past results are never rewritten. Editing a
+  published survey adds a new version rather than changing an old one.
+- **survey_assignments**: points a published version at one org node, with an
+  optional deadline. Which stores it covers is NOT stored here; it is computed
+  live from the node's path, so a store added later is automatically included.
+
 ### schema.sql
 An automatically-generated snapshot of what the pantry looks like right now,
 after all migrations have been applied. You do not edit this by hand; dbmate
@@ -105,8 +119,8 @@ From START_HERE.md's cheat sheet:
 
 ## What comes later
 
-Phase 2 (hierarchy + scope guard) and Phase 3a (the product catalog, the third
-migration above) are now built. Phase 3b adds surveys, which means new migrations
-here (surveys, survey_versions, survey_assignments) and new rules in the backend.
-Each new table arrives as its own numbered migration file, and this README gets a
-new entry describing it.
+Phase 2 (hierarchy + scope guard), Phase 3a (the product catalog), and Phase 3b
+(surveys, versions, assignments, the fourth migration above) are now built. The
+next phase (responses + analytics) will add more tables here, for example one for
+the answers reps submit. Each new table arrives as its own numbered migration
+file, and this README gets a new entry describing it.

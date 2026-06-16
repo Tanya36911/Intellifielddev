@@ -28,7 +28,7 @@ fast-follow, never the headline.
 - [x] **Phase 2** - hierarchy + scope guard. Done: org_level_definitions, nodes (materialized path), assignments; one shared ScopedRepo enforces tenant + pinned-subtree on every query; GET /nodes. Gate MET: isolation tests pass (tenant, sibling region, rep, admin reach, no-pin), both at the repo level and through the API.
 - [~] **Phase 3** - catalog + surveys + versions + assignments. Split into 3a + 3b.
   - [x] **Phase 3a** - catalog (skus): company-wide list, admin-only add/edit, company isolation. Gate met (tests green).
-  - [ ] **Phase 3b** - surveys + immutable versions + assignments + structured pass conditions.
+  - [x] **Phase 3b** - surveys + immutable versions + assignments + structured pass conditions. Gate met (tests green).
 - [ ] **Phase 4** - responses + analytics + payroll + export.
 - [ ] **Phase 5** - Field app + offline sync.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
@@ -84,6 +84,23 @@ fast-follow, never the headline.
   (dbmate + harness) and scripts run in transactions (dbmate, seed, writes via engine.begin); UTC
   was already real via timestamptz + UTC Postgres, now also pinned explicitly. Remaining pre-launch:
   set fresh strong secrets in the production environment.
+- 2026-06-16: Phase 3b - surveys + immutable versions + assignments + structured pass conditions.
+  Migration for surveys (name, type, status draft/published/archived), survey_versions (questions
+  jsonb + published_at = the freeze marker; unique per survey by version_number), and
+  survey_assignments (published version -> target node, deadline, created_by). New surveys.py router:
+  admins author (POST /surveys creates draft v1; PATCH a draft; POST publish freezes; POST versions
+  starts a new draft from the latest; POST archive), any company user views (GET /surveys, GET
+  /surveys/{id}); editing a published version is refused (409). Assignments via
+  require_manager_or_admin + the scope guard: admins anywhere, managers within their branch (POST/
+  DELETE /survey-assignments, 404 out of scope), GET list scoped, GET /survey-assignments/{id}/stores
+  computes coverage live from the node path (store added later is included). ScopedRepo gained the
+  survey + assignment methods (surveys company-wide like the catalog; assignments branch-scoped like
+  nodes) plus 4 lifecycle exceptions. Questions validated by Pydantic (type/operator enums, choice
+  options, per-SKU + passScope) and sku_ids checked to belong to the caller's company. Seed adds a
+  published survey per company (Lumen "Velvet Lip Shelf Check" assigned to Central, Acme "Glow Serum
+  Check"). GATE GREEN: 57 backend tests (incl. isolation, admin-only authoring, immutability,
+  assign-scope, computed coverage, assign-only-published, validation) + 27 frontend. Phase 3b
+  COMPLETE; Phase 4 (responses + analytics) next.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR

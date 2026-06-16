@@ -33,7 +33,11 @@ The backend now has its own robot too. With the backend running, run
 tests passing, including the isolation checks that prove one company cannot see
 another company's data and a manager cannot see a sibling region. As of Phase 3a
 these also cover the product catalog: one company cannot see another's products,
-and only admins can add or edit products. If any go red, copy the text to me.
+and only admins can add or edit products. As of Phase 3b they also cover surveys:
+only admins can build a survey, a published version can never be edited (editing
+makes a new version), a manager can assign a survey only inside their own branch,
+and "which stores does this cover" is computed from the org tree. If any go red,
+copy the text to me.
 
 ### Check 2: The build (catches typos and broken wiring)
 This assembles the app for real. If any piece is mistyped or points at
@@ -71,6 +75,29 @@ The backend builds its own clickable test page.
 
 What it proves: the backend accepts the right password and refuses wrong ones,
 with no frontend involved at all.
+
+### Check 5: Walk a survey through its life (Phase 3b, at /docs)
+This proves the surveys engine by hand, no coding. At http://localhost:8000/docs,
+first log in: open `POST /auth/login`, "Try it out", use `dana@lumenbeauty.com` /
+`demo1234`, Execute, and copy the `token` from the response. Click the green
+**Authorize** button at the top right, paste the token, Authorize. Now every
+"Try it out" below runs as Dana.
+
+1. `GET /surveys` -> you see "Velvet Lip Shelf Check". GOOD: Acme's "Glow Serum
+   Check" is NOT in the list (companies stay separate).
+2. `POST /surveys` with a name and a question or two -> GOOD: it comes back with
+   `status: draft` and a version 1 whose `published_at` is empty.
+3. `POST /surveys/{id}/publish` (use the id from step 2) -> GOOD: `status` is now
+   `published` and the version has a `published_at` time.
+4. `PATCH /surveys/{id}/versions/{vid}` on that now-published version -> GOOD: it
+   is REFUSED with a `409` ("published and cannot be edited"). That is the
+   freeze working.
+5. `POST /survey-assignments` pointing the published version at a node, then
+   `GET /survey-assignments/{id}/stores` -> GOOD: it lists the stores under that
+   node. Assigning to a region returns that region's stores only.
+
+What it proves: surveys freeze when published, editing makes a new version, and
+assignment coverage is computed from the tree.
 
 ---
 

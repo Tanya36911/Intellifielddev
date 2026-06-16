@@ -50,7 +50,8 @@ are packaging.
 The starting point. When the backend boots, this file runs first. It:
 - creates the application,
 - lists the two health-check addresses (`/health` and `/health/db`),
-- plugs in the login feature (from `auth.py`),
+- plugs in each feature router (login from `auth.py`, the org tree from
+  `hierarchy.py`, the catalog from `catalog.py`, and surveys from `surveys.py`),
 - and sets the "guest list" (called CORS) that says which web addresses are
   allowed to call the backend. Right now that is the local Admin app.
 
@@ -73,8 +74,10 @@ Four security jobs live here, kept separate from everything else on purpose. The
 third, `current_claims` (added in Phase 2), verifies the caller's wristband on
 each incoming request and is what the scope guard relies on. The fourth,
 `require_admin` (added in Phase 3a), goes one step further and blocks anyone who
-is not an admin with a "not allowed" (403); it guards the catalog write
-endpoints. The first two:
+is not an admin with a "not allowed" (403); it guards the catalog and survey
+write endpoints. The fifth, `require_manager_or_admin` (added in Phase 3b), lets
+admins and managers through but blocks reps; it guards survey assignment writes
+(the scope guard still keeps a manager to their own branch). The first two:
 - **Password scrambling.** Passwords are never stored as the real text. They
   are run through a one-way scrambler called Argon2. You can check a guess
   against the scramble, but you can never un-scramble it back to the password.
@@ -109,7 +112,10 @@ the caller's company and the part of the tree at or below their pin. Because the
 filter lives only here, no screen can forget it. A person with no pin sees
 nothing (the safe default). As of Phase 3a the ScopedRepo also lists, adds, and
 edits catalog products, filtered by company only (the catalog is company-wide
-reference data, not branch-scoped).
+reference data, not branch-scoped). As of Phase 3b it also handles surveys
+(company-wide, like the catalog) and survey assignments (branch-scoped, like the
+org tree): creating, publishing, and versioning surveys, and assigning a
+published version to a node within the caller's branch.
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
@@ -122,6 +128,26 @@ can view) and `POST /skus` + `PATCH /skus/{id}` (admins only, guarded by
 require_admin). All go through the ScopedRepo, so they only ever touch the
 caller's own company's products.
 
+### app/surveys.py  (the surveys API)
+Defines the survey and assignment endpoints, all through the ScopedRepo. A
+**survey** is a checklist a rep fills out in a store; its questions live in
+frozen **versions**, and each question can carry a structured **pass rule**
+("passes if 4 or more") and link to catalog products. Viewing
+(`GET /surveys`, `GET /surveys/{id}`) is open to any signed-in person in the
+company; authoring is admins only: `POST /surveys` (creates a draft),
+`PATCH /surveys/{id}/versions/{vid}` (edit a draft, refused once published with
+a 409), `POST /surveys/{id}/publish` (freeze it forever), `POST /surveys/{id}/versions`
+(start a new draft from the latest, the way you "edit" a published survey), and
+`POST /surveys/{id}/archive` (retire it, history kept). **Assignments** point a
+published version at an org node: `POST /survey-assignments` and
+`DELETE /survey-assignments/{id}` are allowed for admins anywhere and managers
+within their own branch (guarded by require_manager_or_admin plus the scope
+guard); `GET /survey-assignments` lists what is in your branch; and
+`GET /survey-assignments/{id}/stores` returns the live list of stores the
+assignment covers, computed from the node's tree path, so stores added later are
+included automatically. Question and pass-rule shapes are checked on save, and a
+question can never link to another company's product.
+
 ### app/seed.py  (puts the demo data in)
 Creates two demo companies and their org trees so you can log in and so the
 isolation tests have a known world to check: "Lumen Beauty" (8 spots: regions,
@@ -132,7 +158,10 @@ pins each to a spot: `dana@lumenbeauty.com` (admin, sees all of Lumen),
 Bay Area), `newbie@lumenbeauty.com` (no pin, sees nothing), and
 `avery@acme.com` (admin of Acme). All use password `demo1234`. As of Phase 3a it
 also seeds demo products: 4 for Lumen (Velvet Lip in three shades plus a Silk
-Foundation) and 1 for Acme. Safe to run twice. Run it with the command in
+Foundation) and 1 for Acme. As of Phase 3b it also seeds one demo survey per
+company (Lumen's "Velvet Lip Shelf Check", published, with pass rules and a
+product link, assigned to the Central region; Acme's "Glow Serum Check"), so the
+survey tests have a known world. Safe to run twice. Run it with the command in
 START_HERE.md after the database is set up.
 
 ### app/__init__.py  (a Python formality)
