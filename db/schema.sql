@@ -94,6 +94,51 @@ CREATE TABLE public.skus (
 
 
 --
+-- Name: survey_assignments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.survey_assignments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    survey_version_id uuid NOT NULL,
+    target_node_id uuid NOT NULL,
+    deadline timestamp with time zone,
+    timezone_basis text,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: survey_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.survey_versions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    survey_id uuid NOT NULL,
+    version_number integer NOT NULL,
+    questions jsonb DEFAULT '[]'::jsonb NOT NULL,
+    published_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: surveys; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.surveys (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    name text NOT NULL,
+    type text,
+    status text DEFAULT 'draft'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT surveys_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text, 'archived'::text])))
+);
+
+
+--
 -- Name: tenants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -194,6 +239,38 @@ ALTER TABLE ONLY public.skus
 
 
 --
+-- Name: survey_assignments survey_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_assignments
+    ADD CONSTRAINT survey_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: survey_versions survey_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_versions
+    ADD CONSTRAINT survey_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: survey_versions survey_versions_survey_id_version_number_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_versions
+    ADD CONSTRAINT survey_versions_survey_id_version_number_key UNIQUE (survey_id, version_number);
+
+
+--
+-- Name: surveys surveys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.surveys
+    ADD CONSTRAINT surveys_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: tenants tenants_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -244,6 +321,41 @@ CREATE INDEX nodes_tenant_parent_idx ON public.nodes USING btree (tenant_id, par
 --
 
 CREATE INDEX skus_tenant_idx ON public.skus USING btree (tenant_id);
+
+
+--
+-- Name: survey_assignments_node_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX survey_assignments_node_idx ON public.survey_assignments USING btree (target_node_id);
+
+
+--
+-- Name: survey_assignments_tenant_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX survey_assignments_tenant_idx ON public.survey_assignments USING btree (tenant_id);
+
+
+--
+-- Name: survey_assignments_version_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX survey_assignments_version_idx ON public.survey_assignments USING btree (survey_version_id);
+
+
+--
+-- Name: survey_versions_survey_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX survey_versions_survey_idx ON public.survey_versions USING btree (survey_id);
+
+
+--
+-- Name: surveys_tenant_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX surveys_tenant_idx ON public.surveys USING btree (tenant_id);
 
 
 --
@@ -303,6 +415,54 @@ ALTER TABLE ONLY public.skus
 
 
 --
+-- Name: survey_assignments survey_assignments_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_assignments
+    ADD CONSTRAINT survey_assignments_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id);
+
+
+--
+-- Name: survey_assignments survey_assignments_survey_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_assignments
+    ADD CONSTRAINT survey_assignments_survey_version_id_fkey FOREIGN KEY (survey_version_id) REFERENCES public.survey_versions(id);
+
+
+--
+-- Name: survey_assignments survey_assignments_target_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_assignments
+    ADD CONSTRAINT survey_assignments_target_node_id_fkey FOREIGN KEY (target_node_id) REFERENCES public.nodes(id);
+
+
+--
+-- Name: survey_assignments survey_assignments_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_assignments
+    ADD CONSTRAINT survey_assignments_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
+-- Name: survey_versions survey_versions_survey_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.survey_versions
+    ADD CONSTRAINT survey_versions_survey_id_fkey FOREIGN KEY (survey_id) REFERENCES public.surveys(id);
+
+
+--
+-- Name: surveys surveys_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.surveys
+    ADD CONSTRAINT surveys_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
 -- Name: users users_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -324,4 +484,5 @@ ALTER TABLE ONLY public.users
 INSERT INTO public.schema_migrations (version) VALUES
     ('20260613000001'),
     ('20260615000001'),
-    ('20260615000002');
+    ('20260615000002'),
+    ('20260616000001');
