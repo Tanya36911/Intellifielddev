@@ -772,6 +772,56 @@ class ScopedRepo:
                 })
         return {"is_store": False, "children": rows}
 
+    def oos_by_sku(self, survey_version_id, question_id, node_id=None):
+        """Out-of-stock by product for a per-product count question, using each
+        store's latest response under the node. Out of stock = answer 0. Returns
+        None if node/version not in scope (-> 404); raises ValueError for a bad
+        question (-> 400)."""
+        if self.scope_path is None:
+            return None
+        with engine.connect() as conn:
+            base = self._base_path_in_scope(conn, node_id)
+            if base is None:
+                return None
+            questions = self._version_questions(conn, survey_version_id)
+            if questions is None:
+                return None
+            _count_question(questions, question_id)  # raises ValueError if invalid
+            maxlvl = self._max_level(conn)
+            # value is jsonb; (value::text)::numeric is the version-portable way
+            # to read a stored number (direct jsonb::numeric needs PG15+). 4a's
+            # _check_value guarantees number questions only ever store numbers.
+            rows = conn.execute(
+                text("with latest as ("
+                     " select distinct on (r.store_node_id) r.id from responses r "
+                     " join nodes n on n.id = r.store_node_id "
+                     " where r.survey_version_id = cast(:vid as uuid) "
+                     " and r.tenant_id = cast(:tid as uuid) "
+                     " and n.path like :base || '%' and n.level_order = :ml "
+                     " order by r.store_node_id, r.submitted_at desc) "
+                     "select ri.sku_id, sk.line, sk.variant, "
+                     " count(*) filter (where (ri.value::text)::numeric = 0) as oos_store_count, "
+                     " count(*) as reporting_store_count "
+                     "from response_items ri join latest l on l.id = ri.response_id "
+                     "join skus sk on sk.id = ri.sku_id "
+                     "where ri.question_id = :qid and ri.sku_id is not null "
+                     "group by ri.sku_id, sk.line, sk.variant order by sk.line, sk.variant"),
+                {"vid": str(survey_version_id), "tid": str(self.tenant_id),
+                 "base": base, "ml": maxlvl, "qid": question_id},
+            ).mappings().all()
+        return [{"sku_id": str(r["sku_id"]), "line": r["line"], "variant": r["variant"],
+                 "oos_store_count": r["oos_store_count"],
+                 "reporting_store_count": r["reporting_store_count"]} for r in rows]
+
+
+def _count_question(questions, question_id):
+    """Return the question if it is a per-product number question, else raise
+    ValueError (-> 400). Used by the out-of-stock and trend analytics."""
+    q = next((x for x in questions if x.get("id") == question_id), None)
+    if q is None or q.get("type") != "number" or not q.get("perSku", False):
+        raise ValueError(f"{question_id} is not a per-product number question")
+    return q
+
 
 def _check_value(value, q) -> None:
     """Raise ValueError if a non-blank answer value does not match its question

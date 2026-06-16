@@ -33,3 +33,19 @@ def compliance_drill(
     if result is None:
         raise HTTPException(status_code=404, detail="Node or version not found in your scope")
     return result
+
+
+@router.get("/oos")
+def oos(
+    survey_version_id: UUID,
+    question_id: str,
+    node_id: UUID | None = None,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+) -> dict:
+    try:
+        rows = repo.oos_by_sku(survey_version_id, question_id, node_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if rows is None:
+        raise HTTPException(status_code=404, detail="Node or version not found in your scope")
+    return {"rows": rows, "count": len(rows)}

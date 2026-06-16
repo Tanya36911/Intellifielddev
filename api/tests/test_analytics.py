@@ -180,3 +180,68 @@ def test_drill_node_out_of_scope_404(client, login):
                       headers=_auth(login("sarah@lumenbeauty.com")),
                       params={"node_id": str(_node_id("bayarea")), "survey_version_id": vid})
     assert resp.status_code == 404, resp.text
+
+
+def test_oos_counts_zero_answers(client, login):
+    dana = login("dana@lumenbeauty.com")
+    marcus = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "facings?", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "OOS Survey", q, "bayarea")
+    _submit(client, marcus, vid, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 0}])
+    _submit(client, marcus, vid, "oakland", [{"question_id": "q1", "sku_id": str(rose), "value": 7}])
+    body = client.get("/analytics/oos", headers=_auth(dana),
+                      params={"survey_version_id": vid, "question_id": "q1"}).json()
+    row = next(r for r in body["rows"] if r["sku_id"] == str(rose))
+    assert row["oos_store_count"] == 1
+    assert row["reporting_store_count"] == 2
+
+
+def test_oos_uses_latest_response(client, login):
+    dana = login("dana@lumenbeauty.com")
+    marcus = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "OOS Latest", q, "bayarea")
+    _submit(client, marcus, vid, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 0}])
+    _submit(client, marcus, vid, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    body = client.get("/analytics/oos", headers=_auth(dana),
+                      params={"survey_version_id": vid, "question_id": "q1"}).json()
+    row = next(r for r in body["rows"] if r["sku_id"] == str(rose))
+    assert row["oos_store_count"] == 0  # latest is 5
+
+
+def test_oos_bad_question_400(client, login):
+    dana = login("dana@lumenbeauty.com")
+    vid = _publish_and_assign(client, dana, "OOS Bad Q",
+        [{"id": "q1", "prompt": "present?", "type": "boolean"}], "bayarea")
+    resp = client.get("/analytics/oos", headers=_auth(dana),
+                      params={"survey_version_id": vid, "question_id": "q1"})
+    assert resp.status_code == 400, resp.text
+
+
+def test_oos_version_out_of_company_404(client, login):
+    acme_vid = _scalar(
+        "select v.id from survey_versions v join surveys s on s.id = v.survey_id "
+        "where s.name = 'Glow Serum Check' and v.published_at is not null limit 1")
+    resp = client.get("/analytics/oos", headers=_auth(login("dana@lumenbeauty.com")),
+                      params={"survey_version_id": str(acme_vid), "question_id": "q1"})
+    assert resp.status_code == 404, resp.text
+
+
+def test_oos_company_isolation(client, login):
+    # Avery (Acme) runs out-of-stock on an Acme survey; no Lumen product appears.
+    avery = login("avery@acme.com")
+    acme_sku, lumen_sku = _sku_id("ACM-GS-ORIG"), _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "facings?", "type": "number", "perSku": True,
+          "sku_ids": [str(acme_sku)], "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, avery, "Acme OOS", q, "acme-co")
+    _submit(client, avery, vid, "boston-store",
+            [{"question_id": "q1", "sku_id": str(acme_sku), "value": 0}])
+    body = client.get("/analytics/oos", headers=_auth(avery),
+                      params={"survey_version_id": vid, "question_id": "q1"}).json()
+    sku_ids = {r["sku_id"] for r in body["rows"]}
+    assert str(acme_sku) in sku_ids
+    assert str(lumen_sku) not in sku_ids
