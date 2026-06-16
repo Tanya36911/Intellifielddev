@@ -158,6 +158,61 @@ def _survey(conn, tenant_id, name, type_, questions, assign_node=None, created_b
     return survey_id
 
 
+def _response(conn, tenant_id, survey_name, store_code, user_email, answers):
+    """Insert one demo response with its atomic answer rows. Idempotent: if this
+    user already has a response for this store+version, do nothing."""
+    version_id = conn.execute(
+        text(
+            "select v.id from survey_versions v join surveys s on s.id = v.survey_id "
+            "where s.tenant_id = :tid and s.name = :name and v.published_at is not null "
+            "order by v.version_number desc limit 1"
+        ),
+        {"tid": tenant_id, "name": survey_name},
+    ).scalar()
+    store = conn.execute(
+        text("select id, path from nodes where tenant_id = :tid and code = :code"),
+        {"tid": tenant_id, "code": store_code},
+    ).mappings().first()
+    user_id = conn.execute(
+        text("select id from users where tenant_id = :tid and email = :email"),
+        {"tid": tenant_id, "email": user_email},
+    ).scalar()
+    # Fail loudly on a mistyped name/code/email rather than passing None into the
+    # inserts (matches the defensive style of the other seed helpers).
+    assert version_id, f"no published version for survey {survey_name!r}"
+    assert store, f"no node with code {store_code!r}"
+    assert user_id, f"no user with email {user_email!r}"
+    existing = conn.execute(
+        text(
+            "select id from responses where survey_version_id = :vid "
+            "and store_node_id = :nid and user_id = :uid"
+        ),
+        {"vid": version_id, "nid": store["id"], "uid": user_id},
+    ).scalar()
+    if existing:
+        return existing
+    resp_id = conn.execute(
+        text(
+            "insert into responses (tenant_id, survey_version_id, store_node_id, store_path, user_id) "
+            "values (:tid, :vid, :nid, :spath, :uid) returning id"
+        ),
+        {"tid": tenant_id, "vid": version_id, "nid": store["id"],
+         "spath": store["path"], "uid": user_id},
+    ).scalar()
+    for a in answers:
+        conn.execute(
+            text(
+                "insert into response_items (response_id, tenant_id, store_node_id, store_path, "
+                "survey_version_id, question_id, sku_id, value) values (:rid, :tid, :nid, :spath, "
+                ":vid, :qid, :sku, cast(:val as jsonb))"
+            ),
+            {"rid": resp_id, "tid": tenant_id, "nid": store["id"], "spath": store["path"],
+             "vid": version_id, "qid": a["question_id"], "sku": a.get("sku_id"),
+             "val": json.dumps(a["value"])},
+        )
+    return resp_id
+
+
 def run() -> None:
     with engine.begin() as conn:
         # ----- Lumen Beauty -----
@@ -194,6 +249,14 @@ def run() -> None:
             assign_node=central, created_by=dana_id,
         )
 
+        # A real response at SF (Bay Area, Marcus's scope): Rosewood below the
+        # bar (3 < 4) so q1 fails, endcap present so q2 passes -> overall fail.
+        _response(
+            conn, lumen, "Velvet Lip Shelf Check", "sf", "marcus@lumenbeauty.com",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 3},
+             {"question_id": "q2", "value": True}],
+        )
+
         # ----- Acme Cosmetics (proves cross-tenant isolation) -----
         acme = _tenant(conn, "Acme Cosmetics", "acme")
         _levels(conn, acme)
@@ -211,7 +274,13 @@ def run() -> None:
             [{"id": "q1", "prompt": "Is Glow Serum in stock?", "type": "boolean"}],
         )
 
-    print("Seeded Lumen (8 nodes, 4 products, 1 survey) + Acme (4 nodes, 1 product, 1 survey) + 5 users with pins.")
+        # Acme demo response (q1 has no pass rule -> overall not counted).
+        _response(
+            conn, acme, "Glow Serum Check", "boston-store", "avery@acme.com",
+            [{"question_id": "q1", "value": True}],
+        )
+
+    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 1 response) + Acme (4 nodes, 1 product, 1 survey, 1 response) + 5 users with pins.")
 
 
 if __name__ == "__main__":
