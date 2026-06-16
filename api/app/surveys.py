@@ -99,3 +99,64 @@ def get_survey(
     if survey is None:
         raise HTTPException(status_code=404, detail="Survey not found")
     return survey
+
+
+@router.patch("/surveys/{survey_id}/versions/{version_id}")
+def update_version(
+    survey_id: UUID,
+    version_id: UUID,
+    body: VersionUpdate,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    try:
+        updated = repo.update_version(survey_id, version_id, _questions_json(body.questions))
+    except PublishedVersionError:
+        raise HTTPException(status_code=409, detail="This version is published and cannot be edited")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Survey version not found")
+    return updated
+
+
+@router.post("/surveys/{survey_id}/publish")
+def publish_survey(
+    survey_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    try:
+        published = repo.publish_version(survey_id)
+    except NoDraftError:
+        raise HTTPException(status_code=409, detail="No draft version to publish")
+    if published is None:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    return published
+
+
+@router.post("/surveys/{survey_id}/versions")
+def new_version(
+    survey_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    try:
+        created = repo.new_version(survey_id)
+    except DraftExistsError:
+        raise HTTPException(status_code=409, detail="A draft version already exists; edit or publish it first")
+    if created is None:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    return created
+
+
+@router.post("/surveys/{survey_id}/archive")
+def archive_survey(
+    survey_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    archived = repo.archive_survey(survey_id)
+    if archived is None:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    return archived

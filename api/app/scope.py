@@ -196,6 +196,108 @@ class ScopedRepo:
         result["versions"] = [dict(version)]
         return result
 
+    def update_version(self, survey_id, version_id, questions: list[dict]) -> dict | None:
+        with engine.begin() as conn:
+            ver = conn.execute(
+                text(
+                    "select v.published_at from survey_versions v "
+                    "join surveys s on s.id = v.survey_id "
+                    "where v.id = cast(:vid as uuid) and v.survey_id = cast(:sid as uuid) "
+                    "and s.tenant_id = cast(:tid as uuid)"
+                ),
+                {"vid": str(version_id), "sid": str(survey_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if ver is None:
+                return None
+            if ver["published_at"] is not None:
+                raise PublishedVersionError()
+            self._check_sku_ids(conn, questions)
+            row = conn.execute(
+                text(
+                    "update survey_versions set questions = cast(:q as jsonb) "
+                    "where id = cast(:vid as uuid) "
+                    f"returning {self._VERSION_COLS}"
+                ),
+                {"q": json.dumps(questions), "vid": str(version_id)},
+            ).mappings().first()
+        return dict(row)
+
+    def publish_version(self, survey_id) -> dict | None:
+        with engine.begin() as conn:
+            survey = conn.execute(
+                text(
+                    "select id from surveys where id = cast(:id as uuid) "
+                    "and tenant_id = cast(:tid as uuid)"
+                ),
+                {"id": str(survey_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if survey is None:
+                return None
+            draft = conn.execute(
+                text(
+                    "select id from survey_versions where survey_id = cast(:id as uuid) "
+                    "and published_at is null order by version_number desc limit 1"
+                ),
+                {"id": str(survey_id)},
+            ).mappings().first()
+            if draft is None:
+                raise NoDraftError()
+            conn.execute(
+                text("update survey_versions set published_at = now() where id = cast(:vid as uuid)"),
+                {"vid": str(draft["id"])},
+            )
+            conn.execute(
+                text(
+                    "update surveys set status = 'published' "
+                    "where id = cast(:id as uuid) and status = 'draft'"
+                ),
+                {"id": str(survey_id)},
+            )
+        return self.get_survey(survey_id)
+
+    def new_version(self, survey_id) -> dict | None:
+        with engine.begin() as conn:
+            survey = conn.execute(
+                text(
+                    "select id from surveys where id = cast(:id as uuid) "
+                    "and tenant_id = cast(:tid as uuid)"
+                ),
+                {"id": str(survey_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if survey is None:
+                return None
+            latest = conn.execute(
+                text(
+                    "select version_number, questions, published_at from survey_versions "
+                    "where survey_id = cast(:id as uuid) order by version_number desc limit 1"
+                ),
+                {"id": str(survey_id)},
+            ).mappings().first()
+            if latest["published_at"] is None:
+                raise DraftExistsError()
+            row = conn.execute(
+                text(
+                    "insert into survey_versions (survey_id, version_number, questions) "
+                    "values (cast(:id as uuid), :vn, cast(:q as jsonb)) "
+                    f"returning {self._VERSION_COLS}"
+                ),
+                {"id": str(survey_id), "vn": latest["version_number"] + 1,
+                 "q": json.dumps(latest["questions"])},
+            ).mappings().first()
+        return dict(row)
+
+    def archive_survey(self, survey_id) -> dict | None:
+        with engine.begin() as conn:
+            row = conn.execute(
+                text(
+                    "update surveys set status = 'archived' "
+                    "where id = cast(:id as uuid) and tenant_id = cast(:tid as uuid) "
+                    f"returning {self._SURVEY_COLS}"
+                ),
+                {"id": str(survey_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+        return dict(row) if row else None
+
 
 def scope_path_for(tenant_id: str, user_id: str) -> str | None:
     """The path of the node a user is pinned to (their scope), or None if the

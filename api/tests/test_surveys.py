@@ -117,3 +117,100 @@ def test_cross_company_sku_link_rejected(client, login):
               "questions": [{"id": "q1", "prompt": "x", "type": "number", "sku_ids": [str(acme_sku)]}]},
     )
     assert resp.status_code == 400, resp.text
+
+
+def _create_draft(client, token, name):
+    resp = client.post(
+        "/surveys",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": name, "type": "shelf_check",
+              "questions": [{"id": "q1", "prompt": "Counter clean?", "type": "boolean"}]},
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+def test_edit_draft_questions(client, login):
+    token = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, token, "Editable Draft")
+    vid = survey["versions"][0]["id"]
+    resp = client.patch(
+        f"/surveys/{survey['id']}/versions/{vid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"questions": [{"id": "q1", "prompt": "Counter spotless?", "type": "boolean"}]},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["questions"][0]["prompt"] == "Counter spotless?"
+
+
+def test_publish_freezes_the_version(client, login):
+    token = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, token, "To Publish")
+    resp = client.post(
+        f"/surveys/{survey['id']}/publish",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["status"] == "published"
+    assert body["versions"][0]["published_at"] is not None
+
+
+def test_cannot_edit_published_version(client, login):
+    token = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, token, "Frozen Survey")
+    vid = survey["versions"][0]["id"]
+    client.post(f"/surveys/{survey['id']}/publish", headers={"Authorization": f"Bearer {token}"})
+    resp = client.patch(
+        f"/surveys/{survey['id']}/versions/{vid}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"questions": [{"id": "q1", "prompt": "changed", "type": "boolean"}]},
+    )
+    assert resp.status_code == 409, resp.text
+
+
+def test_new_version_keeps_old_unchanged(client, login):
+    token = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, token, "Versioned Survey")
+    v1_id = survey["versions"][0]["id"]
+    client.post(f"/surveys/{survey['id']}/publish", headers={"Authorization": f"Bearer {token}"})
+    new = client.post(f"/surveys/{survey['id']}/versions", headers={"Authorization": f"Bearer {token}"})
+    assert new.status_code == 200, new.text
+    v2 = new.json()
+    assert v2["version_number"] == 2
+    assert v2["published_at"] is None
+    # edit v2
+    client.patch(
+        f"/surveys/{survey['id']}/versions/{v2['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"questions": [{"id": "q1", "prompt": "v2 question", "type": "boolean"}]},
+    )
+    # v1 is unchanged
+    full = client.get(f"/surveys/{survey['id']}", headers={"Authorization": f"Bearer {token}"}).json()
+    v1 = next(v for v in full["versions"] if v["id"] == v1_id)
+    assert v1["questions"][0]["prompt"] == "Counter clean?"
+
+
+def test_new_version_requires_published_latest(client, login):
+    token = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, token, "Still A Draft")
+    resp = client.post(f"/surveys/{survey['id']}/versions", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 409, resp.text
+
+
+def test_archive_survey(client, login):
+    token = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, token, "To Archive")
+    resp = client.post(f"/surveys/{survey['id']}/archive", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["status"] == "archived"
+
+
+def test_non_admin_cannot_publish(client, login):
+    dana = login("dana@lumenbeauty.com")
+    survey = _create_draft(client, dana, "Mgr Cannot Publish")
+    resp = client.post(
+        f"/surveys/{survey['id']}/publish",
+        headers={"Authorization": f"Bearer {login('sarah@lumenbeauty.com')}"},
+    )
+    assert resp.status_code == 403, resp.text
