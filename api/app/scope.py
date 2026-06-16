@@ -11,6 +11,7 @@ import json
 from fastapi import Depends
 from sqlalchemy import text
 
+from .compliance import evaluate_response
 from .db import engine
 from .security import current_claims
 
@@ -400,6 +401,145 @@ class ScopedRepo:
                 {"aid": str(assignment_id)},
             )
         return True
+
+    # ----- responses (branch-scoped, like assignments; atomic per-SKU rows) -----
+
+    _RESPONSE_COLS = ("id, survey_version_id, store_node_id, store_path, user_id, "
+                      "online, submitted_at, created_at")
+
+    # Same columns r.-qualified, because the list/get queries join nodes (which
+    # also has an `id` column) for the path filter.
+    _RESPONSE_COLS_R = ("r.id, r.survey_version_id, r.store_node_id, r.store_path, "
+                        "r.user_id, r.online, r.submitted_at, r.created_at")
+
+    def create_response(self, survey_version_id, store_node_id, answers, user_id) -> dict | None:
+        """Store one completed response. Returns None if the store is not a store
+        in the caller's scope. Raises VersionNotPublishedError if the version is
+        missing/unpublished, ValueError if an answer does not fit the version."""
+        if self.scope_path is None:
+            return None
+        with engine.begin() as conn:
+            version = conn.execute(
+                text(
+                    "select v.id, v.questions from survey_versions v "
+                    "join surveys s on s.id = v.survey_id "
+                    "where v.id = cast(:vid as uuid) and s.tenant_id = cast(:tid as uuid) "
+                    "and v.published_at is not null"
+                ),
+                {"vid": str(survey_version_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if version is None:
+                raise VersionNotPublishedError()
+            store = conn.execute(
+                text(
+                    "select id, path from nodes where id = cast(:nid as uuid) "
+                    "and tenant_id = cast(:tid as uuid) and path like :scope || '%' "
+                    "and level_order = (select max(level_order) from org_level_definitions "
+                    "where tenant_id = cast(:tid as uuid))"
+                ),
+                {"nid": str(store_node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            if store is None:
+                return None
+            rows = self._explode_answers(version["questions"], answers)
+            resp = conn.execute(
+                text(
+                    "insert into responses (tenant_id, survey_version_id, store_node_id, "
+                    "store_path, user_id) values (cast(:tid as uuid), cast(:vid as uuid), "
+                    "cast(:nid as uuid), :spath, cast(:uid as uuid)) "
+                    f"returning {self._RESPONSE_COLS}"
+                ),
+                {"tid": str(self.tenant_id), "vid": str(survey_version_id),
+                 "nid": str(store_node_id), "spath": store["path"], "uid": str(user_id)},
+            ).mappings().first()
+            for r in rows:
+                conn.execute(
+                    text(
+                        "insert into response_items (response_id, tenant_id, store_node_id, "
+                        "store_path, survey_version_id, submitted_at, question_id, sku_id, value) "
+                        "values (cast(:rid as uuid), cast(:tid as uuid), cast(:nid as uuid), "
+                        ":spath, cast(:vid as uuid), :sub, :qid, cast(:sku as uuid), cast(:val as jsonb))"
+                    ),
+                    {"rid": str(resp["id"]), "tid": str(self.tenant_id),
+                     "nid": str(store_node_id), "spath": store["path"],
+                     "vid": str(survey_version_id), "sub": resp["submitted_at"],
+                     "qid": r["question_id"],
+                     "sku": str(r["sku_id"]) if r["sku_id"] else None,
+                     "val": json.dumps(r["value"])},
+                )
+        # Re-read through get_response (a fresh connection, after this write has
+        # committed) so the caller gets the same scored shape as a GET, without
+        # duplicating the scoring logic. Not a double write: this only reads.
+        return self.get_response(resp["id"])
+
+    def _explode_answers(self, questions: list[dict], answers: list[dict]) -> list[dict]:
+        """Turn the submitted answers into atomic rows. Phase 4a Task 3: pass
+        through, dropping only blanks. Task 4 adds shape validation here."""
+        rows = []
+        for a in answers:
+            if a.get("value") is None:
+                continue
+            rows.append({"question_id": a["question_id"], "sku_id": a.get("sku_id"),
+                         "value": a["value"]})
+        return rows
+
+    def _score(self, conn, response_row) -> dict:
+        """Load a response's items + its version questions and compute verdicts."""
+        version = conn.execute(
+            text("select questions from survey_versions where id = cast(:vid as uuid)"),
+            {"vid": str(response_row["survey_version_id"])},
+        ).mappings().first()
+        items = conn.execute(
+            text(
+                "select question_id, sku_id, value from response_items "
+                "where response_id = cast(:rid as uuid) order by question_id, sku_id"
+            ),
+            {"rid": str(response_row["id"])},
+        ).mappings().all()
+        return evaluate_response(version["questions"], [dict(i) for i in items])
+
+    def list_responses(self) -> list[dict]:
+        # Note: scores each response with _score (2 queries per row, N+1).
+        # Fine for Phase 4a store counts; Phase 4b should replace per-row
+        # scoring with an indexed roll-up before paging large result sets.
+        if self.scope_path is None:
+            return []
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    f"select {self._RESPONSE_COLS_R} from responses r "
+                    "join nodes n on n.id = r.store_node_id "
+                    "where r.tenant_id = cast(:tid as uuid) and n.path like :scope || '%' "
+                    "order by r.submitted_at desc"
+                ),
+                {"tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().all()
+            result = []
+            for r in rows:
+                result.append({**dict(r), "overall": self._score(conn, r)["overall"]})
+        return result
+
+    def get_response(self, response_id) -> dict | None:
+        if self.scope_path is None:
+            return None
+        with engine.connect() as conn:
+            r = conn.execute(
+                text(
+                    f"select {self._RESPONSE_COLS_R} from responses r "
+                    "join nodes n on n.id = r.store_node_id "
+                    "where r.id = cast(:rid as uuid) and r.tenant_id = cast(:tid as uuid) "
+                    "and n.path like :scope || '%'"
+                ),
+                {"rid": str(response_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            if r is None:
+                return None
+            scored = self._score(conn, r)
+        result = dict(r)
+        result["items"] = scored["items"]
+        result["questions"] = scored["questions"]
+        result["overall"] = scored["overall"]
+        return result
 
 
 def scope_path_for(tenant_id: str, user_id: str) -> str | None:

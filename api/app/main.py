@@ -11,6 +11,7 @@ from .auth import router as auth_router
 from .hierarchy import router as hierarchy_router
 from .catalog import router as catalog_router
 from .surveys import router as surveys_router
+from .responses import router as responses_router
 from .db import db_ok
 
 app = FastAPI(title="Intelli API", version="0.0.0")
@@ -28,6 +29,7 @@ app.include_router(auth_router)
 app.include_router(hierarchy_router)
 app.include_router(catalog_router)
 app.include_router(surveys_router)
+app.include_router(responses_router)
 
 
 @app.get("/health")
