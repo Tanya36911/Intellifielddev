@@ -201,6 +201,13 @@ isolation is provable. Idempotent, like the rest of the seed.
 - **Screens:** a later phase, like the catalog.
 - **AI form builder:** it would *populate* questions; admins authoring/editing by
   hand is the v1 path. The AI piece is a fast-follow.
+- **Manager-authored surveys (optional, later):** in v1 only admins build
+  surveys, so the company-wide library stays consistent and analytics compare
+  like with like; managers deploy those surveys to their branch. Letting a
+  manager create their own survey (for a local or performance check) is a
+  deliberate future option, most cleanly as either "manager drafts, admin
+  approves and publishes" or an explicit branch-local survey concept that never
+  mixes into company-wide analytics. Noted here so it is on record, not built now.
 - **Editing an assignment's deadline in place:** v1 supports create, list, the
   stores lookup, and remove (delete); changing a deadline is remove-and-recreate
   for now, rather than a PATCH.
