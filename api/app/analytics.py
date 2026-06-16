@@ -21,3 +21,15 @@ def compliance(
     if rows is None:
         raise HTTPException(status_code=404, detail="Node not found in your scope")
     return {"rows": rows, "count": len(rows)}
+
+
+@router.get("/compliance/drill")
+def compliance_drill(
+    node_id: UUID,
+    survey_version_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+) -> dict:
+    result = repo.compliance_drill(node_id, survey_version_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Node or version not found in your scope")
+    return result

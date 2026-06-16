@@ -123,3 +123,60 @@ def test_compliance_node_out_of_scope_404(client, login):
 def test_compliance_company_isolation(client, login):
     rows = client.get("/analytics/compliance", headers=_auth(login("avery@acme.com"))).json()["rows"]
     assert all("Velvet" not in r["survey_name"] for r in rows)
+
+
+def test_drill_children_rollup(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "West Drill", q, "west")
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    body = client.get("/analytics/compliance/drill", headers=_auth(dana),
+                      params={"node_id": str(_node_id("west")), "survey_version_id": vid}).json()
+    assert body["is_store"] is False
+    bay = next(c for c in body["children"] if c["name"] == "Bay Area")
+    assert bay["expected"] == 2
+    assert bay["responded"] == 1
+    assert bay["passed"] == 1
+
+
+def test_drill_store_shows_why_failed(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "facings?", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Why Failed", q, "bayarea")
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 2}])
+    body = client.get("/analytics/compliance/drill", headers=_auth(dana),
+                      params={"node_id": str(_node_id("sf")), "survey_version_id": vid}).json()
+    assert body["is_store"] is True
+    assert body["responded"] is True
+    assert body["overall"] is False
+    assert body["questions"]["q1"] is False
+
+
+def test_drill_store_no_response(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Drill No Resp", q, "bayarea")
+    body = client.get("/analytics/compliance/drill", headers=_auth(dana),
+                      params={"node_id": str(_node_id("oakland")), "survey_version_id": vid}).json()
+    assert body["is_store"] is True
+    assert body["responded"] is False
+
+
+def test_drill_node_out_of_scope_404(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    vid = _publish_and_assign(client, dana, "Drill Scope",
+        [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}], "bayarea")
+    resp = client.get("/analytics/compliance/drill",
+                      headers=_auth(login("sarah@lumenbeauty.com")),
+                      params={"node_id": str(_node_id("bayarea")), "survey_version_id": vid})
+    assert resp.status_code == 404, resp.text

@@ -684,6 +684,94 @@ class ScopedRepo:
                 })
         return out
 
+    def _version_questions(self, conn, version_id):
+        """The version's questions if it belongs to the caller's company, else
+        None (-> 404)."""
+        row = conn.execute(
+            text("select v.questions from survey_versions v "
+                 "join surveys s on s.id = v.survey_id "
+                 "where v.id = cast(:vid as uuid) and s.tenant_id = cast(:tid as uuid)"),
+            {"vid": str(version_id), "tid": str(self.tenant_id)},
+        ).mappings().first()
+        return row["questions"] if row else None
+
+    def _score_one(self, conn, questions, response_id) -> dict:
+        """Score one response's items against the already-fetched version
+        questions. Takes questions directly so the caller (which already loaded
+        them via _version_questions) need not query survey_versions twice."""
+        items = conn.execute(
+            text("select question_id, sku_id, value from response_items "
+                 "where response_id = cast(:rid as uuid) order by question_id, sku_id"),
+            {"rid": str(response_id)},
+        ).mappings().all()
+        return evaluate_response(questions, [dict(i) for i in items])
+
+    def compliance_drill(self, node_id, survey_version_id):
+        """Children rollup for a non-store node, or the per-product why-it-failed
+        at a store. None if the node is out of scope or the version is not the
+        caller's company (-> 404)."""
+        if self.scope_path is None:
+            return None
+        with engine.connect() as conn:
+            node = conn.execute(
+                text("select id, path, level_order from nodes where id = cast(:nid as uuid) "
+                     "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                {"nid": str(node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            questions = self._version_questions(conn, survey_version_id)
+            if node is None or questions is None:
+                return None
+            maxlvl = self._max_level(conn)
+            if node["level_order"] == maxlvl:
+                latest = conn.execute(
+                    text("select id from responses where survey_version_id = cast(:vid as uuid) "
+                         "and store_node_id = cast(:nid as uuid) and tenant_id = cast(:tid as uuid) "
+                         "order by submitted_at desc limit 1"),
+                    {"vid": str(survey_version_id), "nid": str(node_id), "tid": str(self.tenant_id)},
+                ).mappings().first()
+                if latest is None:
+                    return {"is_store": True, "responded": False}
+                scored = self._score_one(conn, questions, latest["id"])
+                return {"is_store": True, "responded": True, "items": scored["items"],
+                        "questions": scored["questions"], "overall": scored["overall"]}
+            # Not a store: the version's covered stores under this node, by child.
+            # The extra path-like-scope clause is redundant (node is already in
+            # scope) but states the scope invariant explicitly, like every other
+            # store-fetching query here.
+            covered = conn.execute(
+                text("select n.id, n.path from nodes n where n.tenant_id = cast(:tid as uuid) "
+                     "and n.level_order = :ml and n.path like :np || '%' "
+                     "and n.path like :scope || '%' and exists ("
+                     "  select 1 from survey_assignments a join nodes tn on tn.id = a.target_node_id "
+                     "  where a.survey_version_id = cast(:vid as uuid) "
+                     "  and a.tenant_id = cast(:tid as uuid) and n.path like tn.path || '%')"),
+                {"tid": str(self.tenant_id), "ml": maxlvl, "np": node["path"],
+                 "scope": self.scope_path, "vid": str(survey_version_id)},
+            ).mappings().all()
+            covered = [dict(c) for c in covered]
+            children = conn.execute(
+                text("select id, name, level_order, path from nodes "
+                     "where parent_id = cast(:nid as uuid) and tenant_id = cast(:tid as uuid) "
+                     "order by name"),
+                {"nid": str(node_id), "tid": str(self.tenant_id)},
+            ).mappings().all()
+            rows = []
+            for c in children:
+                # Each covered store sits under exactly one immediate child (a
+                # node's path is a unique prefix of all its descendants).
+                child_store_ids = [s["id"] for s in covered if s["path"].startswith(c["path"])]
+                expected, responded, scored_n, passed = self._metrics_for_stores(
+                    conn, survey_version_id, child_store_ids)
+                rows.append({
+                    "node_id": c["id"], "name": c["name"], "level_order": c["level_order"],
+                    "is_store": c["level_order"] == maxlvl,
+                    "expected": expected, "responded": responded,
+                    "scored": scored_n, "passed": passed,
+                    "completion_pct": self._pct(responded, expected),
+                    "pass_pct": self._pct(passed, scored_n),
+                })
+        return {"is_store": False, "children": rows}
+
 
 def _check_value(value, q) -> None:
     """Raise ValueError if a non-blank answer value does not match its question
