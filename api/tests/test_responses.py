@@ -113,3 +113,112 @@ def test_get_one_response_returns_computed_verdicts(client, login):
     assert body["overall"] is True
     assert any(i["question_id"] == "q1" and i["pass"] is True for i in body["items"])
     assert body["store_path"]  # the tree snapshot was stored
+
+
+def test_unknown_question_rejected(client, login):
+    token = login("marcus@lumenbeauty.com")
+    resp = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "nope", "value": 5},
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "unknown question" in resp.json()["detail"].lower()
+
+
+def test_wrong_value_type_rejected(client, login):
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    resp = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": "five"},  # q1 is a number
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "number" in resp.json()["detail"].lower()
+
+
+def test_sku_not_covered_rejected(client, login):
+    token = login("marcus@lumenbeauty.com")
+    other = _sku_id("LUM-SF-IVORY")  # a real Lumen sku, but not on q1
+    resp = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(other), "value": 5},
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "not covered" in resp.json()["detail"].lower()
+
+
+def test_sku_on_non_per_product_rejected(client, login):
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    resp = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q2", "sku_id": str(rose), "value": True},  # q2 is not per-product
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "not per-product" in resp.json()["detail"].lower()
+
+
+def test_per_product_requires_sku(client, login):
+    token = login("marcus@lumenbeauty.com")
+    resp = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "value": 5},  # q1 is per-product, sku missing
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "sku_id required" in resp.json()["detail"].lower()
+
+
+def test_duplicate_answer_rejected(client, login):
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    resp = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": 5},
+        {"question_id": "q1", "sku_id": str(rose), "value": 6},
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "duplicate" in resp.json()["detail"].lower()
+
+
+def test_blank_answer_is_skipped_not_stored(client, login):
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    created = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": 5},
+        {"question_id": "q2", "value": None},  # blank -> dropped
+    ]).json()
+    assert len(created["items"]) == 1  # only q1 stored
+    assert created["questions"]["q2"] is None  # not counted
+
+
+def _create_published_version(client, admin_token, name, questions):
+    """Create a survey with the given questions, publish v1, return the
+    published version id."""
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    survey = client.post("/surveys", headers=headers,
+                         json={"name": name, "type": None, "questions": questions}).json()
+    client.post(f"/surveys/{survey['id']}/publish", headers=headers)
+    full = client.get(f"/surveys/{survey['id']}", headers=headers).json()
+    return next(v["id"] for v in full["versions"] if v["published_at"] is not None)
+
+
+def test_same_question_two_skus_is_not_a_duplicate(client, login):
+    rose, mauve = _sku_id("LUM-VL-ROSE"), _sku_id("LUM-VL-MAUVE")
+    vid = _create_published_version(
+        client, login("dana@lumenbeauty.com"), "Two SKU Survey",
+        [{"id": "qa", "prompt": "facings?", "type": "number", "perSku": True,
+          "sku_ids": [str(rose), str(mauve)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}],
+    )
+    resp = _submit(client, login("marcus@lumenbeauty.com"), vid, _node_id("sf"), [
+        {"question_id": "qa", "sku_id": str(rose), "value": 5},
+        {"question_id": "qa", "sku_id": str(mauve), "value": 6},
+    ])
+    assert resp.status_code == 200, resp.text  # two different skus, NOT a duplicate
+    assert len(resp.json()["items"]) == 2
+
+
+def test_empty_multi_choice_rejected(client, login):
+    vid = _create_published_version(
+        client, login("dana@lumenbeauty.com"), "Multi Choice Survey",
+        [{"id": "qc", "prompt": "pick", "type": "multi_choice", "options": ["a", "b"]}],
+    )
+    resp = _submit(client, login("marcus@lumenbeauty.com"), vid, _node_id("sf"), [
+        {"question_id": "qc", "value": []},  # empty selection -> rejected (omit to skip)
+    ])
+    assert resp.status_code == 400, resp.text
+    assert "option" in resp.json()["detail"].lower()

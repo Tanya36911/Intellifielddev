@@ -473,14 +473,35 @@ class ScopedRepo:
         return self.get_response(resp["id"])
 
     def _explode_answers(self, questions: list[dict], answers: list[dict]) -> list[dict]:
-        """Turn the submitted answers into atomic rows. Phase 4a Task 3: pass
-        through, dropping only blanks. Task 4 adds shape validation here."""
+        """Strict shape, skips allowed. Returns atomic rows (blanks dropped).
+        Raises ValueError on anything that does not fit the version."""
+        q_index = {q["id"]: q for q in questions}
+        seen = set()
         rows = []
         for a in answers:
-            if a.get("value") is None:
-                continue
-            rows.append({"question_id": a["question_id"], "sku_id": a.get("sku_id"),
-                         "value": a["value"]})
+            qid = a["question_id"]
+            q = q_index.get(qid)
+            if q is None:
+                raise ValueError(f"unknown question: {qid}")
+            # sku_id arrives as a JSON string here (Pydantic UUID -> model_dump(mode="json")).
+            sku_id = a.get("sku_id")
+            if q.get("perSku", False):
+                if sku_id is None:
+                    raise ValueError(f"question {qid} is per-product; sku_id required")
+                allowed = {str(s) for s in (q.get("sku_ids") or [])}
+                if str(sku_id) not in allowed:
+                    raise ValueError(f"sku {sku_id} is not covered by question {qid}")
+            elif sku_id is not None:
+                raise ValueError(f"question {qid} is not per-product; sku_id not allowed")
+            key = (qid, str(sku_id) if sku_id else None)
+            if key in seen:
+                raise ValueError(f"duplicate answer for question {qid}")
+            seen.add(key)
+            value = a.get("value")
+            if value is None:
+                continue  # blank: allowed, simply not stored
+            _check_value(value, q)
+            rows.append({"question_id": qid, "sku_id": sku_id, "value": value})
         return rows
 
     def _score(self, conn, response_row) -> dict:
@@ -540,6 +561,30 @@ class ScopedRepo:
         result["questions"] = scored["questions"]
         result["overall"] = scored["overall"]
         return result
+
+
+def _check_value(value, q) -> None:
+    """Raise ValueError if a non-blank answer value does not match its question
+    type (and, for choice questions, its options)."""
+    qtype = q["type"]
+    if qtype == "number":
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"question {q['id']} expects a number")
+    elif qtype == "boolean":
+        if not isinstance(value, bool):
+            raise ValueError(f"question {q['id']} expects true/false")
+    elif qtype == "single_choice":
+        if not isinstance(value, str) or value not in (q.get("options") or []):
+            raise ValueError(f"question {q['id']} expects one of its options")
+    elif qtype == "multi_choice":
+        opts = q.get("options") or []
+        if not isinstance(value, list) or not value or not all(v in opts for v in value):
+            raise ValueError(f"question {q['id']} expects a non-empty subset of its options")
+    elif qtype in ("text", "photo"):
+        if not isinstance(value, str):
+            raise ValueError(f"question {q['id']} expects text")
+    else:
+        raise ValueError(f"question {q['id']} has unknown type {qtype}")
 
 
 def scope_path_for(tenant_id: str, user_id: str) -> str | None:
