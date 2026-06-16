@@ -153,6 +153,7 @@ intelli-app/
 ├── CODEBASE_MAP.md      PLAIN-ENGLISH MAP OF THE CODE (backend vs frontend)
 ├── CHECKING_THE_WORK.md HOW TO CHECK/TEST THE WORK YOURSELF (no coding needed)
 ├── DEMO.md              MEETING GUIDE: what to tell + show supervisors
+├── DEPLOY.md            HOW TO PUT IT ON A DEV SERVER (so others can verify it)
 ├── scripts/demo.sh      One-command live demo of the security boundary
 ├── docs/
 │   └── superpowers/        Design write-ups (specs/) + build plans (plans/)
