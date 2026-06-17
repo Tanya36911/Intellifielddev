@@ -862,6 +862,56 @@ class ScopedRepo:
                      for d, v in sorted(by_day.items())]
         return {"points": points, "daily_avg": daily_avg}
 
+    # ----- payroll (periods company-wide; entries scoped by the rep's pin) -----
+
+    _PERIOD_COLS = ("id, name, start_date, end_date, cutoff_at, timezone_basis, "
+                    "grace_hours, lock_behavior, status, sealed_at, created_at")
+    # _ENTRY_COLS is used by the time-entry methods added in the next tasks.
+    _ENTRY_COLS = ("id, period_id, user_id, store_min, reset_min, drive_min, miles, "
+                   "mgr_status, sealed, created_at")
+
+    def _audit(self, conn, actor_user_id, action, target, detail) -> None:
+        conn.execute(
+            text("insert into audit (tenant_id, actor_user_id, action, target, detail) "
+                 "values (cast(:tid as uuid), cast(:actor as uuid), :action, :target, "
+                 "cast(:detail as jsonb))"),
+            {"tid": str(self.tenant_id), "actor": str(actor_user_id), "action": action,
+             "target": target, "detail": json.dumps(detail or {})},
+        )
+
+    def create_pay_period(self, name, start_date, end_date, cutoff_at, timezone_basis,
+                          grace_hours, lock_behavior, actor_user_id) -> dict:
+        with engine.begin() as conn:
+            row = conn.execute(
+                text("insert into pay_periods (tenant_id, name, start_date, end_date, cutoff_at, "
+                     "timezone_basis, grace_hours, lock_behavior) values (cast(:tid as uuid), :name, "
+                     ":sd, :ed, :cut, :tzb, :grace, :lock) "
+                     f"returning {self._PERIOD_COLS}"),
+                {"tid": str(self.tenant_id), "name": name, "sd": start_date, "ed": end_date,
+                 "cut": cutoff_at, "tzb": timezone_basis, "grace": grace_hours,
+                 "lock": lock_behavior},
+            ).mappings().first()
+            self._audit(conn, actor_user_id, "pay_period.created", str(row["id"]), {"name": name})
+        return dict(row)
+
+    def list_pay_periods(self) -> list[dict]:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(f"select {self._PERIOD_COLS} from pay_periods "
+                     "where tenant_id = cast(:tid as uuid) order by start_date desc"),
+                {"tid": str(self.tenant_id)},
+            ).mappings().all()
+        return [dict(r) for r in rows]
+
+    def get_pay_period(self, period_id) -> dict | None:
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(f"select {self._PERIOD_COLS} from pay_periods "
+                     "where id = cast(:pid as uuid) and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+        return dict(row) if row else None
+
 
 def _count_question(questions, question_id):
     """Return the question if it is a per-product number question, else raise
