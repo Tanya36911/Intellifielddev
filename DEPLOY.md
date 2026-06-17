@@ -159,3 +159,65 @@ server, the backend's "guest list" (CORS, in `api/app/main.py`) currently only
 allows local addresses. That list would need the server's web address added.
 Not relevant for the DBeaver / `/docs` verification this guide covers; noted so
 it is not a surprise later.
+
+---
+
+## 8. Automatic deploys with GitHub Actions (the pipeline)
+
+Once the server is set up (sections 1-3), you do not deploy by hand again. A
+GitHub Actions pipeline does it: whenever code is pushed to the `main` branch (or
+you click a button), GitHub logs into the server over SSH and runs the update.
+
+Each run the pipeline:
+- pulls the latest `main` onto the server,
+- rebuilds and restarts the backend (`docker compose up -d --build`),
+- applies any new database changes (`migrate up`).
+
+It does NOT create secrets and does NOT reload the demo data, and it never
+touches the server's `.env`. The workflow file is
+`.github/workflows/deploy.yml` in the repo.
+
+### One-time setup (already done for this server)
+1. The code is cloned on the server at `/home/<user>/intelli-app` (here the user
+   is `sriman`), with the GitHub login saved once
+   (`git config --global credential.helper store`) so the pipeline's `git pull`
+   runs without anyone typing a token.
+2. That user is in the `docker` group, so it can run `docker compose` without
+   sudo. (After adding a user to the group, they must log out and back in.)
+3. A dedicated SSH "deploy key" was generated on the server with no passphrase
+   (`ssh-keygen -t ed25519 -N ""`). Its PUBLIC half was added to that user's
+   `~/.ssh/authorized_keys`; its PRIVATE half was pasted into a GitHub Secret.
+4. Four repo Secrets were set in GitHub (Settings > Secrets and variables >
+   Actions): `SERVER_HOST` (the server address), `SERVER_USER` (the login, here
+   `sriman`), `SERVER_SSH_KEY` (the private deploy key, the whole file including
+   the BEGIN/END lines), and `SERVER_PORT` (only if SSH is not on 22).
+
+### How to trigger a deploy
+- Automatic: just push to `main`; the pipeline runs on its own.
+- Manual: GitHub > Actions tab > "Deploy to server" > "Run workflow".
+Watch the run in the Actions tab; the "Deploy over SSH" step shows the
+pull/build/migrate output, and a green check means it deployed.
+
+### If a deploy fails, the usual causes (we hit all of these once)
+- `ssh: handshake failed ... [none publickey]`: the deploy key is not trusted by
+  the SSH user. `SERVER_USER` must be the SAME user whose
+  `~/.ssh/authorized_keys` holds the deploy key's public half AND who owns
+  `~/intelli-app`, and the key must have NO passphrase. Verify on the server
+  before trusting the secret:
+  ```
+  ssh -o BatchMode=yes -i ~/intelli_deploy_key <user>@localhost true && echo LOGIN_OK
+  ```
+  Use `localhost`, not the public IP (a cloud box usually cannot SSH to its own
+  public IP, so that test hangs). Get `LOGIN_OK` first, then put that exact
+  private key in the secret.
+- The deploy logs in but `cd ~/intelli-app` fails: the one-time setup
+  (sections 1-3) was not done for that user.
+- `docker compose` permission denied: the user is not in the `docker` group yet
+  (add them, then log out and back in).
+
+### Security notes
+- The private deploy key lives only on the server and in the GitHub Secret, never
+  in the repo. The server's `.env` secrets stay on the server.
+- This lets GitHub's runners reach the server's SSH. Keep SSH key-only (no
+  password login) and, if your host allows it, restrict port 22 to GitHub's
+  published IP ranges.
