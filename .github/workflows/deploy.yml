@@ -1,0 +1,53 @@
+# Deploys Intelli to the server from GitHub's own (cloud) runner over SSH.
+# GitHub's runner logs into your Ubuntu box and runs the deploy commands there.
+#
+# Requires these repo Secrets (Settings > Secrets and variables > Actions),
+# which you set yourself (the private key never goes through anyone else):
+#   SERVER_HOST     the server's address (IP or hostname)
+#   SERVER_USER     the SSH username to log in as (the one that owns
+#                   ~/intelli-app and can run docker)
+#   SERVER_SSH_KEY  the PRIVATE SSH key (full text, including the
+#                   -----BEGIN...----- / -----END...----- lines) whose public
+#                   half is in that user's ~/.ssh/authorized_keys on the server
+#   SERVER_PORT     (optional) the SSH port; defaults to 22 if not set
+#
+# It runs in a FIXED deploy directory ($HOME/intelli-app of SERVER_USER): the
+# persistent .env (your strong passwords) and the database's Docker volume both
+# live there, so every deploy reuses the same database. It does NOT create
+# secrets and does NOT seed demo data; the one-time setup (clone, .env, first
+# `migrate up` + seed) is done by hand once, this automates every deploy after.
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]      # auto-deploy when main changes
+  workflow_dispatch: {}    # plus a manual "Run workflow" button in the Actions tab
+
+# Never let two deploys overlap.
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            cd "$HOME/intelli-app"
+            # Sync exactly to the pushed main. .env is gitignored, so the
+            # server's secrets are left untouched by this hard reset.
+            git fetch --all --prune
+            git reset --hard origin/main
+            # Rebuild + restart the backend (the database keeps its volume).
+            docker compose up -d --build
+            # Apply any new migrations (safe every time; only un-applied run).
+            docker compose --profile tools run --rm migrate up
+            docker compose ps
