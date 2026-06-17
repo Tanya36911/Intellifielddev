@@ -150,3 +150,88 @@ def test_rep_cannot_approve(client, login):
                             "drive_min": 0, "miles": 0}).json()["id"]
     resp = client.post(f"/time-entries/{eid}/approve", headers=_auth(marcus))
     assert resp.status_code == 403, resp.text
+
+
+def _seal(client, admin_token, pid):
+    return client.post(f"/pay-periods/{pid}/seal", headers=_auth(admin_token))
+
+
+def test_seal_locks_entries(client, login):
+    dana, marcus = login("dana@lumenbeauty.com"), login("marcus@lumenbeauty.com")
+    pid = _make_period(client, dana, "Seal Lock").json()["id"]
+    eid = client.post("/time-entries", headers=_auth(marcus),
+                      json={"period_id": pid, "store_min": 10, "reset_min": 0,
+                            "drive_min": 0, "miles": 0}).json()["id"]
+    assert _seal(client, dana, pid).status_code == 200
+    edit = client.patch(f"/time-entries/{eid}", headers=_auth(marcus),
+                        json={"store_min": 99, "reset_min": 0, "drive_min": 0, "miles": 0})
+    assert edit.status_code == 409, edit.text
+    appr = client.post(f"/time-entries/{eid}/approve", headers=_auth(dana))
+    assert appr.status_code == 409, appr.text
+    new = client.post("/time-entries", headers=_auth(login("rico@lumenbeauty.com")),
+                      json={"period_id": pid, "store_min": 5, "reset_min": 0, "drive_min": 0, "miles": 0})
+    assert new.status_code == 409, new.text
+
+
+def test_logged_reopen_unlocks_one_rep(client, login):
+    dana, marcus, rico = (login("dana@lumenbeauty.com"),
+                          login("marcus@lumenbeauty.com"), login("rico@lumenbeauty.com"))
+    pid = _make_period(client, dana, "Reopen One").json()["id"]
+    marcus_eid = client.post("/time-entries", headers=_auth(marcus),
+                             json={"period_id": pid, "store_min": 10, "reset_min": 0,
+                                   "drive_min": 0, "miles": 0}).json()["id"]
+    rico_eid = client.post("/time-entries", headers=_auth(rico),
+                           json={"period_id": pid, "store_min": 20, "reset_min": 0,
+                                 "drive_min": 0, "miles": 0}).json()["id"]
+    _seal(client, dana, pid)
+    marcus_id = _scalar("select id from users where email='marcus@lumenbeauty.com'")
+    reopen = client.post(f"/pay-periods/{pid}/reopen", headers=_auth(dana),
+                         json={"user_id": str(marcus_id), "reason": "missed a visit"})
+    assert reopen.status_code == 200, reopen.text
+    assert client.patch(f"/time-entries/{marcus_eid}", headers=_auth(marcus),
+                        json={"store_min": 30, "reset_min": 0, "drive_min": 0,
+                              "miles": 0}).status_code == 200
+    assert client.patch(f"/time-entries/{rico_eid}", headers=_auth(rico),
+                        json={"store_min": 30, "reset_min": 0, "drive_min": 0,
+                              "miles": 0}).status_code == 409
+    n = _scalar("select count(*) from audit where action = 'pay_period.reopened' "
+                "and detail->>'reason' = 'missed a visit'")
+    assert n == 1  # exactly one reopen logged with this reason
+    assert _seal(client, dana, pid).status_code == 200
+    assert client.patch(f"/time-entries/{marcus_eid}", headers=_auth(marcus),
+                        json={"store_min": 40, "reset_min": 0, "drive_min": 0,
+                              "miles": 0}).status_code == 409
+
+
+def test_reopen_requires_sealed_period(client, login):
+    dana, marcus = login("dana@lumenbeauty.com"), login("marcus@lumenbeauty.com")
+    pid = _make_period(client, dana, "Reopen Open").json()["id"]
+    client.post("/time-entries", headers=_auth(marcus),
+                json={"period_id": pid, "store_min": 10, "reset_min": 0, "drive_min": 0, "miles": 0})
+    marcus_id = _scalar("select id from users where email='marcus@lumenbeauty.com'")
+    resp = client.post(f"/pay-periods/{pid}/reopen", headers=_auth(dana),
+                       json={"user_id": str(marcus_id), "reason": "x"})
+    assert resp.status_code == 409, resp.text
+
+
+def test_reopen_rep_with_no_entries_404(client, login):
+    dana, marcus = login("dana@lumenbeauty.com"), login("marcus@lumenbeauty.com")
+    pid = _make_period(client, dana, "Reopen No Entries").json()["id"]
+    client.post("/time-entries", headers=_auth(marcus),
+                json={"period_id": pid, "store_min": 10, "reset_min": 0, "drive_min": 0, "miles": 0})
+    _seal(client, dana, pid)
+    rico_id = _scalar("select id from users where email='rico@lumenbeauty.com'")
+    resp = client.post(f"/pay-periods/{pid}/reopen", headers=_auth(dana),
+                       json={"user_id": str(rico_id), "reason": "x"})
+    assert resp.status_code == 404, resp.text
+
+
+def test_audit_log_admin_only_and_records_actions(client, login):
+    dana = login("dana@lumenbeauty.com")
+    pid = _make_period(client, dana, "Audit Period").json()["id"]
+    _seal(client, dana, pid)
+    log = client.get("/audit", headers=_auth(dana))
+    assert log.status_code == 200, log.text
+    actions = {r["action"] for r in log.json()["audit"]}
+    assert {"pay_period.created", "pay_period.sealed"} <= actions
+    assert client.get("/audit", headers=_auth(login("marcus@lumenbeauty.com"))).status_code == 403

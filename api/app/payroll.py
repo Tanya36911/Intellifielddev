@@ -8,7 +8,7 @@ from uuid import UUID
 
 from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from .db import engine
 from .scope import (
@@ -16,6 +16,7 @@ from .scope import (
     EntrySealedError,
     PeriodNotSealedError,
     PeriodSealedError,
+    RepEntriesNotFoundError,
     ScopedRepo,
     get_scoped_repo,
 )
@@ -166,3 +167,50 @@ def reject_entry(
     _payroll: dict = Depends(require_payroll),
 ) -> dict:
     return _set_status(repo, entry_id, "rejected")
+
+
+class ReopenBody(BaseModel):
+    user_id: UUID
+    reason: str = Field(min_length=1)
+
+
+@router.post("/pay-periods/{period_id}/seal")
+def seal_period(
+    period_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(require_admin),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    result = repo.seal_period(period_id, claims["sub"])
+    if result is None:
+        raise HTTPException(status_code=404, detail="Pay period not found")
+    return result
+
+
+@router.post("/pay-periods/{period_id}/reopen")
+def reopen_period(
+    period_id: UUID,
+    body: ReopenBody,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(require_admin),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    try:
+        result = repo.reopen_period(period_id, body.user_id, body.reason, claims["sub"])
+    except PeriodNotSealedError:
+        raise HTTPException(status_code=409, detail="This pay period is not sealed")
+    except RepEntriesNotFoundError:
+        raise HTTPException(status_code=404, detail="That rep has no entries in this pay period")
+    if result is None:
+        raise HTTPException(status_code=404, detail="Pay period not found")
+    return result
+
+
+@router.get("/audit")
+def get_audit(
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _claims: dict = Depends(require_admin),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    rows = repo.list_audit()
+    return {"audit": rows, "count": len(rows)}

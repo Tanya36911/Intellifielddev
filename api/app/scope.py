@@ -49,6 +49,10 @@ class PeriodNotSealedError(Exception):
     """Tried to reopen a pay period that is not sealed."""
 
 
+class RepEntriesNotFoundError(Exception):
+    """Tried to reopen a rep who has no entries in the pay period."""
+
+
 class ScopedRepo:
     """The only object allowed to read scoped tables. tenant_id and scope_path
     are baked in; a scope_path of None means the caller sees nothing."""
@@ -1055,6 +1059,68 @@ class ScopedRepo:
                 {"st": status, "eid": str(entry_id)},
             ).mappings().first()
         return dict(row)
+
+    def seal_period(self, period_id, actor_user_id) -> dict | None:
+        """Lock every entry in the period and mark it sealed (stamping sealed_at
+        the first time). Re-callable: a re-seal re-locks reopened entries and
+        writes its own pay_period.sealed audit row (re-seals are not
+        distinguished from the initial seal in the log). None if the period is
+        not the company's."""
+        with engine.begin() as conn:
+            period = conn.execute(
+                text("select id from pay_periods where id = cast(:pid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
+            ).first()
+            if period is None:
+                return None
+            conn.execute(
+                text("update pay_periods set status = 'sealed', "
+                     "sealed_at = coalesce(sealed_at, now()) where id = cast(:pid as uuid)"),
+                {"pid": str(period_id)},
+            )
+            conn.execute(
+                text("update time_entries set sealed = true where period_id = cast(:pid as uuid)"),
+                {"pid": str(period_id)},
+            )
+            self._audit(conn, actor_user_id, "pay_period.sealed", str(period_id), {})
+        return self.get_pay_period(period_id)
+
+    def reopen_period(self, period_id, target_user_id, reason, actor_user_id) -> dict | None:
+        """Unlock one rep's entries in a sealed period and log it. Returns the
+        period dict on success, None if the period is not the company's (-> 404).
+        Raises PeriodNotSealedError if the period is not sealed (-> 409), and
+        RepEntriesNotFoundError if that rep has no entries in it (-> 404)."""
+        with engine.begin() as conn:
+            period = conn.execute(
+                text("select status from pay_periods where id = cast(:pid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if period is None:
+                return None
+            if period["status"] != "sealed":
+                raise PeriodNotSealedError()
+            unlocked = conn.execute(
+                text("update time_entries set sealed = false "
+                     "where period_id = cast(:pid as uuid) and user_id = cast(:uid as uuid) "
+                     "returning id"),
+                {"pid": str(period_id), "uid": str(target_user_id)},
+            ).all()
+            if not unlocked:
+                raise RepEntriesNotFoundError()
+            self._audit(conn, actor_user_id, "pay_period.reopened",
+                        f"period:{period_id} user:{target_user_id}", {"reason": reason})
+        return self.get_pay_period(period_id)
+
+    def list_audit(self) -> list[dict]:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("select id, actor_user_id, action, target, detail, at from audit "
+                     "where tenant_id = cast(:tid as uuid) order by at desc"),
+                {"tid": str(self.tenant_id)},
+            ).mappings().all()
+        return [dict(r) for r in rows]
 
 
 def _count_question(questions, question_id):
