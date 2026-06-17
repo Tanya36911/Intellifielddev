@@ -32,7 +32,7 @@ fast-follow, never the headline.
 - [~] **Phase 4** - responses + analytics + payroll + export. Split into 4a + 4b + 4c + 4d.
   - [x] **Phase 4a** - responses + live pass/fail scoring. Gate met (tests green).
   - [x] **Phase 4b** - analytics (compliance %, OOS by SKU, trends). Gate met (tests green).
-  - [ ] **Phase 4c** - payroll.
+  - [x] **Phase 4c** - payroll. Gate met (tests green).
   - [ ] **Phase 4d** - export.
 - [ ] **Phase 5** - Field app + offline sync.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
@@ -133,6 +133,7 @@ fast-follow, never the headline.
   indexed SQL aggregates. ScopedRepo gained an analytics section. Seed enriched (an out-of-stock
   answer at Oakland and a dated SF trend point). GATE GREEN: 111 backend tests + 27 frontend.
   Phase 4b COMPLETE; 4c (payroll) next.
+- 2026-06-17: Phase 4c - payroll engine. Migration adds three tables: pay_periods (a date range with a cutoff and an open/sealed status), time_entries (one row per rep per period: store/reset/drive minutes, miles, a manager-approval status, and a per-entry locked flag), and audit (a permanent logbook of sensitive actions). A new column payroll_enabled on tenants gates the whole feature per company. New api/app/payroll.py with a require_payroll guard: create/list pay periods (admin), log/edit your own hours (rep), approve/reject hours within your branch (manager/admin), seal a period (admin, locks all entries), reopen one rep's hours (admin, always audit-logged), and read the audit log (admin). The per-entry locked flag is the single source of truth for the lock; seal is re-callable so the reopen->fix->re-seal cycle works without special state. Manual seal in v1 (auto-clock deferred). ScopedRepo gained a payroll section (periods company-wide; entries role-scoped by the rep's pin). Seed turns payroll on for Lumen, off for Acme, and adds a rep under Central plus an open period with entries. Gate GREEN: 132 backend tests + 27 frontend. Phase 4c COMPLETE; 4d (export) next.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR

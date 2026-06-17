@@ -95,7 +95,9 @@ only, no screen yet. Proven by the test robot: the numbers add up, compliance
 changes when a rule changes, a company-wide survey shows for a region scoped to
 its own stores, and a manager only ever sees their own branch.
 
-**What's NEXT:** Phase 4c (payroll).
+**Phase 4c - payroll (done):** Each company can switch on payroll. An admin opens a pay period, reps log their own hours (store, reset, drive minutes, miles), managers approve their branch's hours, and at the cutoff the admin seals the period so the numbers lock. The one exception is a deliberate, logged "reopen one rep" (their hours unlock, get fixed, and the action is written into a permanent logbook). Backend only, no screen yet. Proven by the test robot: a sealed period can't be edited or re-approved, a reopen frees exactly one rep and is logged, and a company with payroll off is refused.
+
+**What's NEXT:** Phase 4d (export).
 
 ---
 
@@ -193,6 +195,7 @@ intelli-app/
 │   │   ├── responses.py Rep answers stored as atomic rows + live pass/fail (Phase 4a)
 │   │   ├── compliance.py Pass/fail brain: given an answer + a rule, returns pass/fail (Phase 4a)
 │   │   ├── analytics.py  Read-only reports (compliance, out-of-stock, trend)
+│   │   ├── payroll.py   Pay periods, hours, the seal/reopen lock, audit log
 │   │   └── seed.py      Creates the demo companies, tree, users, products, surveys, responses
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
@@ -262,9 +265,10 @@ project memory, so a new chat in this folder already knows them.)
 - Product catalog (company-wide to view, admin-only to edit): DONE and tested.
 - Surveys + frozen versions + assignments + pass rules: DONE and tested.
 - Responses + live pass/fail scoring: DONE and tested.
-- Analytics (compliance %, out-of-stock by product, trends): DONE and tested
-  (backend robot green: 111 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, 3b, 4a, and 4b complete. NEXT: Phase 4c (payroll).
+- Analytics (compliance %, out-of-stock by product, trends): DONE and tested.
+- Payroll (pay periods, logged hours, manager approval, seal/reopen lock, audit log): DONE and tested
+  (backend robot green: 132 backend checks, plus 27 frontend checks).
+- Phases 1, 2, 3a, 3b, 4a, 4b, and 4c complete. NEXT: Phase 4d (export).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

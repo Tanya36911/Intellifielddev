@@ -161,6 +161,48 @@ What it proves: the response rows correctly power live compliance, out-of-stock,
 and trend reports; a manager only sees their own branch; and no report scores
 are ever stored in the database.
 
+### Check 8: Walk through payroll (Phase 4c, at /docs)
+This proves the payroll engine by hand, with no coding. At
+http://localhost:8000/docs, log in as Dana (admin): open `POST /auth/login`,
+click "Try it out", enter `dana@lumenbeauty.com` / `demo1234`, click Execute.
+Copy the `token` from the response. Click the green **Authorize** button at the
+top right, paste the token, click Authorize.
+
+1. `POST /pay-periods` with a start date, end date, and cutoff date.
+   - GOOD: a `201` comes back with the new period's id and a status of `open`.
+2. Log in as Marcus (a rep) and log hours. Open `POST /auth/login` again,
+   use `marcus@lumenbeauty.com` / `demo1234`, authorize.
+   `POST /time-entries` with the period id, a store id in Marcus's branch, and
+   some minutes/miles.
+   - GOOD: a `201` with an entry that has `locked: false` and approval `pending`.
+3. Back as Dana: `POST /pay-periods/{id}/seal` (use the period id from step 1).
+   - GOOD: a `200` and the period now shows `status: sealed`.
+4. Try to edit the entry now: `PATCH /time-entries/{entry_id}` with new values.
+   - GOOD: it is REFUSED with a `409`. That is the lock working.
+5. Try to approve the entry: `POST /time-entries/{entry_id}/approve`.
+   - GOOD: REFUSED with a `409`. Sealed entries cannot be re-approved either.
+6. `POST /pay-periods/{id}/reopen` with the rep's user id and a reason (like
+   "Miles were entered wrong").
+   - GOOD: a `200`. The entry for that rep now has `locked: false` again.
+7. `PATCH /time-entries/{entry_id}` with the corrected miles.
+   - GOOD: the edit succeeds now.
+8. `POST /pay-periods/{id}/seal` again to lock it back up.
+9. `GET /audit` to read the logbook.
+   - GOOD: you see the reopen action recorded, with the reason you gave, who
+     did it, and when.
+
+To confirm the payroll gate is refused for a company with payroll off: log in
+as `avery@acme.com` / `demo1234` (Acme has payroll switched off). Try
+`GET /pay-periods`. GOOD: refused with a `403`.
+
+To confirm the automated gate: run `pnpm test:api` (backend must be running).
+GOOD looks like `132 passed` at the bottom. If anything goes red, copy the
+text to me.
+
+What it proves: a sealed period locks all entries against edits and re-approvals,
+a reopen frees exactly one rep's hours and writes a permanent logbook entry,
+and a company with payroll switched off is turned away at the door.
+
 ---
 
 ## "Is the code in the wrong place?"

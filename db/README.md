@@ -114,6 +114,25 @@ surveys:
   fly. Re-visits are kept as new rows rather than overwriting old ones, so the
   full history is preserved.
 
+### migrations/20260617000001_create_payroll.sql
+The sixth renovation order. It adds three tables and one column:
+- **pay_periods**: one row per payroll period. Has a start date, end date, and
+  cutoff date, plus a status of "open" or "sealed." An admin creates a period
+  and seals it when the cutoff arrives, which locks every entry inside.
+- **time_entries**: one row per rep per period. Records store minutes (time
+  spent in-store), reset minutes (time setting up the store), drive minutes,
+  and miles driven. Also carries a manager-approval status (pending, approved,
+  or rejected) and a per-entry "locked" flag. That locked flag is the real lock:
+  sealing a period sets it to true on every entry inside, and reopening one rep
+  sets it back to false just for that rep. The locked flag, not the period's
+  status, is what the edit and approve endpoints check.
+- **audit**: the permanent logbook. Every time a sensitive payroll action happens
+  (such as reopening a sealed period for a rep), a row is written here with who
+  did it, what they did, and the reason they gave. Rows are never deleted.
+- **tenants.payroll_enabled**: a true/false column added to the existing tenants
+  table. When false, every payroll endpoint is refused with a 403 for that
+  company's users.
+
 ### schema.sql
 An automatically-generated snapshot of what the pantry looks like right now,
 after all migrations have been applied. You do not edit this by hand; dbmate
@@ -137,7 +156,8 @@ From START_HERE.md's cheat sheet:
 ## What comes later
 
 Phases 2 (hierarchy + scope guard), 3a (the product catalog), 3b (surveys,
-versions, assignments), and 4a (responses, response items, the fifth migration
-above) are now built. The next phase (4b analytics) will add query support on
-top of the response_items table. Each new table arrives as its own numbered
-migration file, and this README gets a new entry describing it.
+versions, assignments), 4a (responses, response items), 4b (analytics, no new
+tables), and 4c (payroll: pay_periods, time_entries, audit, and the
+payroll_enabled column) are now built. The next phase is 4d (export). Each new
+table arrives as its own numbered migration file, and this README gets a new
+entry describing it.

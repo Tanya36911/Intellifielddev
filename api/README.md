@@ -52,7 +52,8 @@ The starting point. When the backend boots, this file runs first. It:
 - lists the two health-check addresses (`/health` and `/health/db`),
 - plugs in each feature router (login from `auth.py`, the org tree from
   `hierarchy.py`, the catalog from `catalog.py`, surveys from `surveys.py`,
-  responses from `responses.py`, and analytics from `analytics.py`),
+  responses from `responses.py`, analytics from `analytics.py`, and payroll
+  from `payroll.py`),
 - and sets the "guest list" (called CORS) that says which web addresses are
   allowed to call the backend. Right now that is the local Admin app.
 
@@ -122,7 +123,11 @@ branch-scoped so a rep can only submit for a store in their own part of the
 tree. As of Phase 4b the ScopedRepo gained an analytics section: the four
 read-only report queries (compliance, drill, out-of-stock, trend) are also
 branch-scoped through it, so a manager can only see analytics for their own part
-of the tree.
+of the tree. As of Phase 4c the ScopedRepo gained a payroll section: pay periods
+are company-wide (any admin in the company can see them), while time entries are
+role-scoped (reps see their own; managers see their branch; admins see all). It
+also gained an `_audit` helper that writes a permanent, tamper-evident log entry
+whenever a sensitive payroll action happens (such as reopening a sealed period).
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
@@ -181,6 +186,30 @@ across all products". Blank answers are skipped rather than failed. Because
 nothing is ever stored, changing a question's rule in the survey immediately
 changes every score for every past response the next time they are read.
 
+### app/payroll.py  (the payroll API)
+Defines the payroll endpoints, gated by a per-company `payroll_enabled` switch
+(a `require_payroll` check returns 403 for companies where payroll is off, such
+as Acme in the demo). All endpoints also go through the standard wristband check.
+
+- `POST /pay-periods` and `GET /pay-periods` let an admin create and list pay
+  periods. Each period has a start date, end date, and a cutoff, and starts as
+  "open." Only one open period per company at a time.
+- `POST /time-entries` lets a rep log their own hours for a period: store
+  minutes, reset minutes, drive minutes, and miles. A rep can only log for stores
+  inside their own branch (the scope guard is enforced).
+- `PATCH /time-entries/{id}` lets a rep edit their own entry, as long as the
+  entry is not yet locked (sealed periods lock all entries).
+- `POST /time-entries/{id}/approve` and `.../reject` let a manager or admin
+  change the approval status of an entry within their branch.
+- `POST /pay-periods/{id}/seal` locks every entry in the period. After sealing,
+  no entry can be edited or re-approved. Seal is re-callable (running it twice is
+  harmless), which makes the reopen-fix-re-seal cycle work cleanly.
+- `POST /pay-periods/{id}/reopen` (admin only) unlocks one rep's entries in the
+  period so they can be corrected. Every reopen is written to the audit log with
+  the reason given.
+- `GET /audit` lets an admin read the permanent logbook of sensitive payroll
+  actions.
+
 ### app/analytics.py  (the read-only reports API)
 Defines four read-only report endpoints, all branch-scoped through the
 ScopedRepo. No new database tables were added; all numbers are computed live
@@ -220,8 +249,10 @@ survey tests have a known world. As of Phase 4a it also seeds one demo response
 per company (a Lumen response for the SF store with a mix of passing and failing
 answers, and an Acme response) so the response tests have a known baseline. As
 of Phase 4b the seed was enriched with an out-of-stock answer at the Oakland
-store and a dated SF response to give the trend report something to plot. Safe
-to run twice. Run it with the command in START_HERE.md after the database is set
+store and a dated SF response to give the trend report something to plot. As of
+Phase 4c it also turns payroll on for Lumen (off for Acme), adds a rep pinned
+to the Central region, and creates an open pay period with sample time entries,
+so the payroll tests have a known world to check against. Safe to run twice. Run it with the command in START_HERE.md after the database is set
 up.
 
 ### app/__init__.py  (a Python formality)

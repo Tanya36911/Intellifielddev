@@ -58,6 +58,15 @@ out-of-stock, and trend reports ([api/app/analytics.py](api/app/analytics.py)).
 All reports are branch-scoped (a manager only sees their own stores) and
 computed live, with no new database tables.
 
+As of Phase 4c, the backend runs payroll ([api/app/payroll.py](api/app/payroll.py)),
+with pay periods, logged hours, an admin seal/reopen lock, and a permanent
+audit log, all gated by a per-company on/off switch. An admin opens a pay
+period, reps log their own store/reset/drive hours and miles, managers approve
+their branch's entries, and the admin seals the period to lock all numbers.
+The one deliberate exception is a "reopen one rep" action that unlocks a single
+rep's hours so they can be corrected, then re-sealed, with every reopen written
+into the audit log.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+
