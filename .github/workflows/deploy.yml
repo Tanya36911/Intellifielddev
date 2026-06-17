@@ -15,7 +15,7 @@
 # persistent .env (your strong passwords) and the database's Docker volume both
 # live there, so every deploy reuses the same database. It does NOT create
 # secrets and does NOT seed demo data; the one-time setup (clone, .env, first
-# `migrate up` + seed) is done by hand once, this automates every deploy after.
+# `migrate up` + seed) is done by hand once, this automates every deploy after...
 name: Deploy to server
 
 on:
