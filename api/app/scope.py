@@ -1025,6 +1025,37 @@ class ScopedRepo:
                 ).mappings().all()
         return [dict(r) for r in rows]
 
+    def set_entry_status(self, entry_id, status) -> dict | None:
+        """Approve/reject an entry. The entry's rep must be pinned within the
+        caller's scope (the role is already gated by the endpoint dependency).
+        None if not found / out of scope / the rep is unpinned (-> 404);
+        EntrySealedError if the entry is locked."""
+        if self.scope_path is None:
+            return None
+        with engine.begin() as conn:
+            # The rep's pin must be within the caller's scope. The path-prefix
+            # filter is in the WHERE (same idiom as everywhere else), so an
+            # out-of-scope or unpinned rep simply returns no row -> 404.
+            entry = conn.execute(
+                text("select te.sealed from time_entries te "
+                     "join assignments a on a.user_id = te.user_id "
+                     "and a.tenant_id = cast(:tid as uuid) "
+                     "join nodes n on n.id = a.node_id "
+                     "where te.id = cast(:eid as uuid) and te.tenant_id = cast(:tid as uuid) "
+                     "and n.path like :scope || '%'"),
+                {"eid": str(entry_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            if entry is None:
+                return None
+            if entry["sealed"]:
+                raise EntrySealedError()
+            row = conn.execute(
+                text("update time_entries set mgr_status = :st where id = cast(:eid as uuid) "
+                     f"returning {self._ENTRY_COLS}"),
+                {"st": status, "eid": str(entry_id)},
+            ).mappings().first()
+        return dict(row)
+
 
 def _count_question(questions, question_id):
     """Return the question if it is a per-product number question, else raise

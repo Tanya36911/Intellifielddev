@@ -116,3 +116,37 @@ def test_entries_list_is_role_scoped(client, login):
     assert marcus_id not in sarah_users
     alld = client.get(f"/pay-periods/{pid}/entries", headers=_auth(dana)).json()
     assert {rico_id, marcus_id} <= {e["user_id"] for e in alld["entries"]}
+
+
+def test_manager_approves_branch_rep(client, login):
+    dana, rico = login("dana@lumenbeauty.com"), login("rico@lumenbeauty.com")
+    pid = _make_period(client, dana, "Approve Period").json()["id"]
+    eid = client.post("/time-entries", headers=_auth(rico),
+                      json={"period_id": pid, "store_min": 10, "reset_min": 0,
+                            "drive_min": 0, "miles": 0}).json()["id"]
+    resp = client.post(f"/time-entries/{eid}/approve",
+                       headers=_auth(login("sarah@lumenbeauty.com")))
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["mgr_status"] == "approved"
+
+
+def test_manager_cannot_approve_sibling_branch(client, login):
+    dana, marcus = login("dana@lumenbeauty.com"), login("marcus@lumenbeauty.com")
+    pid = _make_period(client, dana, "Sibling Approve").json()["id"]
+    eid = client.post("/time-entries", headers=_auth(marcus),
+                      json={"period_id": pid, "store_min": 10, "reset_min": 0,
+                            "drive_min": 0, "miles": 0}).json()["id"]
+    resp = client.post(f"/time-entries/{eid}/reject",
+                       headers=_auth(login("sarah@lumenbeauty.com")))
+    assert resp.status_code == 404, resp.text
+
+
+def test_rep_cannot_approve(client, login):
+    dana, marcus, rico = (login("dana@lumenbeauty.com"),
+                          login("marcus@lumenbeauty.com"), login("rico@lumenbeauty.com"))
+    pid = _make_period(client, dana, "Rep Approve").json()["id"]
+    eid = client.post("/time-entries", headers=_auth(rico),
+                      json={"period_id": pid, "store_min": 10, "reset_min": 0,
+                            "drive_min": 0, "miles": 0}).json()["id"]
+    resp = client.post(f"/time-entries/{eid}/approve", headers=_auth(marcus))
+    assert resp.status_code == 403, resp.text

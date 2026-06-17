@@ -136,3 +136,33 @@ def list_entries(
     if rows is None:
         raise HTTPException(status_code=404, detail="Pay period not found")
     return {"entries": rows, "count": len(rows)}
+
+
+def _set_status(repo: ScopedRepo, entry_id: UUID, status: str) -> dict:
+    try:
+        result = repo.set_entry_status(entry_id, status)
+    except EntrySealedError:
+        raise HTTPException(status_code=409, detail="This entry is sealed")
+    if result is None:
+        raise HTTPException(status_code=404, detail="Entry not found in your scope")
+    return result
+
+
+@router.post("/time-entries/{entry_id}/approve")
+def approve_entry(
+    entry_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _claims: dict = Depends(require_manager_or_admin),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    return _set_status(repo, entry_id, "approved")
+
+
+@router.post("/time-entries/{entry_id}/reject")
+def reject_entry(
+    entry_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _claims: dict = Depends(require_manager_or_admin),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    return _set_status(repo, entry_id, "rejected")
