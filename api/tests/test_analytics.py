@@ -289,3 +289,62 @@ def test_trend_sku_not_on_question_400(client, login):
     resp = client.get("/analytics/trend", headers=_auth(dana),
                       params={"survey_version_id": vid, "question_id": "q1", "sku_id": str(ivory)})
     assert resp.status_code == 400, resp.text
+
+
+def test_trend_node_out_of_scope_404(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Trend Scope", q, "bayarea")
+    resp = client.get("/analytics/trend", headers=_auth(login("sarah@lumenbeauty.com")),  # Central
+                      params={"survey_version_id": vid, "question_id": "q1", "sku_id": str(rose),
+                              "node_id": str(_node_id("bayarea"))})
+    assert resp.status_code == 404, resp.text
+
+
+def test_trend_version_out_of_company_404(client, login):
+    acme_vid = _scalar(
+        "select v.id from survey_versions v join surveys s on s.id = v.survey_id "
+        "where s.name = 'Glow Serum Check' and v.published_at is not null limit 1")
+    rose = _sku_id("LUM-VL-ROSE")
+    resp = client.get("/analytics/trend", headers=_auth(login("dana@lumenbeauty.com")),
+                      params={"survey_version_id": str(acme_vid), "question_id": "q1",
+                              "sku_id": str(rose)})
+    assert resp.status_code == 404, resp.text
+
+
+def test_compliance_expected_includes_store_added_later(client, login):
+    # The analytics 'expected' count is computed live from the tree, so a store
+    # added under the target node after the assignment raises it.
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    q = [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}]
+    vid = _publish_and_assign(client, dana, "Live Coverage", q, "bayarea")
+
+    def _expected():
+        rows = client.get("/analytics/compliance", headers=_auth(dana),
+                          params={"node_id": str(_node_id("bayarea"))}).json()["rows"]
+        return next(r for r in rows if r["survey_version_id"] == vid)["expected"]
+
+    before = _expected()
+    nid = None
+    try:
+        with engine.begin() as conn:
+            bay = conn.execute(
+                text("select id, path, tenant_id from nodes where code = 'bayarea'")
+            ).mappings().first()
+            nid = conn.execute(
+                text("insert into nodes (tenant_id, parent_id, level_order, name, code, chain) "
+                     "values (:tid, :pid, 3, 'Late 4b Store', 'late-4b-store', 'CVS') returning id"),
+                {"tid": bay["tenant_id"], "pid": bay["id"]},
+            ).scalar()
+            conn.execute(text("update nodes set path = :p where id = :id"),
+                         {"p": f"{bay['path']}{nid}/", "id": nid})
+        assert _expected() == before + 1  # coverage recomputed live, not copied
+    finally:
+        if nid is not None:
+            with engine.begin() as conn:
+                conn.execute(text("delete from nodes where id = cast(:id as uuid)"),
+                             {"id": str(nid)})
