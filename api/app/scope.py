@@ -886,9 +886,10 @@ class ScopedRepo:
 
     _PERIOD_COLS = ("id, name, start_date, end_date, cutoff_at, timezone_basis, "
                     "grace_hours, lock_behavior, status, sealed_at, created_at")
-    # _ENTRY_COLS is used by the time-entry methods added in the next tasks.
-    _ENTRY_COLS = ("id, period_id, user_id, store_min, reset_min, drive_min, miles, "
-                   "mgr_status, sealed, created_at")
+    # _ENTRY_COLS is used by the time-entry methods. miles is cast to float so it
+    # serializes as a JSON number, not a string (jsonb/numeric would stringify).
+    _ENTRY_COLS = ("id, period_id, user_id, store_min, reset_min, drive_min, "
+                   "miles::float as miles, mgr_status, sealed, created_at")
 
     def _audit(self, conn, actor_user_id, action, target, detail) -> None:
         conn.execute(
@@ -982,9 +983,11 @@ class ScopedRepo:
             row = conn.execute(
                 text("update time_entries set store_min = :sm, reset_min = :rm, "
                      "drive_min = :dm, miles = :mi where id = cast(:eid as uuid) "
+                     "and tenant_id = cast(:tid as uuid) "
                      f"returning {self._ENTRY_COLS}"),
                 {"sm": fields["store_min"], "rm": fields["reset_min"],
-                 "dm": fields["drive_min"], "mi": fields["miles"], "eid": str(entry_id)},
+                 "dm": fields["drive_min"], "mi": fields["miles"], "eid": str(entry_id),
+                 "tid": str(self.tenant_id)},
             ).mappings().first()
         return dict(row)
 
@@ -1055,8 +1058,9 @@ class ScopedRepo:
                 raise EntrySealedError()
             row = conn.execute(
                 text("update time_entries set mgr_status = :st where id = cast(:eid as uuid) "
+                     "and tenant_id = cast(:tid as uuid) "
                      f"returning {self._ENTRY_COLS}"),
-                {"st": status, "eid": str(entry_id)},
+                {"st": status, "eid": str(entry_id), "tid": str(self.tenant_id)},
             ).mappings().first()
         return dict(row)
 
@@ -1076,12 +1080,14 @@ class ScopedRepo:
                 return None
             conn.execute(
                 text("update pay_periods set status = 'sealed', "
-                     "sealed_at = coalesce(sealed_at, now()) where id = cast(:pid as uuid)"),
-                {"pid": str(period_id)},
+                     "sealed_at = coalesce(sealed_at, now()) where id = cast(:pid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
             )
             conn.execute(
-                text("update time_entries set sealed = true where period_id = cast(:pid as uuid)"),
-                {"pid": str(period_id)},
+                text("update time_entries set sealed = true where period_id = cast(:pid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
             )
             self._audit(conn, actor_user_id, "pay_period.sealed", str(period_id), {})
         return self.get_pay_period(period_id)
@@ -1104,8 +1110,8 @@ class ScopedRepo:
             unlocked = conn.execute(
                 text("update time_entries set sealed = false "
                      "where period_id = cast(:pid as uuid) and user_id = cast(:uid as uuid) "
-                     "returning id"),
-                {"pid": str(period_id), "uid": str(target_user_id)},
+                     "and tenant_id = cast(:tid as uuid) returning id"),
+                {"pid": str(period_id), "uid": str(target_user_id), "tid": str(self.tenant_id)},
             ).all()
             if not unlocked:
                 raise RepEntriesNotFoundError()

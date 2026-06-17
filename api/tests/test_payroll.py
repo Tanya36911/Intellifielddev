@@ -203,6 +203,17 @@ def test_logged_reopen_unlocks_one_rep(client, login):
                               "miles": 0}).status_code == 409
 
 
+def test_non_admin_cannot_seal_or_reopen(client, login):
+    dana = login("dana@lumenbeauty.com")
+    pid = _make_period(client, dana, "Admin Only Lock").json()["id"]
+    marcus_id = _scalar("select id from users where email='marcus@lumenbeauty.com'")
+    for email in ("sarah@lumenbeauty.com", "marcus@lumenbeauty.com"):  # manager, rep
+        tok = _auth(login(email))
+        assert client.post(f"/pay-periods/{pid}/seal", headers=tok).status_code == 403
+        assert client.post(f"/pay-periods/{pid}/reopen", headers=tok,
+                           json={"user_id": str(marcus_id), "reason": "x"}).status_code == 403
+
+
 def test_reopen_requires_sealed_period(client, login):
     dana, marcus = login("dana@lumenbeauty.com"), login("marcus@lumenbeauty.com")
     pid = _make_period(client, dana, "Reopen Open").json()["id"]
