@@ -16,7 +16,7 @@ from .analytics import router as analytics_router
 from .payroll import router as payroll_router
 from .db import db_ok
 
-app = FastAPI(title="Intelli API", version="0.0.0")
+app = FastAPI(title="Intelli API", version="0.0.1")
 
 # Dev CORS: let the local web apps (Vite) call the API. Tightened in prod.
 app.add_middleware(
@@ -39,7 +39,7 @@ app.include_router(payroll_router)
 @app.get("/health")
 def health() -> dict:
     """Liveness: the API process is up."""
-    return {"status": "ok", "service": "intelli-api", "version": "0.0.0"}
+    return {"status": "ok", "service": "intelli-api", "version": "0.0.1"}
 
 
 @app.get("/health/db")
