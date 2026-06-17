@@ -215,6 +215,44 @@ def _response(conn, tenant_id, survey_name, store_code, user_email, answers, sub
     return resp_id
 
 
+def _pay_period(conn, tenant_id, name, start_date, end_date):
+    """Insert (or fetch) an open pay period. Idempotent by (tenant_id, name)."""
+    existing = conn.execute(
+        text("select id from pay_periods where tenant_id = :tid and name = :name"),
+        {"tid": tenant_id, "name": name},
+    ).scalar()
+    if existing:
+        return existing
+    return conn.execute(
+        text("insert into pay_periods (tenant_id, name, start_date, end_date) "
+             "values (:tid, :name, :sd, :ed) returning id"),
+        {"tid": tenant_id, "name": name, "sd": start_date, "ed": end_date},
+    ).scalar()
+
+
+def _time_entry(conn, tenant_id, period_id, user_email, store_min, reset_min,
+                drive_min, miles, mgr_status="pending"):
+    """Insert (or skip) one rep's entry for a period. Idempotent by (period, user)."""
+    user_id = conn.execute(
+        text("select id from users where tenant_id = :tid and email = :email"),
+        {"tid": tenant_id, "email": user_email},
+    ).scalar()
+    assert user_id, f"no user with email {user_email!r}"
+    existing = conn.execute(
+        text("select id from time_entries where period_id = :pid and user_id = :uid"),
+        {"pid": period_id, "uid": user_id},
+    ).scalar()
+    if existing:
+        return existing
+    return conn.execute(
+        text("insert into time_entries (tenant_id, period_id, user_id, store_min, reset_min, "
+             "drive_min, miles, mgr_status) values (:tid, :pid, :uid, :sm, :rm, :dm, :mi, :ms) "
+             "returning id"),
+        {"tid": tenant_id, "pid": period_id, "uid": user_id, "sm": store_min, "rm": reset_min,
+         "dm": drive_min, "mi": miles, "ms": mgr_status},
+    ).scalar()
+
+
 def run() -> None:
     with engine.begin() as conn:
         # ----- Lumen Beauty -----
@@ -271,6 +309,15 @@ def run() -> None:
             submitted_at="2026-06-10T09:00:00Z",
         )
 
+        # Payroll on for Lumen. A rep pinned under Central (Sarah's branch) so
+        # manager-approval scope is testable: Sarah can approve Rico, not Marcus.
+        conn.execute(text("update tenants set payroll_enabled = true where id = :id"),
+                     {"id": lumen})
+        _user(conn, lumen, "rico@lumenbeauty.com", "Rico Vance", "rep", chicago)
+        period = _pay_period(conn, lumen, "June 1-15", "2026-06-01", "2026-06-15")
+        _time_entry(conn, lumen, period, "marcus@lumenbeauty.com", 480, 60, 90, 42, "pending")
+        _time_entry(conn, lumen, period, "rico@lumenbeauty.com", 510, 45, 70, 33, "approved")
+
         # ----- Acme Cosmetics (proves cross-tenant isolation) -----
         acme = _tenant(conn, "Acme Cosmetics", "acme")
         _levels(conn, acme)
@@ -294,7 +341,7 @@ def run() -> None:
             [{"question_id": "q1", "value": True}],
         )
 
-    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 3 responses) + Acme (4 nodes, 1 product, 1 survey, 1 response) + 5 users with pins.")
+    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 3 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
 
 
 if __name__ == "__main__":
