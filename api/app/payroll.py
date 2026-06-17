@@ -4,14 +4,22 @@ is the only one who can do the audit-logged reopen-for-one-rep. The whole surfac
 is gated by a per-company payroll switch (require_payroll).
 """
 from datetime import date, datetime
+from uuid import UUID
 
 from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, model_validator
 
 from .db import engine
-from .scope import ScopedRepo, get_scoped_repo
-from .security import current_claims, require_admin
+from .scope import (
+    EntryExistsError,
+    EntrySealedError,
+    PeriodNotSealedError,
+    PeriodSealedError,
+    ScopedRepo,
+    get_scoped_repo,
+)
+from .security import current_claims, require_admin, require_manager_or_admin
 
 router = APIRouter(tags=["payroll"])
 
@@ -64,3 +72,67 @@ def list_pay_periods(
 ) -> dict:
     rows = repo.list_pay_periods()
     return {"pay_periods": rows, "count": len(rows)}
+
+
+class TimeEntryFields(BaseModel):
+    store_min: int = 0
+    reset_min: int = 0
+    drive_min: int = 0
+    miles: float = 0
+
+
+class TimeEntryCreate(TimeEntryFields):
+    period_id: UUID
+
+
+def _fields(body: TimeEntryFields) -> dict:
+    return {"store_min": body.store_min, "reset_min": body.reset_min,
+            "drive_min": body.drive_min, "miles": body.miles}
+
+
+@router.post("/time-entries")
+def create_time_entry(
+    body: TimeEntryCreate,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(current_claims),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    try:
+        result = repo.create_time_entry(body.period_id, claims["sub"], _fields(body))
+    except PeriodSealedError:
+        raise HTTPException(status_code=409, detail="This pay period is sealed")
+    except EntryExistsError:
+        raise HTTPException(status_code=409, detail="You already have an entry for this period")
+    if result is None:
+        raise HTTPException(status_code=404, detail="Pay period not found")
+    return result
+
+
+@router.patch("/time-entries/{entry_id}")
+def update_time_entry(
+    entry_id: UUID,
+    body: TimeEntryFields,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(current_claims),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    try:
+        result = repo.update_time_entry(entry_id, claims["sub"], _fields(body))
+    except EntrySealedError:
+        raise HTTPException(status_code=409, detail="This entry is sealed")
+    if result is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return result
+
+
+@router.get("/pay-periods/{period_id}/entries")
+def list_entries(
+    period_id: UUID,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(current_claims),
+    _payroll: dict = Depends(require_payroll),
+) -> dict:
+    rows = repo.list_entries(period_id, claims["sub"], claims["role"])
+    if rows is None:
+        raise HTTPException(status_code=404, detail="Pay period not found")
+    return {"entries": rows, "count": len(rows)}

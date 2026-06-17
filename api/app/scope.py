@@ -33,6 +33,22 @@ class VersionNotPublishedError(Exception):
     """Tried to assign a survey version that is missing or not published."""
 
 
+class PeriodSealedError(Exception):
+    """Tried to add an entry to a sealed pay period."""
+
+
+class EntryExistsError(Exception):
+    """Tried to create a second time entry for the same rep + period."""
+
+
+class EntrySealedError(Exception):
+    """Tried to edit or re-approve a locked (sealed) time entry."""
+
+
+class PeriodNotSealedError(Exception):
+    """Tried to reopen a pay period that is not sealed."""
+
+
 class ScopedRepo:
     """The only object allowed to read scoped tables. tenant_id and scope_path
     are baked in; a scope_path of None means the caller sees nothing."""
@@ -911,6 +927,103 @@ class ScopedRepo:
                 {"pid": str(period_id), "tid": str(self.tenant_id)},
             ).mappings().first()
         return dict(row) if row else None
+
+    def create_time_entry(self, period_id, user_id, fields) -> dict | None:
+        """The caller's own entry for an OPEN period. None if the period is not
+        the company's (-> 404); PeriodSealedError if sealed; EntryExistsError if
+        the rep already has one."""
+        with engine.begin() as conn:
+            period = conn.execute(
+                text("select status from pay_periods where id = cast(:pid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if period is None:
+                return None
+            if period["status"] != "open":
+                raise PeriodSealedError()
+            # Pre-check is enough for this single-writer app; the
+            # unique(period_id, user_id) constraint is the real backstop.
+            exists = conn.execute(
+                text("select id from time_entries where period_id = cast(:pid as uuid) "
+                     "and user_id = cast(:uid as uuid)"),
+                {"pid": str(period_id), "uid": str(user_id)},
+            ).first()
+            if exists is not None:
+                raise EntryExistsError()
+            row = conn.execute(
+                text("insert into time_entries (tenant_id, period_id, user_id, store_min, "
+                     "reset_min, drive_min, miles) values (cast(:tid as uuid), cast(:pid as uuid), "
+                     "cast(:uid as uuid), :sm, :rm, :dm, :mi) "
+                     f"returning {self._ENTRY_COLS}"),
+                {"tid": str(self.tenant_id), "pid": str(period_id), "uid": str(user_id),
+                 "sm": fields["store_min"], "rm": fields["reset_min"],
+                 "dm": fields["drive_min"], "mi": fields["miles"]},
+            ).mappings().first()
+        return dict(row)
+
+    def update_time_entry(self, entry_id, user_id, fields) -> dict | None:
+        """Edit the caller's OWN entry's hours. None if not found or not the
+        caller's (-> 404); EntrySealedError if the entry is locked."""
+        with engine.begin() as conn:
+            entry = conn.execute(
+                text("select sealed, user_id from time_entries where id = cast(:eid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"eid": str(entry_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if entry is None or str(entry["user_id"]) != str(user_id):
+                return None
+            if entry["sealed"]:
+                raise EntrySealedError()
+            row = conn.execute(
+                text("update time_entries set store_min = :sm, reset_min = :rm, "
+                     "drive_min = :dm, miles = :mi where id = cast(:eid as uuid) "
+                     f"returning {self._ENTRY_COLS}"),
+                {"sm": fields["store_min"], "rm": fields["reset_min"],
+                 "dm": fields["drive_min"], "mi": fields["miles"], "eid": str(entry_id)},
+            ).mappings().first()
+        return dict(row)
+
+    def list_entries(self, period_id, caller_user_id, caller_role) -> list[dict] | None:
+        """Entries for a period. A rep sees only their own; a manager/admin sees
+        entries for reps whose pin is within the caller's scope. None if the
+        period is not the company's (-> 404)."""
+        with engine.connect() as conn:
+            period = conn.execute(
+                text("select id from pay_periods where id = cast(:pid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"pid": str(period_id), "tid": str(self.tenant_id)},
+            ).first()
+            if period is None:
+                return None
+            if caller_role == "rep":
+                rows = conn.execute(
+                    text(f"select {self._ENTRY_COLS} from time_entries "
+                         "where period_id = cast(:pid as uuid) and tenant_id = cast(:tid as uuid) "
+                         "and user_id = cast(:uid as uuid) order by created_at"),
+                    {"pid": str(period_id), "tid": str(self.tenant_id),
+                     "uid": str(caller_user_id)},
+                ).mappings().all()
+            elif self.scope_path is None:
+                rows = []
+            else:
+                # te.-qualified column list, derived from _ENTRY_COLS so the two
+                # list paths can never drift, with the join tables also sharing
+                # id/user_id names.
+                te_cols = ", ".join(f"te.{c.strip()}" for c in self._ENTRY_COLS.split(","))
+                rows = conn.execute(
+                    text(f"select {te_cols} from time_entries te "
+                         # a.tenant_id keeps the assignments join within the
+                         # caller's company (defense-in-depth + a 1:1 join).
+                         "join assignments a on a.user_id = te.user_id "
+                         "and a.tenant_id = cast(:tid as uuid) "
+                         "join nodes n on n.id = a.node_id "
+                         "where te.period_id = cast(:pid as uuid) "
+                         "and te.tenant_id = cast(:tid as uuid) "
+                         "and n.path like :scope || '%' order by te.created_at"),
+                    {"pid": str(period_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+                ).mappings().all()
+        return [dict(r) for r in rows]
 
 
 def _count_question(questions, question_id):
