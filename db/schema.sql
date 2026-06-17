@@ -33,6 +33,21 @@ CREATE TABLE public.assignments (
 
 
 --
+-- Name: audit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    actor_user_id uuid NOT NULL,
+    action text NOT NULL,
+    target text,
+    detail jsonb DEFAULT '{}'::jsonb NOT NULL,
+    at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: nodes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -63,6 +78,28 @@ CREATE TABLE public.org_level_definitions (
     level_order integer NOT NULL,
     name text NOT NULL,
     locked boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: pay_periods; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pay_periods (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    name text,
+    start_date date NOT NULL,
+    end_date date NOT NULL,
+    cutoff_at timestamp with time zone,
+    timezone_basis text,
+    grace_hours integer DEFAULT 0 NOT NULL,
+    lock_behavior text DEFAULT 'manual'::text NOT NULL,
+    status text DEFAULT 'open'::text NOT NULL,
+    sealed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pay_periods_check CHECK ((end_date >= start_date)),
+    CONSTRAINT pay_periods_status_check CHECK ((status = ANY (ARRAY['open'::text, 'sealed'::text])))
 );
 
 
@@ -181,7 +218,28 @@ CREATE TABLE public.tenants (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     code text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    payroll_enabled boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: time_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.time_entries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    period_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    store_min integer DEFAULT 0 NOT NULL,
+    reset_min integer DEFAULT 0 NOT NULL,
+    drive_min integer DEFAULT 0 NOT NULL,
+    miles numeric DEFAULT 0 NOT NULL,
+    mgr_status text DEFAULT 'pending'::text NOT NULL,
+    sealed boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT time_entries_mgr_status_check CHECK ((mgr_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
 );
 
 
@@ -218,6 +276,14 @@ ALTER TABLE ONLY public.assignments
 
 
 --
+-- Name: audit audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit
+    ADD CONSTRAINT audit_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: nodes nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -247,6 +313,14 @@ ALTER TABLE ONLY public.org_level_definitions
 
 ALTER TABLE ONLY public.org_level_definitions
     ADD CONSTRAINT org_level_definitions_tenant_id_level_order_key UNIQUE (tenant_id, level_order);
+
+
+--
+-- Name: pay_periods pay_periods_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pay_periods
+    ADD CONSTRAINT pay_periods_pkey PRIMARY KEY (id);
 
 
 --
@@ -338,6 +412,22 @@ ALTER TABLE ONLY public.tenants
 
 
 --
+-- Name: time_entries time_entries_period_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT time_entries_period_id_user_id_key UNIQUE (period_id, user_id);
+
+
+--
+-- Name: time_entries time_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT time_entries_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -354,6 +444,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: audit_tenant_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_tenant_at_idx ON public.audit USING btree (tenant_id, at);
+
+
+--
 -- Name: nodes_path_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -365,6 +462,13 @@ CREATE INDEX nodes_path_idx ON public.nodes USING btree (path text_pattern_ops);
 --
 
 CREATE INDEX nodes_tenant_parent_idx ON public.nodes USING btree (tenant_id, parent_id);
+
+
+--
+-- Name: pay_periods_tenant_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX pay_periods_tenant_idx ON public.pay_periods USING btree (tenant_id);
 
 
 --
@@ -466,6 +570,27 @@ CREATE INDEX surveys_tenant_idx ON public.surveys USING btree (tenant_id);
 
 
 --
+-- Name: time_entries_period_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX time_entries_period_idx ON public.time_entries USING btree (period_id);
+
+
+--
+-- Name: time_entries_tenant_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX time_entries_tenant_idx ON public.time_entries USING btree (tenant_id);
+
+
+--
+-- Name: time_entries_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX time_entries_user_idx ON public.time_entries USING btree (user_id);
+
+
+--
 -- Name: assignments assignments_node_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -490,6 +615,22 @@ ALTER TABLE ONLY public.assignments
 
 
 --
+-- Name: audit audit_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit
+    ADD CONSTRAINT audit_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: audit audit_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit
+    ADD CONSTRAINT audit_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
 -- Name: nodes nodes_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -511,6 +652,14 @@ ALTER TABLE ONLY public.nodes
 
 ALTER TABLE ONLY public.org_level_definitions
     ADD CONSTRAINT org_level_definitions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
+-- Name: pay_periods pay_periods_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pay_periods
+    ADD CONSTRAINT pay_periods_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
 
 
 --
@@ -642,6 +791,30 @@ ALTER TABLE ONLY public.surveys
 
 
 --
+-- Name: time_entries time_entries_period_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT time_entries_period_id_fkey FOREIGN KEY (period_id) REFERENCES public.pay_periods(id);
+
+
+--
+-- Name: time_entries time_entries_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT time_entries_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
+-- Name: time_entries time_entries_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.time_entries
+    ADD CONSTRAINT time_entries_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: users users_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -665,4 +838,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260615000001'),
     ('20260615000002'),
     ('20260616000001'),
-    ('20260616000002');
+    ('20260616000002'),
+    ('20260617000001');
