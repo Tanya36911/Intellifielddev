@@ -222,13 +222,15 @@ Output mechanics (in `exports.py`, the presentation layer):
   reuses the existing `require_payroll` FastAPI dependency by importing it
   (`from .payroll import require_payroll`), so the `tenants.payroll_enabled` check
   lives in exactly one place and cannot drift.
-- **Validation order** (cheap pure-input checks first, scope lookups last, so
-  behavior is deterministic and parity tests are stable): validate `format` and
-  `grain` in the router first (unknown -> 400, before any DB work); then the
-  payroll switch (`require_payroll` -> 403); then call the repo and map a `None`
-  return to 404. The `format` query key stays `format` in the URL but is bound to
-  a parameter named `fmt` via `Query(alias="format")` so it does not shadow the
-  Python builtin.
+- **Validation order** (deterministic, so parity tests are stable): the payroll
+  endpoint's switch is a FastAPI dependency (`require_payroll`), so for that
+  endpoint a payroll-off company is refused with 403 first, as an endpoint gate,
+  before the body runs. Then in the body: `format` and `grain` are validated
+  (unknown -> 400) before any DB work; then the repo is called and a `None` return
+  maps to 404. (For the responses and compliance endpoints, which have no payroll
+  gate, that is simply 400 then 404.) The `format` query key stays `format` in the
+  URL but is bound to a parameter named `fmt` via `Query(alias="format")` so it
+  does not shadow the Python builtin.
 
 ### Demo data
 The 4a/4b/4c seed already builds a non-trivial world (responses across Bay Area
