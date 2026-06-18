@@ -99,7 +99,17 @@ its own stores, and a manager only ever sees their own branch.
 
 **Phase 4d - export (done):** You can now get the field data out of the app. Three new addresses hand back the store survey answers (responses), the logged hours (payroll), and the headline compliance summary, either as a spreadsheet file (CSV) you download or as the same data in plain data form (JSON), chosen with a `?format=` setting. You can narrow what comes out by date, survey, chain, a spot on the org tree, and product. Like everything else it is branch-scoped (a manager only ever gets their own branch), it reuses the same login wristband, and it adds no new database tables. Backend only, no screen yet. Proven by the test robot: the CSV and the JSON always match, both response levels work, the pass/fail is worked out live, every filter narrows correctly, payroll stays role-scoped and is refused for a company with payroll off, and a node outside your branch is refused.
 
-**What's NEXT:** Phase 5 (Field app + offline sync).
+**Phase 5 (Field app + offline sync) STARTED:** This phase (the rep's phone app,
+which works even with no signal) is large, so it is being built in small pieces.
+- **5-BE-a (idempotency keys, done):** the two screens a rep submits from (saving
+  a finished survey, and logging hours) now accept an optional "claim ticket" (a
+  one-time id, like a coat-check stub). If the phone is offline and re-sends a
+  submission once the signal returns, the ticket lets the server hand back the
+  original record instead of making a duplicate. Nothing that was already working
+  changes. Backend only, no screen yet.
+
+**What's NEXT:** the rest of Phase 5 (5-BE-b batch sync, 5-BE-c photo storage,
+then the Field mobile app itself).
 
 ---
 
@@ -270,9 +280,14 @@ project memory, so a new chat in this folder already knows them.)
 - Responses + live pass/fail scoring: DONE and tested.
 - Analytics (compliance %, out-of-stock by product, trends): DONE and tested.
 - Payroll (pay periods, logged hours, manager approval, seal/reopen lock, audit log): DONE and tested.
-- Export (responses, payroll, compliance as CSV or JSON, branch-scoped): DONE and tested
-  (backend robot green: 160 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete. NEXT: Phase 5 (Field app + offline sync).
+- Export (responses, payroll, compliance as CSV or JSON, branch-scoped): DONE and tested.
+- Idempotency keys (the "claim ticket" so an offline phone can safely re-send a
+  survey or hours without duplicating): DONE and tested. This is Phase 5's first
+  piece (backend robot green: 169 backend checks, plus 27 frontend checks).
+- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done). Phase 5 (Field
+  app + offline sync) is underway: its first piece, idempotency keys (5-BE-a), is
+  done. NEXT: 5-BE-b (batch sync), then 5-BE-c (photo storage), then the Field
+  mobile app.
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

@@ -77,6 +77,15 @@ everything else it is branch-scoped (a manager only ever gets their own branch),
 it reuses the same login wristband, the pass/fail is worked out live, and it
 adds no new database tables.
 
+As of Phase 5-BE-a (the start of Phase 5, the field phone + offline sync), the
+two endpoints a rep submits to (`POST /responses` and `POST /time-entries`) now
+accept an optional "claim ticket" (a one-time id the phone makes, like a
+coat-check stub). When the phone is offline a submission waits in a queue and is
+sent later; if the signal flickers and the phone re-sends, the matching ticket
+lets the server return the original row instead of creating a duplicate. Sending
+no ticket behaves exactly as before, so nothing already live is affected. This
+is the groundwork for the offline queue the field app will use.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

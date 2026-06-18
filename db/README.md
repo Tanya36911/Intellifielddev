@@ -133,6 +133,25 @@ The sixth renovation order. It adds three tables and one column:
   table. When false, every payroll endpoint is refused with a 403 for that
   company's users.
 
+### migrations/20260618000001_add_idempotency_keys.sql
+The seventh renovation order, and the first piece of Phase 5 (the field phone +
+offline sync). It adds one optional column to each of the two tables a rep
+submits to, plus a smart index on each:
+- **responses.idempotency_key** and **time_entries.idempotency_key**: an optional
+  "claim ticket" (like a coat-check stub), stored as a UUID (a long random id).
+  When the phone is offline a submission waits in a queue and is sent later; if
+  the signal flickers the phone re-sends, and the matching ticket lets the server
+  recognize the re-send and return the original row instead of filing a second
+  copy. The column is optional (nullable), so existing rows and any caller that
+  sends no ticket are completely unaffected.
+- a **partial unique index** on each table (`responses_tenant_idem_idx` and
+  `time_entries_tenant_idem_idx`), meaning a unique index that only watches some
+  of the rows. Each one says "no two rows in the same company may share a ticket,
+  but only count rows that actually have one." The `where idempotency_key is not
+  null` part is what makes it partial: the many existing and unkeyed rows (all
+  blank) are ignored, so they can never clash. Only real, non-blank tickets are
+  deduped.
+
 ### schema.sql
 An automatically-generated snapshot of what the pantry looks like right now,
 after all migrations have been applied. You do not edit this by hand; dbmate
@@ -157,7 +176,10 @@ From START_HERE.md's cheat sheet:
 
 Phases 2 (hierarchy + scope guard), 3a (the product catalog), 3b (surveys,
 versions, assignments), 4a (responses, response items), 4b (analytics, no new
-tables), and 4c (payroll: pay_periods, time_entries, audit, and the
-payroll_enabled column) are now built. The next phase is 4d (export). Each new
-table arrives as its own numbered migration file, and this README gets a new
-entry describing it.
+tables), 4c (payroll: pay_periods, time_entries, audit, and the payroll_enabled
+column), and 4d (export, no new tables) are all built. Phase 5 (the field phone +
+offline sync) has now started: its first piece, 5-BE-a, added the two
+idempotency_key columns and their partial unique indexes above. The next pieces
+are 5-BE-b (batch sync) and 5-BE-c (photo storage). Each new table or column
+arrives as its own numbered migration file, and this README gets a new entry
+describing it.

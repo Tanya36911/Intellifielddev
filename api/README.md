@@ -175,6 +175,14 @@ overwrite the old one. `GET /responses` lists responses in the caller's branch
 (with pass/fail worked out live); `GET /responses/{id}` returns one response in
 full, same live scoring. All go through the ScopedRepo.
 
+As of Phase 5-BE-a, `POST /responses` also accepts an optional `idempotency_key`
+(a client-generated UUID, a "claim ticket" like a coat-check stub). If the same
+ticket is sent twice, the second call returns the original response instead of
+making a duplicate; sending no ticket behaves exactly as before. This is the
+first piece of Phase 5 (the field phone + offline sync): when the phone is
+offline a submission waits in a queue and is re-sent later, and the ticket keeps
+a flaky re-send from creating a second copy.
+
 ### app/compliance.py  (the pure pass/fail evaluator)
 Given a rep's answer and a question's pass rule, this module returns whether the
 answer passes, fails, or was not counted (because it was blank). It has no
@@ -196,7 +204,13 @@ as Acme in the demo). All endpoints also go through the standard wristband check
   "open." Only one open period per company at a time.
 - `POST /time-entries` lets a rep log their own hours for a period: store
   minutes, reset minutes, drive minutes, and miles. A rep can only log for stores
-  inside their own branch (the scope guard is enforced).
+  inside their own branch (the scope guard is enforced). As of Phase 5-BE-a it
+  also accepts an optional `idempotency_key` (a client-generated UUID, the same
+  "claim ticket" idea as on `POST /responses`): re-sending the same ticket
+  returns the original entry instead of the usual "you already have an entry"
+  409, while a genuinely different second entry still gets that 409, and sending
+  no ticket behaves exactly as before. This is part of the first piece of Phase 5
+  (the field phone + offline sync).
 - `PATCH /time-entries/{id}` lets a rep edit their own entry, as long as the
   entry is not yet locked (sealed periods lock all entries).
 - `POST /time-entries/{id}/approve` and `.../reject` let a manager or admin

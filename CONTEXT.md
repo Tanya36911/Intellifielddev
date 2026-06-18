@@ -34,7 +34,9 @@ fast-follow, never the headline.
   - [x] **Phase 4b** - analytics (compliance %, OOS by SKU, trends). Gate met (tests green).
   - [x] **Phase 4c** - payroll. Gate met (tests green).
   - [x] **Phase 4d** - export (CSV + read-only JSON feed). Gate met (tests green).
-- [ ] **Phase 5** - Field app + offline sync.
+- [~] **Phase 5** - Field app + offline sync. Split into a backend sync-contract track and a mobile track.
+  - Backend track: [x] **5-BE-a** idempotency keys (claim tickets on the two rep submit endpoints, the safety primitive the offline queue depends on); [ ] **5-BE-b** batch sync; [ ] **5-BE-c** photo storage.
+  - Mobile track: [ ] **5-M-a** Expo skeleton; [ ] **5-M-b**; [ ] **5-M-c**; [ ] **5-M-d** on-device DB + sync engine.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
 
 ## How to run (see README for detail)
@@ -154,6 +156,28 @@ fast-follow, never the headline.
   outside scope is a 404 and an unpinned caller gets an empty export. Seed unchanged (the tests build
   their own surveys/periods where determinism matters). Gate GREEN: 160 backend tests + 27 frontend.
   Phase 4d COMPLETE; Phase 4 done. NEXT: Phase 5 (Field app + offline sync).
+- 2026-06-18: Phase 5-BE-a - idempotency keys (the first piece of Phase 5, a backend-only safety
+  primitive for offline re-sends). Goal: let the two rep submit endpoints accept an optional
+  client-generated "claim ticket" (a UUID) so a re-sent queued submission returns the original row
+  instead of duplicating, with zero change for callers that send no ticket. One migration
+  (20260618000001_add_idempotency_keys) adds a nullable idempotency_key uuid column to responses and
+  time_entries plus a partial unique index on each (responses_tenant_idem_idx / time_entries_tenant_idem_idx,
+  unique on (tenant_id, idempotency_key) where idempotency_key is not null), so only real non-null
+  tickets are deduped per company and every existing/unkeyed row (all NULL) is untouched; schema.sql
+  regenerated. ResponseCreate and TimeEntryCreate gained an optional idempotency_key: UUID | None = None,
+  passed straight through. In scope.py, create_response and create_time_entry learned a
+  check-then-insert-or-return step: a re-sent ticket returns the original (responses via get_response,
+  which re-applies the caller's current scope; hours via the same _ENTRY_COLS row shape, user_id-scoped,
+  short-circuiting BEFORE the sealed-period and already-have-an-entry checks so a genuine re-send is a
+  200, not the usual 409). Backward-compatible: a NULL ticket is never deduped. The key stays internal
+  (never added to _RESPONSE_COLS / _ENTRY_COLS, so it never leaks into a response body). New
+  api/tests/test_idempotency.py (9 tests through the API): same ticket twice returns one row and the
+  identical body; no ticket creates two; keyed then unkeyed still inserts; the partial index actually
+  rejects a direct duplicate; the same ticket across two companies does not collide; a keyed first
+  submit still respects scope (404) and validation (400); hours replay returns the original and the row
+  carries the sent ticket; a different ticket for the same (period, rep) still 409s; a payroll-off
+  company still 403s before any ticket logic. Gate GREEN: 169 backend tests + 27 frontend. Phase 5-BE-a
+  COMPLETE. NEXT: 5-BE-b (batch sync), then 5-BE-c (photo storage), then the Expo mobile app (5-M-*).
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR
