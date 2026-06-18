@@ -68,14 +68,20 @@ explicit `begin;`/`commit;`, `set local timezone='UTC';`, and a matching
 - `alter table responses add column idempotency_key uuid;`
 - `alter table time_entries add column idempotency_key uuid;`
 - A **partial unique index** on each so only real (non-null) tickets are deduped
-  and the many existing/unkeyed rows (all NULL) are unaffected:
-  `create unique index responses_tenant_idem_key on responses (tenant_id,
+  and the many existing/unkeyed rows (all NULL) are unaffected (matching the
+  project's `_idx` naming):
+  `create unique index responses_tenant_idem_idx on responses (tenant_id,
   idempotency_key) where idempotency_key is not null;` and the equivalent
-  `time_entries_tenant_idem_key`.
+  `time_entries_tenant_idem_idx`.
 - Adding a nullable column to existing tables leaves current rows as NULL (no
   backfill needed). The `down` drops the two indexes and the two columns.
+- The migration must be a self-contained, valid script (the same
+  `begin;` / `set local timezone='UTC';` / `commit;` envelope as the payroll
+  migration), because the test harness applies each migration's up-section as one
+  whole `execute`; a syntax slip would red the entire suite at build time.
 - Regenerate the `db/schema.sql` snapshot after applying the migration (the
-  snapshot is the auto-generated picture of the current shape).
+  snapshot is the auto-generated picture of the current shape; the harness does
+  not read it, so it is documentation, but keep it current).
 
 ### The submit endpoints learn an optional ticket
 - `api/app/responses.py`: `ResponseCreate` gains `idempotency_key: UUID | None =
@@ -88,21 +94,42 @@ explicit `begin;`/`commit;`, `set local timezone='UTC';`, and a matching
 ### The scope guard learns the check-then-insert-or-return step
 `api/app/scope.py` (the single object allowed to touch scoped tables):
 - `create_response(survey_version_id, store_node_id, answers, user_id,
-  idempotency_key=None)`: if `idempotency_key` is given, first look up an existing
-  response in this tenant with that key; if found, return `get_response(existing
-  id)` (the original, re-scored live, same shape as a fresh create). Otherwise
-  insert as today, writing the key into the new column. The partial unique index
-  is the hard backstop against a duplicate.
+  idempotency_key=None)`: if `idempotency_key` is given, then inside the existing
+  `engine.begin()` block (after the `if self.scope_path is None: return None`
+  guard) run a plain key lookup `select id from responses where tenant_id = :tid
+  and idempotency_key = cast(:idem as uuid)` (tenant-only, **no** path-scope
+  filter, since the original store can sit anywhere in the tenant). If a row is
+  found, return `self.get_response(found_id)` (the original, re-scored live, the
+  identical shape a fresh create returns). `get_response` re-applies the caller's
+  CURRENT branch scope, so a normal same-rep re-send (same pin) gets a 200, but a
+  replay whose caller no longer covers the original store (a moved pin, or a
+  different in-tenant user) correctly gets a 404 rather than a cross-scope leak;
+  the test author must not assert 200 for a moved-pin replay. If no row is found,
+  insert as today, writing the key into the new column. For responses (which has
+  no other uniqueness constraint) the partial unique index is the hard backstop
+  against a duplicate.
 - `create_time_entry(period_id, user_id, fields, idempotency_key=None)`: if
-  `idempotency_key` is given and matches an existing entry in this tenant, return
-  that entry (200), short-circuiting before the sealed-period and
-  already-have-an-entry checks. Otherwise run today's logic (sealed -> 409, an
-  existing (period, rep) entry without a matching ticket -> 409) and write the key
-  on insert.
+  `idempotency_key` is given, first run a key lookup scoped to `(tenant_id,
+  idempotency_key, user_id)` (the caller's `user_id` is available and constraining
+  to it is cheap defense-in-depth) that selects the FULL `_ENTRY_COLS`
+  (`... miles::float as miles ...`) and, if found, returns `dict(row)` directly,
+  short-circuiting before the sealed-period and already-have-an-entry checks. This
+  returns the same un-scoped `_ENTRY_COLS` shape as a fresh insert, with **no**
+  nodes/assignments join (the create path has none, so the replay must not add
+  one). If no row is found, run today's logic (sealed -> 409; an existing
+  (period, rep) entry with a different/absent ticket -> the existing 409) and
+  write the key on insert. Here `unique (period_id, user_id)` is the real
+  duplicate guard; the ticket's job is to turn a genuine re-send into a 200
+  instead of that 409.
+- UUID binding convention (matching the rest of `scope.py`): the key is bound as
+  `cast(:idem as uuid)` with the param set to `str(idempotency_key)` when given
+  and `None` when absent; a NULL key is simply never deduped (the partial index
+  ignores it).
 - Both follow the existing pre-check pattern (as `create_time_entry` already does
-  for `EntryExistsError`); the partial unique index guarantees no duplicate row
-  even if two identical sends ever raced. A concurrent double-send from one rep is
-  out of scope for v1 (a single phone sends its queue sequentially).
+  for `EntryExistsError`); a concurrent double-send from one rep is out of scope
+  for v1 (a single phone sends its queue sequentially), and a true race past the
+  pre-check surfaces as an IntegrityError (500), which is acceptable for v1.
+  (A future refinement could smooth that to a 200 via `insert ... on conflict`.)
 
 ### Demo data
 No seed change needed. The seed's existing responses and time entries simply have
@@ -111,24 +138,44 @@ backward-compatible behavior. Tests create their own keyed submissions.
 
 ### The tests (the gate for 5-BE-a)
 A new `api/tests/test_idempotency.py` (through the API, same harness as the rest):
-- **Responses, headline:** submit the same survey twice with one ticket -> the
-  same `response_id` and identical body both times, and exactly one row exists in
-  the database for that ticket.
+- **Responses, headline:** submit the same survey twice with one ticket and assert
+  the replay's `id` equals the first call's `id` AND the full JSON body is equal
+  (`second.json() == first.json()`), not merely a 200. Then assert exactly one row
+  exists in the database for that ticket (`select count(*) from responses where
+  idempotency_key = :ticket` is 1), which also exercises the partial unique index
+  for responses.
+- **The ticket never leaks into the body:** `'idempotency_key' not in
+  resp.json()` on both the responses and the hours endpoints (the column stays
+  internal; this guards against a future implementer adding it to
+  `_RESPONSE_COLS` / `_ENTRY_COLS`).
 - **No ticket is unchanged:** submitting the same survey twice with no ticket
-  creates two different responses (today's behavior, re-visits retained).
-- **Cross-company isolation of the ticket:** the same ticket value used by two
-  different companies does not collide; each company gets its own row, and one
-  company never receives the other's row.
+  creates two different `response_id`s (today's behavior, re-visits retained).
+- **Keyed then unkeyed still inserts:** after a keyed submit (one row), the same
+  survey submitted with NO ticket creates a second, distinct response (NULL keys
+  are never deduped, so the key path does not poison the unkeyed path).
+- **The partial unique index actually bites (responses):** a direct DB-level
+  insert of a second `responses` row with the same `(tenant_id, idempotency_key)`
+  raises an `IntegrityError` (done with `engine.begin()` + `text()`, the style
+  already used in the response tests). This is the only way to prove the index,
+  since the endpoint short-circuits before re-inserting.
+- **Cross-company isolation (responses):** the same ticket UUID used by a Lumen
+  rep (`marcus@lumenbeauty.com`) and an Acme admin (`avery@acme.com`) does not
+  collide; each company gets its own row and neither sees the other's. (Hours
+  cross-company isolation is the same per-tenant index property but is not
+  separately exercised, because the seed's only second company has payroll off; a
+  payroll-off company 403s before any ticket logic, and the spec adds no seed
+  change.)
 - **A keyed first submit still scopes and validates:** an out-of-scope store still
   returns 404 and a bad answer shape still returns 400 on the first call (the
   ticket does not bypass any existing rule).
-- **Hours, replay returns the original (not 409):** `POST /time-entries` twice
-  with one ticket returns the same entry both times; a second, different create
-  for the same (period, rep) with no matching ticket still returns 409; a
+- **Hours, replay returns the original (proving the ticket, not just absence of a
+  409):** `POST /time-entries` twice with one ticket returns the same entry both
+  times (full-body equal); then assert the DB has exactly one entry for that
+  (period, rep) AND its `idempotency_key` column equals the sent ticket. As a
+  negative control, a SECOND create for the same (period, rep) with a DIFFERENT
+  ticket still returns 409 `EntryExistsError` (proving the short-circuit is keyed
+  off the ticket, not off any duplicate, and the 409 path is intact). A
   payroll-off company still returns 403.
-- **The unique index holds:** two responses (or entries) cannot carry the same
-  (tenant, ticket) (covered through the endpoint replay behavior; the index is the
-  backstop).
 - The full backend suite plus the existing 27 frontend checks stay green.
 
 ## The new and changed files
