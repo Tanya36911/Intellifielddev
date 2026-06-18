@@ -101,7 +101,9 @@ def _check_format(fmt):
 
 
 def _date_tag(d) -> str:
-    return d.isoformat() if d is not None else "all"
+    if d is None:
+        return "all"
+    return d.date().isoformat() if isinstance(d, datetime) else d.isoformat()
 
 
 @router.get("/compliance")

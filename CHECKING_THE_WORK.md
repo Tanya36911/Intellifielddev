@@ -230,7 +230,7 @@ You can do the same with `GET /export/payroll` (the logged hours) and
 `GET /export/compliance` (the headline completion and pass numbers).
 
 To confirm the automated gate: run `pnpm test:api` (backend must be running).
-GOOD looks like `157 passed` at the bottom. If anything goes red, copy the text
+GOOD looks like `160 passed` at the bottom. If anything goes red, copy the text
 to me.
 
 What it proves: the same field data can be pulled out as a CSV file or as JSON

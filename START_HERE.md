@@ -271,7 +271,7 @@ project memory, so a new chat in this folder already knows them.)
 - Analytics (compliance %, out-of-stock by product, trends): DONE and tested.
 - Payroll (pay periods, logged hours, manager approval, seal/reopen lock, audit log): DONE and tested.
 - Export (responses, payroll, compliance as CSV or JSON, branch-scoped): DONE and tested
-  (backend robot green: 157 backend checks, plus 27 frontend checks).
+  (backend robot green: 160 backend checks, plus 27 frontend checks).
 - Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete. NEXT: Phase 5 (Field app + offline sync).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch

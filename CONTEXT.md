@@ -152,7 +152,7 @@ fast-follow, never the headline.
   through the shared ScopedRepo (a new export section: export_responses / export_payroll /
   export_compliance), reusing the same login wristband, so no new tables and no new sign-in; a node
   outside scope is a 404 and an unpinned caller gets an empty export. Seed unchanged (the tests build
-  their own surveys/periods where determinism matters). Gate GREEN: 157 backend tests + 27 frontend.
+  their own surveys/periods where determinism matters). Gate GREEN: 160 backend tests + 27 frontend.
   Phase 4d COMPLETE; Phase 4 done. NEXT: Phase 5 (Field app + offline sync).
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local

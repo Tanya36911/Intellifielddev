@@ -366,3 +366,56 @@ def test_payroll_csv_parity(client, login):
                             params={"period_id": pid, "format": "csv"}))
     assert grid[0] == list(j["rows"][0].keys())
     assert len(grid) - 1 == j["count"]
+
+
+def test_responses_pass_fail_is_rule_derived(client, login):
+    # Same answer value, two different pass rules -> different verdict in the
+    # export, proving pass/fail is computed from the rule at read time, never
+    # stored (the Phase 4 gate, seen through the export).
+    dana = login("dana@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    marcus = login("marcus@lumenbeauty.com")
+    lenient = _publish_and_assign(client, dana, "Export Lenient",
+        [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 4}, "passScope": "each"}], "bayarea")
+    strict = _publish_and_assign(client, dana, "Export Strict",
+        [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+          "pass": {"operator": ">=", "value": 6}, "passScope": "each"}], "bayarea")
+    _submit(client, marcus, lenient, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    _submit(client, marcus, strict, "sf", [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    lrow = client.get("/export/responses", headers=_auth(dana),
+                      params={"survey_id": str(_survey_id_of(lenient))}).json()["rows"][0]
+    srow = client.get("/export/responses", headers=_auth(dana),
+                      params={"survey_id": str(_survey_id_of(strict))}).json()["rows"][0]
+    assert lrow["overall"] is True    # value 5 vs rule >=4 -> pass
+    assert srow["overall"] is False   # same value 5 vs rule >=6 -> fail
+
+
+def test_payroll_date_range_filter_no_period(client, login):
+    # The date-range filter selects overlapping periods with no period_id, and
+    # stays tenant-scoped.
+    dana = login("dana@lumenbeauty.com")
+    pid = client.post("/pay-periods", headers=_auth(dana),
+                      json={"start_date": "2026-11-01", "end_date": "2026-11-15",
+                            "name": "Nov 1-15"}).json()["id"]
+    client.post("/time-entries", headers=_auth(login("rico@lumenbeauty.com")),
+                json={"period_id": pid, "store_min": 100})
+    hit = client.get("/export/payroll", headers=_auth(dana),
+                     params={"date_from": "2026-11-10", "date_to": "2026-11-20"}).json()["rows"]
+    assert any(r["period_id"] == pid for r in hit)        # overlapping range includes it
+    miss = client.get("/export/payroll", headers=_auth(dana),
+                      params={"date_from": "2025-01-01", "date_to": "2025-12-31"}).json()["rows"]
+    assert all(r["period_id"] != pid for r in miss)       # non-overlapping range excludes it
+
+
+def test_responses_filename_is_yyyy_mm_dd(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rosewood_q()
+    vid = _publish_and_assign(client, dana, "Export Filename", q, "bayarea")
+    sid = str(_survey_id_of(vid))
+    resp = client.get("/export/responses", headers=_auth(dana),
+                      params={"survey_id": sid, "format": "csv",
+                              "date_from": "2026-04-01T00:00:00Z",
+                              "date_to": "2026-06-18T00:00:00Z"})
+    cd = resp.headers["content-disposition"]
+    assert "intelli_responses_summary_2026-04-01_2026-06-18.csv" in cd
