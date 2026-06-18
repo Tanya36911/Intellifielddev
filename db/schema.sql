@@ -134,7 +134,8 @@ CREATE TABLE public.responses (
     user_id uuid NOT NULL,
     online boolean DEFAULT true NOT NULL,
     submitted_at timestamp with time zone DEFAULT now() NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    idempotency_key uuid
 );
 
 
@@ -239,6 +240,7 @@ CREATE TABLE public.time_entries (
     mgr_status text DEFAULT 'pending'::text NOT NULL,
     sealed boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    idempotency_key uuid,
     CONSTRAINT time_entries_mgr_status_check CHECK ((mgr_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
 );
 
@@ -514,6 +516,13 @@ CREATE INDEX responses_submitted_idx ON public.responses USING btree (submitted_
 
 
 --
+-- Name: responses_tenant_idem_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX responses_tenant_idem_idx ON public.responses USING btree (tenant_id, idempotency_key) WHERE (idempotency_key IS NOT NULL);
+
+
+--
 -- Name: responses_tenant_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -574,6 +583,13 @@ CREATE INDEX surveys_tenant_idx ON public.surveys USING btree (tenant_id);
 --
 
 CREATE INDEX time_entries_period_idx ON public.time_entries USING btree (period_id);
+
+
+--
+-- Name: time_entries_tenant_idem_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX time_entries_tenant_idem_idx ON public.time_entries USING btree (tenant_id, idempotency_key) WHERE (idempotency_key IS NOT NULL);
 
 
 --
@@ -839,4 +855,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260615000002'),
     ('20260616000001'),
     ('20260616000002'),
-    ('20260617000001');
+    ('20260617000001'),
+    ('20260618000001');
