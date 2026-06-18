@@ -1256,6 +1256,82 @@ class ScopedRepo:
                     })
             return out
 
+    def export_payroll(self, caller_user_id, caller_role, period_id=None,
+                       date_from=None, date_to=None, node_id=None):
+        """Flat payroll rows for export. Reuses list_entries' row-visibility rule
+        (rep -> own entries; manager/admin -> entries for reps pinned within
+        scope) but is a distinct query joining pay_periods + users + a LEFT join
+        to the rep's pin (so an unpinned rep still exports, with a blank
+        rep_node_name). te.tenant_id is always applied. Returns None only if
+        node_id is given but out of scope (-> 404)."""
+        with engine.connect() as conn:
+            scope_filter_path = self.scope_path
+            if node_id is not None:
+                nrow = conn.execute(
+                    text("select path from nodes where id = cast(:nid as uuid) "
+                         "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                    {"nid": str(node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+                ).mappings().first()
+                if nrow is None:
+                    return None  # node_id out of scope -> 404
+                scope_filter_path = nrow["path"]
+
+            clauses = ["te.tenant_id = cast(:tid as uuid)"]
+            params = {"tid": str(self.tenant_id)}
+            if caller_role == "rep":
+                clauses.append("te.user_id = cast(:caller as uuid)")
+                params["caller"] = str(caller_user_id)
+            else:
+                # The rep's pin (LEFT-joined) must be within scope. An unpinned rep
+                # has rn.path NULL, so NULL like ... is false and they are excluded
+                # from a manager/admin view (matching list_entries' inner-join);
+                # an unpinned manager/admin (scope None) sees nobody.
+                clauses.append("rn.path like :scope || '%'")
+                params["scope"] = scope_filter_path
+            if period_id is not None:
+                clauses.append("te.period_id = cast(:pid as uuid)")
+                params["pid"] = str(period_id)
+            if date_from is not None:
+                clauses.append("pp.end_date >= cast(:df as date)")
+                params["df"] = date_from.isoformat()
+            if date_to is not None:
+                clauses.append("pp.start_date <= cast(:dt as date)")
+                params["dt"] = date_to.isoformat()
+            where = " and ".join(clauses)
+            rows = conn.execute(
+                text("select te.id as entry_id, te.period_id, pp.name as period_name, "
+                     "pp.start_date, pp.end_date, pp.status as period_status, "
+                     "te.user_id, u.name as rep_name, u.email as rep_email, "
+                     "te.store_min, te.reset_min, te.drive_min, te.miles::float as miles, "
+                     "te.mgr_status, te.sealed, rn.name as rep_node_name "
+                     "from time_entries te "
+                     "join pay_periods pp on pp.id = te.period_id "
+                     "join users u on u.id = te.user_id "
+                     "left join assignments ra on ra.user_id = te.user_id "
+                     "and ra.tenant_id = te.tenant_id "
+                     "left join nodes rn on rn.id = ra.node_id "
+                     f"where {where} order by pp.start_date, u.name, te.id"),
+                params,
+            ).mappings().all()
+        return [{
+            "entry_id": str(r["entry_id"]),
+            "period_id": str(r["period_id"]),
+            "period_name": r["period_name"],
+            "start_date": r["start_date"],
+            "end_date": r["end_date"],
+            "period_status": r["period_status"],
+            "user_id": str(r["user_id"]),
+            "rep_name": r["rep_name"],
+            "rep_email": r["rep_email"],
+            "store_min": r["store_min"],
+            "reset_min": r["reset_min"],
+            "drive_min": r["drive_min"],
+            "miles": r["miles"],
+            "mgr_status": r["mgr_status"],
+            "sealed": r["sealed"],
+            "rep_node_name": r["rep_node_name"],
+        } for r in rows]
+
 
 def _count_question(questions, question_id):
     """Return the question if it is a per-product number question, else raise

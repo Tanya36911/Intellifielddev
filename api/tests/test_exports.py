@@ -287,3 +287,82 @@ def test_responses_bad_grain_400(client, login):
     resp = client.get("/export/responses", headers=_auth(login("dana@lumenbeauty.com")),
                       params={"grain": "weird"})
     assert resp.status_code == 400, resp.text
+
+
+# ----- payroll export -----
+
+def _period_with_entries(client, login, start, end, name=None):
+    """As admin, create a pay period; as Rico (Central) and Marcus (Bay Area)
+    create their own entries. Returns the period id. Fully deterministic."""
+    dana = login("dana@lumenbeauty.com")
+    body = {"start_date": start, "end_date": end}
+    if name:
+        body["name"] = name
+    pid = client.post("/pay-periods", headers=_auth(dana), json=body).json()["id"]
+    client.post("/time-entries", headers=_auth(login("rico@lumenbeauty.com")),
+                json={"period_id": pid, "store_min": 100, "reset_min": 10,
+                      "drive_min": 20, "miles": 5})
+    client.post("/time-entries", headers=_auth(login("marcus@lumenbeauty.com")),
+                json={"period_id": pid, "store_min": 200, "reset_min": 20,
+                      "drive_min": 30, "miles": 9})
+    return pid
+
+
+def test_payroll_manager_sees_only_branch(client, login):
+    pid = _period_with_entries(client, login, "2026-07-01", "2026-07-15", "July 1-15")
+    rows = client.get("/export/payroll", headers=_auth(login("sarah@lumenbeauty.com")),
+                      params={"period_id": pid}).json()["rows"]
+    assert {r["rep_email"] for r in rows} == {"rico@lumenbeauty.com"}  # Marcus (Bay Area) excluded
+    r0 = rows[0]
+    assert r0["period_name"] == "July 1-15"
+    assert r0["start_date"] == "2026-07-01"
+    assert r0["end_date"] == "2026-07-15"
+    assert r0["period_status"] == "open"
+    assert r0["rep_name"] == "Rico Vance"
+    assert r0["rep_node_name"] == "Chicago"
+    assert r0["miles"] == 5.0
+    assert r0["mgr_status"] == "pending"
+    assert r0["sealed"] is False
+
+
+def test_payroll_rep_sees_only_own(client, login):
+    pid = _period_with_entries(client, login, "2026-07-16", "2026-07-31")
+    rows = client.get("/export/payroll", headers=_auth(login("marcus@lumenbeauty.com")),
+                      params={"period_id": pid}).json()["rows"]
+    assert {r["rep_email"] for r in rows} == {"marcus@lumenbeauty.com"}
+
+
+def test_payroll_admin_sees_all(client, login):
+    pid = _period_with_entries(client, login, "2026-08-01", "2026-08-15")
+    rows = client.get("/export/payroll", headers=_auth(login("dana@lumenbeauty.com")),
+                      params={"period_id": pid}).json()["rows"]
+    assert {"rico@lumenbeauty.com", "marcus@lumenbeauty.com"} <= {r["rep_email"] for r in rows}
+
+
+def test_payroll_unpinned_rep_exports_own_with_blank_node(client, login):
+    dana = login("dana@lumenbeauty.com")
+    pid = client.post("/pay-periods", headers=_auth(dana),
+                      json={"start_date": "2026-09-01", "end_date": "2026-09-15"}).json()["id"]
+    newbie = login("newbie@lumenbeauty.com")
+    client.post("/time-entries", headers=_auth(newbie),
+                json={"period_id": pid, "store_min": 60})
+    rows = client.get("/export/payroll", headers=_auth(newbie),
+                      params={"period_id": pid}).json()["rows"]
+    assert len(rows) == 1
+    assert rows[0]["rep_email"] == "newbie@lumenbeauty.com"
+    assert rows[0]["rep_node_name"] is None  # unpinned -> blank, but row is present
+
+
+def test_payroll_off_company_403(client, login):
+    resp = client.get("/export/payroll", headers=_auth(login("avery@acme.com")))
+    assert resp.status_code == 403, resp.text
+
+
+def test_payroll_csv_parity(client, login):
+    pid = _period_with_entries(client, login, "2026-10-01", "2026-10-15")
+    dana = login("dana@lumenbeauty.com")
+    j = client.get("/export/payroll", headers=_auth(dana), params={"period_id": pid}).json()
+    grid = _grid(client.get("/export/payroll", headers=_auth(dana),
+                            params={"period_id": pid, "format": "csv"}))
+    assert grid[0] == list(j["rows"][0].keys())
+    assert len(grid) - 1 == j["count"]

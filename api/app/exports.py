@@ -138,3 +138,23 @@ def export_responses(
     columns = RESPONSE_SUMMARY_COLUMNS if grain == "summary" else RESPONSE_SKU_COLUMNS
     filename = f"intelli_responses_{grain}_{_date_tag(date_from)}_{_date_tag(date_to)}.csv"
     return _deliver(fmt, columns, rows, filename)
+
+
+@router.get("/payroll")
+def export_payroll(
+    fmt: str = Query("json", alias="format"),
+    period_id: UUID | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    node_id: UUID | None = None,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    claims: dict = Depends(current_claims),
+    _payroll: dict = Depends(require_payroll),  # 403 if the company has payroll off
+):
+    _check_format(fmt)
+    rows = repo.export_payroll(claims["sub"], claims["role"], period_id,
+                               date_from, date_to, node_id)
+    if rows is None:
+        raise HTTPException(status_code=404, detail="Node not found in your scope")
+    tag = f"period-{period_id}" if period_id is not None else f"{_date_tag(date_from)}_{_date_tag(date_to)}"
+    return _deliver(fmt, PAYROLL_COLUMNS, rows, f"intelli_payroll_{tag}.csv")
