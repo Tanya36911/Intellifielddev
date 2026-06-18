@@ -1286,6 +1286,10 @@ class ScopedRepo:
                 # has rn.path NULL, so NULL like ... is false and they are excluded
                 # from a manager/admin view (matching list_entries' inner-join);
                 # an unpinned manager/admin (scope None) sees nobody.
+                # Unpinned manager/admin sees nobody (matches the rest of
+                # ScopedRepo); avoids relying on `path like NULL` returning no rows.
+                if scope_filter_path is None:
+                    return []
                 clauses.append("rn.path like :scope || '%'")
                 params["scope"] = scope_filter_path
             if period_id is not None:
