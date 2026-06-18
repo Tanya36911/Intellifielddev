@@ -67,6 +67,16 @@ The one deliberate exception is a "reopen one rep" action that unlocks a single
 rep's hours so they can be corrected, then re-sealed, with every reopen written
 into the audit log.
 
+As of Phase 4d, the backend can hand the data back out
+([api/app/exports.py](api/app/exports.py)). You can export the store survey
+answers (responses), the logged hours (payroll), and the headline compliance
+summary, either as a spreadsheet file (CSV) you download or as the same data in
+plain data form (JSON), chosen with a `?format=` setting. You can narrow what
+comes out by date, survey, chain, a spot on the org tree, and product. Like
+everything else it is branch-scoped (a manager only ever gets their own branch),
+it reuses the same login wristband, the pass/fail is worked out live, and it
+adds no new database tables.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

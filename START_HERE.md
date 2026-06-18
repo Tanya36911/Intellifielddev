@@ -97,7 +97,9 @@ its own stores, and a manager only ever sees their own branch.
 
 **Phase 4c - payroll (done):** Each company can switch on payroll. An admin opens a pay period, reps log their own hours (store, reset, drive minutes, miles), managers approve their branch's hours, and at the cutoff the admin seals the period so the numbers lock. The one exception is a deliberate, logged "reopen one rep" (their hours unlock, get fixed, and the action is written into a permanent logbook). Backend only, no screen yet. Proven by the test robot: a sealed period can't be edited or re-approved, a reopen frees exactly one rep and is logged, and a company with payroll off is refused.
 
-**What's NEXT:** Phase 4d (export).
+**Phase 4d - export (done):** You can now get the field data out of the app. Three new addresses hand back the store survey answers (responses), the logged hours (payroll), and the headline compliance summary, either as a spreadsheet file (CSV) you download or as the same data in plain data form (JSON), chosen with a `?format=` setting. You can narrow what comes out by date, survey, chain, a spot on the org tree, and product. Like everything else it is branch-scoped (a manager only ever gets their own branch), it reuses the same login wristband, and it adds no new database tables. Backend only, no screen yet. Proven by the test robot: the CSV and the JSON always match, both response levels work, the pass/fail is worked out live, every filter narrows correctly, payroll stays role-scoped and is refused for a company with payroll off, and a node outside your branch is refused.
+
+**What's NEXT:** Phase 5 (Field app + offline sync).
 
 ---
 
@@ -196,6 +198,7 @@ intelli-app/
 │   │   ├── compliance.py Pass/fail brain: given an answer + a rule, returns pass/fail (Phase 4a)
 │   │   ├── analytics.py  Read-only reports (compliance, out-of-stock, trend)
 │   │   ├── payroll.py   Pay periods, hours, the seal/reopen lock, audit log
+│   │   ├── exports.py   Data exports (responses, payroll, compliance) as CSV or JSON (Phase 4d)
 │   │   └── seed.py      Creates the demo companies, tree, users, products, surveys, responses
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
@@ -266,9 +269,10 @@ project memory, so a new chat in this folder already knows them.)
 - Surveys + frozen versions + assignments + pass rules: DONE and tested.
 - Responses + live pass/fail scoring: DONE and tested.
 - Analytics (compliance %, out-of-stock by product, trends): DONE and tested.
-- Payroll (pay periods, logged hours, manager approval, seal/reopen lock, audit log): DONE and tested
-  (backend robot green: 132 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, 3b, 4a, 4b, and 4c complete. NEXT: Phase 4d (export).
+- Payroll (pay periods, logged hours, manager approval, seal/reopen lock, audit log): DONE and tested.
+- Export (responses, payroll, compliance as CSV or JSON, branch-scoped): DONE and tested
+  (backend robot green: 157 backend checks, plus 27 frontend checks).
+- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete. NEXT: Phase 5 (Field app + offline sync).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

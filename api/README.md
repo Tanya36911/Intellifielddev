@@ -52,8 +52,8 @@ The starting point. When the backend boots, this file runs first. It:
 - lists the two health-check addresses (`/health` and `/health/db`),
 - plugs in each feature router (login from `auth.py`, the org tree from
   `hierarchy.py`, the catalog from `catalog.py`, surveys from `surveys.py`,
-  responses from `responses.py`, analytics from `analytics.py`, and payroll
-  from `payroll.py`),
+  responses from `responses.py`, analytics from `analytics.py`, payroll
+  from `payroll.py`, and the data exports from `exports.py`),
 - and sets the "guest list" (called CORS) that says which web addresses are
   allowed to call the backend. Right now that is the local Admin app.
 
@@ -231,6 +231,34 @@ from the existing response rows each time you ask.
 - `GET /analytics/trend` returns a product's shelf count over time (all
   responses, not just the latest), with a per-UTC-day average so you can see
   whether facings are improving or dropping.
+
+### app/exports.py  (the export API)
+Defines three read-only export endpoints that let a person, or a reporting tool,
+get the field data out of the app, all branch-scoped through the ScopedRepo and
+all using the same login wristband every other endpoint uses (so there is no new
+sign-in and no new tables).
+
+- `GET /export/responses` hands back the store survey answers, either one row
+  per submission (the summary, with the live pass/fail verdict and a count of
+  passed and failed questions) or one row per product per question (the per-SKU
+  detail, with the raw answer and its own pass/fail), narrowed by date range,
+  survey, chain, a spot on the org tree, and product.
+- `GET /export/payroll` hands back the logged hours, one row per time entry,
+  narrowed by pay period or date range or branch. It is gated by the per-company
+  payroll switch (`require_payroll`, a 403 for companies where payroll is off)
+  and role-scoped exactly like the payroll screens: a rep gets only their own
+  hours, a manager their branch, an admin everything.
+- `GET /export/compliance` hands back the same headline completion % and pass %
+  numbers as the analytics dashboard, as a flat list of rows, so the export and
+  the dashboard can never disagree.
+
+Each address takes a `?format=` choice: `format=csv` streams a spreadsheet file
+you can download, and `format=json` (the default) returns the same rows as data.
+The CSV and the JSON are built from one shared column list per dataset, so they
+always carry the same columns in the same order. Pass/fail is worked out live
+through the one `compliance.py` brain, never stored, and "not scored" shows as a
+blank cell, never a false. No new database tables: this only reads what Phases
+4a, 4b, and 4c already store.
 
 ### app/seed.py  (puts the demo data in)
 Creates two demo companies and their org trees so you can log in and so the

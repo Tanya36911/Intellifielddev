@@ -203,6 +203,40 @@ What it proves: a sealed period locks all entries against edits and re-approvals
 a reopen frees exactly one rep's hours and writes a permanent logbook entry,
 and a company with payroll switched off is turned away at the door.
 
+### Check 9: Pull the data out (Phase 4d export, at /docs)
+This proves you can get the field data out of the app as a spreadsheet or as
+plain data, with no coding. At http://localhost:8000/docs, log in as Dana
+(admin, sees all of Lumen): open `POST /auth/login`, click "Try it out", enter
+`dana@lumenbeauty.com` / `demo1234`, click Execute. Copy the `token` from the
+response, click the green **Authorize** button at the top right, paste the
+token, click Authorize.
+
+1. `GET /export/responses` with no filters and the default `format` (which is
+   `json`).
+   - GOOD: you get back `{ "rows": [...], "count": N }`, one row per stored
+     survey answer in your branch, each with a pass/fail verdict.
+2. `GET /export/responses` again, this time set `format` to `csv`.
+   - GOOD: the page offers you a file to download (a spreadsheet, called a CSV).
+     It is the exact same rows as step 1, just as a file you can open in Excel
+     or Google Sheets. `format=csv` gives the download, `format=json` gives the
+     data on screen, and both always carry the same columns in the same order.
+3. To see that a manager only ever gets their own branch: log out and log in as
+   `sarah@lumenbeauty.com` / `demo1234` (a manager pinned to the Central
+   region), authorize, then `GET /export/responses` again.
+   - GOOD: Sarah's export only shows stores in her own branch, never a sibling
+     region's stores and never another company's.
+
+You can do the same with `GET /export/payroll` (the logged hours) and
+`GET /export/compliance` (the headline completion and pass numbers).
+
+To confirm the automated gate: run `pnpm test:api` (backend must be running).
+GOOD looks like `157 passed` at the bottom. If anything goes red, copy the text
+to me.
+
+What it proves: the same field data can be pulled out as a CSV file or as JSON
+from one address, the two always match, and the export stays inside the caller's
+own branch.
+
 ---
 
 ## "Is the code in the wrong place?"

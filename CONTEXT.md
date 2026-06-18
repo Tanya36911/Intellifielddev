@@ -29,11 +29,11 @@ fast-follow, never the headline.
 - [~] **Phase 3** - catalog + surveys + versions + assignments. Split into 3a + 3b.
   - [x] **Phase 3a** - catalog (skus): company-wide list, admin-only add/edit, company isolation. Gate met (tests green).
   - [x] **Phase 3b** - surveys + immutable versions + assignments + structured pass conditions. Gate met (tests green).
-- [~] **Phase 4** - responses + analytics + payroll + export. Split into 4a + 4b + 4c + 4d.
+- [x] **Phase 4** - responses + analytics + payroll + export. Split into 4a + 4b + 4c + 4d.
   - [x] **Phase 4a** - responses + live pass/fail scoring. Gate met (tests green).
   - [x] **Phase 4b** - analytics (compliance %, OOS by SKU, trends). Gate met (tests green).
   - [x] **Phase 4c** - payroll. Gate met (tests green).
-  - [ ] **Phase 4d** - export.
+  - [x] **Phase 4d** - export (CSV + read-only JSON feed). Gate met (tests green).
 - [ ] **Phase 5** - Field app + offline sync.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
 
@@ -134,6 +134,26 @@ fast-follow, never the headline.
   answer at Oakland and a dated SF trend point). GATE GREEN: 111 backend tests + 27 frontend.
   Phase 4b COMPLETE; 4c (payroll) next.
 - 2026-06-17: Phase 4c - payroll engine. Migration adds three tables: pay_periods (a date range with a cutoff and an open/sealed status), time_entries (one row per rep per period: store/reset/drive minutes, miles, a manager-approval status, and a per-entry locked flag), and audit (a permanent logbook of sensitive actions). A new column payroll_enabled on tenants gates the whole feature per company. New api/app/payroll.py with a require_payroll guard: create/list pay periods (admin), log/edit your own hours (rep), approve/reject hours within your branch (manager/admin), seal a period (admin, locks all entries), reopen one rep's hours (admin, always audit-logged), and read the audit log (admin). The per-entry locked flag is the single source of truth for the lock; seal is re-callable so the reopen->fix->re-seal cycle works without special state. Manual seal in v1 (auto-clock deferred). ScopedRepo gained a payroll section (periods company-wide; entries role-scoped by the rep's pin). Seed turns payroll on for Lumen, off for Acme, and adds a rep under Central plus an open period with entries. Gate GREEN: 132 backend tests + 27 frontend. Phase 4c COMPLETE; 4d (export) next.
+- 2026-06-18: Phase 4d - export (CSV + a matching read-only JSON feed over responses, payroll, and a
+  compliance summary). No new database tables. A new api/app/exports.py router adds three GET
+  endpoints, each returning either a downloadable spreadsheet (?format=csv, a streamed CSV) or the
+  same rows as data (?format=json, the default), so the file and the data feed are literally the same
+  rows; one ordered column list per dataset drives both the CSV header and the JSON keys so they
+  cannot drift. GET /export/responses comes at two levels: a summary (one row per stored response,
+  with the live overall verdict and counts of passed/failed questions) and a per-SKU detail (one row
+  per stored answer item, with the raw value and its live item pass/fail); both filterable by date,
+  survey, chain, node, and product, all ANDed on top of the scope filter, with multi-choice answers
+  kept as a real list in JSON and as compact JSON text in one CSV cell, and "not scored" rendered as
+  a blank cell, never false. GET /export/payroll is role-scoped (rep -> own, manager -> branch,
+  admin -> all) and gated by the per-company payroll switch (require_payroll, 403 when off), with a
+  LEFT join so an unpinned rep still exports with a blank node name. GET /export/compliance reuses the
+  4b assignment_compliance roll-up unchanged, so the export and the dashboard never disagree
+  (including pass_pct staying blank, not 0, when nothing is scored). All read-only and branch-scoped
+  through the shared ScopedRepo (a new export section: export_responses / export_payroll /
+  export_compliance), reusing the same login wristband, so no new tables and no new sign-in; a node
+  outside scope is a 404 and an unpinned caller gets an empty export. Seed unchanged (the tests build
+  their own surveys/periods where determinism matters). Gate GREEN: 157 backend tests + 27 frontend.
+  Phase 4d COMPLETE; Phase 4 done. NEXT: Phase 5 (Field app + offline sync).
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR
