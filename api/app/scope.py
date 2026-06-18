@@ -1128,6 +1128,17 @@ class ScopedRepo:
             ).mappings().all()
         return [dict(r) for r in rows]
 
+    # ----- export (read-only flat rows for CSV + the read API; reuses the
+    # existing scoped readers, so the export can never widen the scope) -----
+
+    def export_compliance(self, node_id=None):
+        """Flat per-assignment compliance roll-up for export. Reuses
+        assignment_compliance unchanged, so the export and the dashboard never
+        disagree (including pass_pct/completion_pct being None, not 0, when their
+        denominator is 0). Returns None only if node_id is out of scope (-> 404);
+        an unpinned caller gets []."""
+        return self.assignment_compliance(node_id)
+
 
 def _count_question(questions, question_id):
     """Return the question if it is a per-product number question, else raise

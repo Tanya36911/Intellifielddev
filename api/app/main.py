@@ -14,6 +14,7 @@ from .surveys import router as surveys_router
 from .responses import router as responses_router
 from .analytics import router as analytics_router
 from .payroll import router as payroll_router
+from .exports import router as exports_router
 from .db import db_ok
 
 app = FastAPI(title="Intelli API", version="0.0.1")
@@ -34,6 +35,7 @@ app.include_router(surveys_router)
 app.include_router(responses_router)
 app.include_router(analytics_router)
 app.include_router(payroll_router)
+app.include_router(exports_router)
 
 
 @app.get("/health")
