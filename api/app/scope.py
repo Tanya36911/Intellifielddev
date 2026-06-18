@@ -947,11 +947,26 @@ class ScopedRepo:
             ).mappings().first()
         return dict(row) if row else None
 
-    def create_time_entry(self, period_id, user_id, fields) -> dict | None:
+    def create_time_entry(self, period_id, user_id, fields, idempotency_key=None) -> dict | None:
         """The caller's own entry for an OPEN period. None if the period is not
         the company's (-> 404); PeriodSealedError if sealed; EntryExistsError if
         the rep already has one."""
         with engine.begin() as conn:
+            # Idempotency: a re-sent create carrying a ticket we have already seen
+            # returns the original entry (200), before the sealed/exists checks, so
+            # a genuine re-send is not mistaken for a duplicate. Same un-scoped
+            # _ENTRY_COLS shape as a fresh insert.
+            if idempotency_key is not None:
+                prior = conn.execute(
+                    text(f"select {self._ENTRY_COLS} from time_entries "
+                         "where tenant_id = cast(:tid as uuid) "
+                         "and idempotency_key = cast(:idem as uuid) "
+                         "and user_id = cast(:uid as uuid)"),
+                    {"tid": str(self.tenant_id), "idem": str(idempotency_key),
+                     "uid": str(user_id)},
+                ).mappings().first()
+                if prior is not None:
+                    return dict(prior)
             period = conn.execute(
                 text("select status from pay_periods where id = cast(:pid as uuid) "
                      "and tenant_id = cast(:tid as uuid)"),
@@ -972,12 +987,14 @@ class ScopedRepo:
                 raise EntryExistsError()
             row = conn.execute(
                 text("insert into time_entries (tenant_id, period_id, user_id, store_min, "
-                     "reset_min, drive_min, miles) values (cast(:tid as uuid), cast(:pid as uuid), "
-                     "cast(:uid as uuid), :sm, :rm, :dm, :mi) "
+                     "reset_min, drive_min, miles, idempotency_key) values (cast(:tid as uuid), "
+                     "cast(:pid as uuid), cast(:uid as uuid), :sm, :rm, :dm, :mi, "
+                     "cast(:idem as uuid)) "
                      f"returning {self._ENTRY_COLS}"),
                 {"tid": str(self.tenant_id), "pid": str(period_id), "uid": str(user_id),
                  "sm": fields["store_min"], "rm": fields["reset_min"],
-                 "dm": fields["drive_min"], "mi": fields["miles"]},
+                 "dm": fields["drive_min"], "mi": fields["miles"],
+                 "idem": str(idempotency_key) if idempotency_key is not None else None},
             ).mappings().first()
         return dict(row)
 

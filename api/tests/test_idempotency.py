@@ -145,3 +145,56 @@ def test_responses_keyed_first_submit_still_scoped_and_validated(client, login):
                   [{"question_id": "q1", "sku_id": str(rose), "value": "notnum"}],
                   idem=str(uuid.uuid4()))
     assert bad.status_code == 400, bad.text          # ticket does not bypass validation
+
+
+def _open_period(client, dana):
+    return client.post("/pay-periods", headers=_auth(dana),
+                       json={"start_date": "2026-12-01", "end_date": "2026-12-15",
+                             "name": "Idem Hours"}).json()["id"]
+
+
+def _post_entry(client, token, pid, idem=None, store_min=120):
+    body = {"period_id": pid, "store_min": store_min, "reset_min": 0,
+            "drive_min": 0, "miles": 0}
+    if idem is not None:
+        body["idempotency_key"] = idem
+    return client.post("/time-entries", headers=_auth(token), json=body)
+
+
+def test_hours_same_ticket_returns_original(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rico = login("rico@lumenbeauty.com")
+    pid = _open_period(client, dana)
+    tk = str(uuid.uuid4())
+    e1 = _post_entry(client, rico, pid, idem=tk)
+    e2 = _post_entry(client, rico, pid, idem=tk)
+    assert e1.status_code == 200 and e2.status_code == 200, (e1.text, e2.text)
+    assert e1.json()["id"] == e2.json()["id"]
+    assert e1.json() == e2.json()                      # identical body (miles a number)
+    assert isinstance(e1.json()["miles"], (int, float))
+    assert "idempotency_key" not in e1.json()
+    rico_id = _scalar("select id from users where email = 'rico@lumenbeauty.com'")
+    n = _scalar("select count(*) from time_entries where period_id = cast(:p as uuid) "
+                "and user_id = cast(:u as uuid)", p=str(pid), u=str(rico_id))
+    assert n == 1
+    k = _scalar("select idempotency_key from time_entries where period_id = cast(:p as uuid) "
+                "and user_id = cast(:u as uuid)", p=str(pid), u=str(rico_id))
+    assert str(k) == tk                                # the row carries the sent ticket
+
+
+def test_hours_different_ticket_same_period_409(client, login):
+    dana = login("dana@lumenbeauty.com")
+    rico = login("rico@lumenbeauty.com")
+    pid = _open_period(client, dana)
+    e1 = _post_entry(client, rico, pid, idem=str(uuid.uuid4()))
+    assert e1.status_code == 200, e1.text
+    e2 = _post_entry(client, rico, pid, idem=str(uuid.uuid4()))   # different ticket, same (period, rep)
+    assert e2.status_code == 409, e2.text              # genuine second entry still blocked
+
+
+def test_hours_payroll_off_company_403(client, login):
+    avery = login("avery@acme.com")                    # Acme: payroll off
+    r = client.post("/time-entries", headers=_auth(avery),
+                    json={"period_id": str(uuid.uuid4()), "store_min": 10,
+                          "idempotency_key": str(uuid.uuid4())})
+    assert r.status_code == 403, r.text                # gate runs before ticket logic

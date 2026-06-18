@@ -84,6 +84,7 @@ class TimeEntryFields(BaseModel):
 
 class TimeEntryCreate(TimeEntryFields):
     period_id: UUID
+    idempotency_key: UUID | None = None
 
 
 def _fields(body: TimeEntryFields) -> dict:
@@ -99,7 +100,8 @@ def create_time_entry(
     _payroll: dict = Depends(require_payroll),
 ) -> dict:
     try:
-        result = repo.create_time_entry(body.period_id, claims["sub"], _fields(body))
+        result = repo.create_time_entry(body.period_id, claims["sub"], _fields(body),
+                                        body.idempotency_key)
     except PeriodSealedError:
         raise HTTPException(status_code=409, detail="This pay period is sealed")
     except EntryExistsError:
