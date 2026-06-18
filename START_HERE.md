@@ -108,8 +108,14 @@ which works even with no signal) is large, so it is being built in small pieces.
   original record instead of making a duplicate. Nothing that was already working
   changes. Backend only, no screen yet.
 
-**What's NEXT:** the rest of Phase 5 (5-BE-b batch sync, 5-BE-c photo storage,
-then the Field mobile app itself).
+**What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we
+pivot to building the **Admin web screens** over the backend that already exists,
+so stakeholders can finally see the product on a screen. The backend is done and
+proven, but the only screen so far is login plus a near-empty welcome page. So the
+next steps are screens, in demo order: the app shell + a real Home, then the
+analytics/compliance dashboard, then catalog, survey builder, responses, payroll,
+and the org tree. The rest of Phase 5 (the Field mobile app + offline sync) is
+**resequenced to after the web screens**, because it is the long, hard, last push.
 
 ---
 
@@ -284,10 +290,13 @@ project memory, so a new chat in this folder already knows them.)
 - Idempotency keys (the "claim ticket" so an offline phone can safely re-send a
   survey or hours without duplicating): DONE and tested. This is Phase 5's first
   piece (backend robot green: 169 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done). Phase 5 (Field
-  app + offline sync) is underway: its first piece, idempotency keys (5-BE-a), is
-  done. NEXT: 5-BE-b (batch sync), then 5-BE-c (photo storage), then the Field
-  mobile app.
+- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done), plus Phase 5's
+  first piece (5-BE-a idempotency keys). 169 backend checks + 27 frontend, green.
+- **NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)): build the Admin
+  web screens over the existing backend, so stakeholders see results.** In order:
+  app shell + Home, analytics/compliance dashboard, catalog, survey builder,
+  responses, payroll, org tree. The Field mobile app + offline sync (the rest of
+  Phase 5) is resequenced to after the web screens.
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

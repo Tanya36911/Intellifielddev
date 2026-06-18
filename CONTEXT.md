@@ -34,7 +34,16 @@ fast-follow, never the headline.
   - [x] **Phase 4b** - analytics (compliance %, OOS by SKU, trends). Gate met (tests green).
   - [x] **Phase 4c** - payroll. Gate met (tests green).
   - [x] **Phase 4d** - export (CSV + read-only JSON feed). Gate met (tests green).
-- [~] **Phase 5** - Field app + offline sync. Split into a backend sync-contract track and a mobile track.
+- [ ] **Web Screens track (NOW the priority - see ROADMAP.md)** - the Admin web
+  screens over the existing backend, built in demo-value order so stakeholders see
+  results. Almost all are buildable on today's endpoints; a few need a small
+  backend brick first (users, tenant settings, node-edit).
+  - [ ] **W1** app shell + Home dashboard; [ ] **W2** analytics/compliance dashboard;
+    [ ] **W3** catalog; [ ] **W4** survey builder + assignments; [ ] **W5** responses
+    + detail; [ ] **W6** payroll; [ ] **W7** org hierarchy (view).
+- [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
+  web screens: it is the long, hard, last push, so the visible web screens come
+  first. Split into a backend sync-contract track and a mobile track.
   - Backend track: [x] **5-BE-a** idempotency keys (claim tickets on the two rep submit endpoints, the safety primitive the offline queue depends on); [ ] **5-BE-b** batch sync; [ ] **5-BE-c** photo storage.
   - Mobile track: [ ] **5-M-a** Expo skeleton; [ ] **5-M-b**; [ ] **5-M-c**; [ ] **5-M-d** on-device DB + sync engine.
 - [ ] **AI** - shelf-scan CV pipeline (separate runway, last).
@@ -177,7 +186,16 @@ fast-follow, never the headline.
   submit still respects scope (404) and validation (400); hours replay returns the original and the row
   carries the sent ticket; a different ticket for the same (period, rep) still 409s; a payroll-off
   company still 403s before any ticket logic. Gate GREEN: 169 backend tests + 27 frontend. Phase 5-BE-a
-  COMPLETE. NEXT: 5-BE-b (batch sync), then 5-BE-c (photo storage), then the Expo mobile app (5-M-*).
+  COMPLETE.
+- 2026-06-18: ROADMAP REVAMP (see ROADMAP.md) - screens first, so stakeholders see results. The
+  backend is comprehensive and proven (Phases 1-4d + 5-BE-a, 169 tests) but the only screen is login
+  + a near-empty welcome page. So the priority pivots to building the Admin web screens over the
+  existing backend, in demo-value order (W1 app shell + Home, W2 analytics/compliance dashboard, W3
+  catalog, W4 survey builder + assignments, W5 responses + detail, W6 payroll, W7 hierarchy view).
+  Almost all are buildable on today's endpoints; a few need a small backend brick first (users,
+  tenant settings, node-edit). Phase 5 (Field mobile app + offline sync) is RESEQUENCED to after the
+  web screens (it is the long, hard, last push); nothing built is discarded. NEXT: W1 (app shell +
+  Home), then W2 (analytics dashboard), each via the usual mockup-approve-then-build flow.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR
