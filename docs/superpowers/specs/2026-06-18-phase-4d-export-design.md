@@ -87,38 +87,97 @@ list of plain dict rows ready to render as CSV or JSON:
 
 - `export_responses(grain, date_from=None, date_to=None, survey_id=None,
   chain=None, node_id=None, sku_id=None)` - flat response rows for the caller's
-  branch (or `node_id`'s subtree, within scope).
-  - `grain="summary"`: one row per completed response: `response_id`,
-    `store_node_id`, `store_name`, `chain`, `survey_id`, `survey_name`,
-    `survey_version_id`, `version_number`, `user_id`, `submitted_at`, `online`,
-    `overall` (the live overall verdict: `true`/`false`/blank), `num_passed`,
-    `num_failed` (item counts from the live scoring).
-  - `grain="sku"`: one row per atomic answer item: `response_id`,
+  branch (or `node_id`'s subtree, within scope). **`grain="summary"` returns
+  EVERY stored response in scope (the full audit trail), not the latest per
+  store.** This is deliberately different from the compliance roll-up (which is
+  latest-per-store), so the summary row count is not meant to match the
+  completion numbers; the summary export is the raw record, the compliance export
+  is the rolled-up view. (There is no draft/completed state: a `responses` row
+  exists only after a successful submission, so "every response" means every row.)
+  - `grain="summary"`: one row per response: `response_id`, `store_node_id`,
+    `store_name`, `chain`, `survey_id`, `survey_name`, `survey_version_id`,
+    `version_number`, `user_id`, `submitted_at`, `online`, `overall` (the live
+    overall verdict, `true`/`false`/blank), `num_passed`, `num_failed` (the count
+    of this response's countable **question** verdicts that are True and that are
+    False respectively; a question with no pass rule or only blank answers is not
+    counted, so it lands in neither, exactly like `overall`).
+  - `grain="sku"`: one row per **stored** atomic answer item: `response_id`,
     `store_node_id`, `store_name`, `chain`, `survey_name`, `version_number`,
     `submitted_at`, `question_id`, `sku_id`, `sku_line`, `sku_variant`, `value`
-    (the raw answer), `item_pass` (the live per-item verdict: `true`/`false`/
-    blank).
-  - Filters: `date_from`/`date_to` on `submitted_at` (UTC, inclusive);
-    `survey_id` (all its versions; omit for all surveys); `chain` (store
-    attribute); `node_id` (a node in the caller's scope; its store subtree);
-    `sku_id` (only meaningful at `grain="sku"`). Pass/fail is computed by the
-    existing `evaluate_response`, batched (fetch each version's questions once
-    and the relevant items in bulk), never re-expressed as SQL.
-  - Returns `None` if `node_id` is given but out of scope (-> 404).
+    (the raw answer), `item_pass` (the live per-item verdict, `true`/`false`/
+    blank). A non-per-product answered question is stored with `sku_id` NULL, so
+    its row has blank `sku_id`/`sku_line`/`sku_variant`. Blank/skipped answers are
+    never stored (4a drops them), so they produce no row at all; `item_pass` is
+    blank only for a stored value whose question has no applicable pass rule.
+  - Scoring uses the FULL `evaluate_response` output (its `items` with a per-item
+    `pass`, and its `questions` verdict map and `overall`), not the
+    `_overall_for` helper (which keeps only `overall`). Because a no-`survey_id`
+    export spans many `survey_versions`, the algorithm is: fetch the filtered
+    response rows with their `survey_version_id`; group response ids by version;
+    per version load its `questions` once (via `_version_questions`) plus that
+    version's `response_items` in bulk; run `evaluate_response` per response. The
+    pass rules are never re-expressed as SQL.
+  - Filters, every one ANDed on top of the unconditional `tenant_id = :tid AND
+    n.path like scope_path || '%'` filter (and, when `node_id` is given, the
+    node's subtree path), never as a standalone predicate:
+    - `date_from`/`date_to`: `datetime` params, inclusive on `submitted_at`
+      (`submitted_at >= :df AND submitted_at <= :dt`, the same idiom as
+      `facings_trend`). A bare date means midnight UTC (so a whole-day pull passes
+      the next day, or a timestamp, as `date_to`); the filename renders the bound
+      as `YYYY-MM-DD` in UTC.
+    - `survey_id`: matches all versions of that survey, by joining
+      `response.survey_version_id -> survey_versions.survey_id` within the tenant
+      (responses carry only the version id); omit for all surveys.
+    - `chain`: an extra `AND nodes.chain = :chain`. Chain is a free store
+      attribute that does not respect the pin (the same chain exists in other
+      branches and other tenants), so it MUST stay layered on the scope filter,
+      never replace it.
+    - `node_id`: a node in the caller's scope; its store subtree.
+    - `sku_id`: applies only at `grain="sku"` (filters `response_items.sku_id`).
+      At `grain="summary"` it is ignored (summary has no per-SKU dimension), so
+      `summary` + `sku_id` returns the same rows as `summary` alone.
+  - Returns `None` only if `node_id` is given but out of scope (-> 404). An
+    unpinned caller (`scope_path` is None) returns an empty list (200, zero rows),
+    never a 404 and never a leak, mirroring `list_responses`.
 - `export_payroll(caller_user_id, caller_role, period_id=None, date_from=None,
   date_to=None, node_id=None)` - one row per time entry the caller is allowed to
   see: `entry_id`, `period_id`, `period_name`, `start_date`, `end_date`,
   `period_status`, `user_id`, `rep_name`, `rep_email`, `store_min`, `reset_min`,
-  `drive_min`, `miles`, `mgr_status`, `sealed`, `rep_node_name`. Role-scoped like
-  `list_entries` (rep -> own; manager/admin -> reps pinned within scope).
-  Filters: `period_id`; `date_from`/`date_to` (periods overlapping the range);
-  `node_id` (branch within scope). Returns `None` if `node_id` is out of scope.
+  `drive_min`, `miles`, `mgr_status`, `sealed`, `rep_node_name`. This is a **new,
+  distinct query**, not a wrapper over `list_entries`: it reuses only that
+  method's row-visibility rule, but adds joins `list_entries` does not perform.
+  - **Row visibility (reused rule):** a **rep** sees only their own entries
+    (`user_id = caller`); a **manager/admin** sees entries for reps whose pinned
+    node is within scope (join entry -> the rep's `assignments` -> `nodes`, filter
+    `path like scope_path || '%'`, with `a.tenant_id` on the join). The
+    `te.tenant_id = :tid` filter is ALWAYS applied (it does not depend on the
+    optional period lookup), and a manager/admin with no pin (`scope_path` None)
+    gets an empty list, exactly as `list_entries` does today.
+  - **New joins for the wider columns:** `pay_periods` (for `period_name`,
+    `start_date`, `end_date`, `period_status`), `users` (for `rep_name`,
+    `rep_email`; the `users` table carries `name`/`email`), and a **LEFT** join
+    rep -> `assignments` -> `nodes` for `rep_node_name`. The LEFT join matters: an
+    unpinned rep (e.g. the seeded `Newbie NoPin`) must still export their own rows
+    with a blank `rep_node_name`, not be dropped. `miles` keeps the existing
+    `miles::float` cast so it serializes as a JSON number, not a string.
+  - **Filters:** `period_id` (one period); `date_from`/`date_to` select periods
+    overlapping the range, predicate `pp.start_date <= :date_to::date AND
+    pp.end_date >= :date_from::date` (inclusive; an omitted bound leaves that side
+    open; compared as dates against the DATE columns, since `time_entries` has no
+    per-day date); `node_id` (a branch within scope). All are ANDed on top of the
+    tenant + role-scope filter.
+  - Returns `None` only if `node_id` is given but out of scope (-> 404).
 - `export_compliance(node_id=None)` - the flat per-assignment roll-up, reusing
   `assignment_compliance(node_id)` unchanged and returning its rows
   (`assignment_id`, `survey_id`, `survey_name`, `survey_version_id`,
   `target_node_id`, `target_node_name`, `expected`, `responded`, `scored`,
   `passed`, `completion_pct`, `pass_pct`). So the export and the 4b dashboard can
-  never disagree. Returns `None` if `node_id` is out of scope.
+  never disagree, including that `completion_pct`/`pass_pct` are **blank (null),
+  never 0**, when their denominator is 0 (the `_pct` zero rule). The CSV must
+  render that `None` as an empty cell, not `0`, or the export would disagree with
+  the dashboard on exactly the not-scored rows. Returns `None` only if `node_id`
+  is out of scope (-> 404); an unpinned caller (`scope_path` None) returns an
+  empty list (200), exactly like `GET /analytics/compliance`.
 
 ### The web addresses (a new router, `api/app/exports.py`)
 All read-only, branch-scoped (a node outside the caller's scope returns 404).
@@ -132,19 +191,44 @@ Each takes `format=csv|json` (default `json`):
 - `GET /export/compliance?format=&node_id=` (any signed-in user).
 
 Output mechanics (in `exports.py`, the presentation layer):
+- **One ordered `COLUMNS` list per dataset/grain is the single source of truth**
+  for BOTH the CSV header + field order AND the JSON row key order. Each JSON row
+  is built by projecting the repo's dict through that `COLUMNS` list, and the CSV
+  writes the same list, so the two can never silently drift (which is exactly what
+  the parity test guards).
 - **JSON**: `{"rows": [...], "count": N}`, consistent with the other endpoints.
   A non-scalar answer value (a multi-choice list) is kept as a real JSON list in
-  the JSON feed and rendered as its compact JSON text in a CSV cell, so one
-  column always holds one value.
-- **CSV**: a `StreamingResponse` (`text/csv; charset=utf-8`) written row by row
-  with Python's `csv` module from a generator, so a large export is never built
-  whole in memory. A `Content-Disposition: attachment; filename="..."` header
-  names the file, e.g. `intelli_responses_summary_2026-04-01_2026-06-18.csv`,
-  `intelli_payroll_<dates>.csv`, `intelli_compliance_<date>.csv`. Column order is
-  defined once per dataset/grain so the header row and the JSON keys stay in
-  lockstep.
-- Validation: a node not in scope -> 404; `require_payroll` off -> 403 on the
-  payroll endpoint; an unknown `grain` or `format` -> 400.
+  the JSON feed and rendered as its compact JSON text (`json.dumps`) in a CSV
+  cell, so one column always holds one value. A `None`/missing value is JSON
+  `null` and an empty CSV cell (never the string `false` or `0`); pass/fail
+  verdicts and the compliance percentages must follow this so "not scored" stays
+  blank, not false.
+- **CSV**: a `StreamingResponse` (`text/csv; charset=utf-8`). Because
+  `csv.writer` needs a file-like `.write()` target (a bare generator is not one),
+  the recipe is: one `io.StringIO` buffer + a `csv.writer` over it; a synchronous
+  generator that first `writerow(header)` then, for each data row,
+  `writerow(...)`, `yield buf.getvalue()`, `buf.seek(0); buf.truncate(0)`. The
+  header is yielded before any data row, so an **empty export still streams a
+  valid header line** with zero data rows. The generator is sync (the repo uses
+  sync `engine.connect()`), which `StreamingResponse` supports. A
+  `Content-Disposition: attachment; filename="..."` header names the file. The
+  filename date components come from the supplied `date_from`/`date_to` rendered
+  `YYYY-MM-DD` in UTC, with the token `all` for an omitted bound (deterministic
+  across the dev box and the Ubuntu deploy host, never local "today"); a payroll
+  export filtered by `period_id` names the file from that period. Examples:
+  `intelli_responses_summary_2026-04-01_2026-06-18.csv`,
+  `intelli_payroll_all_all.csv`, `intelli_compliance_all.csv`.
+- **The payroll switch dependency is shared, not re-implemented:** `exports.py`
+  reuses the existing `require_payroll` FastAPI dependency by importing it
+  (`from .payroll import require_payroll`), so the `tenants.payroll_enabled` check
+  lives in exactly one place and cannot drift.
+- **Validation order** (cheap pure-input checks first, scope lookups last, so
+  behavior is deterministic and parity tests are stable): validate `format` and
+  `grain` in the router first (unknown -> 400, before any DB work); then the
+  payroll switch (`require_payroll` -> 403); then call the repo and map a `None`
+  return to 404. The `format` query key stays `format` in the URL but is bound to
+  a parameter named `fmt` via `Query(alias="format")` so it does not shadow the
+  Python builtin.
 
 ### Demo data
 The 4a/4b/4c seed already builds a non-trivial world (responses across Bay Area
@@ -154,26 +238,60 @@ period with entries; payroll on for Lumen, off for Acme). 4d is expected to need
 not exist yet, keeping it idempotent like the rest.
 
 ### The tests (the gate for 4d)
+Same harness as 4a/4b/4c: through-the-API `client` + `login` fixtures over the
+throwaway `intelli_test` Postgres, building extra surveys inline (idempotently)
+when the seed lacks a needed shape, never mutating the seed.
 - **Format parity (headline):** for the same filters, `format=csv` and
-  `format=json` return the same logical rows (same count, same set); the CSV has
-  a header row plus one row per record; the JSON has `rows`/`count`.
-- **Responses grains:** `grain=summary` yields one row per response with the
-  overall verdict and item counts; `grain=sku` yields one row per atomic item
-  with the raw value and its per-item pass/fail.
+  `format=json` return the same logical rows (same count, same set, same column
+  order: the CSV header equals the JSON keys); the CSV has a header row plus one
+  row per record; the JSON has `rows`/`count`.
+- **Responses grains:** `grain=summary` yields one row per stored response with
+  `overall` + `num_passed`/`num_failed`; `grain=sku` yields one row per stored
+  atomic item with the raw `value` and its `item_pass`.
+- **"Not scored" renders blank, not false (the likeliest bug):** a response to a
+  rule-less survey (the `test_analytics.py` rule-less setup) exports with
+  `overall` (summary) and `item_pass` (sku) as JSON `null` / empty CSV cell, NOT
+  `false`. Likewise the compliance export's `pass_pct` is blank, not `0`, for a
+  `scored == 0` assignment.
+- **multi_choice cell rendering:** a published multi_choice survey + a list-valued
+  answer (pattern from `test_responses.py`) exports with the JSON `value` as the
+  real list and the CSV cell as the compact JSON string (`["a","b"]`), so one
+  column holds one value.
+- **Empty export:** an impossible filter (e.g. `date_to` far in the past) returns
+  JSON `{"rows": [], "count": 0}` and a CSV that still has the header line and
+  zero data rows.
 - **Export pass/fail is rule-derived, not stored:** changing a survey's pass rule
   (a new version with a different threshold, scored over the same values) flips
   the verdict shown in the export. This is the Phase 4 gate ("compliance
   recomputes when a rule changes") seen through the export.
-- **Filters:** `date_from`/`date_to`, `survey_id`, `chain`, `node_id`, and
-  `sku_id` each narrow the rows correctly; combining them ANDs; a `node_id`
+- **Filters:** `survey_id`, `chain`, `node_id`, `sku_id` each narrow correctly and
+  combine with AND; `date_from`/`date_to` are inclusive at the boundary (with
+  `date_from == date_to ==` the seeded 2026-06-10 SF response timestamp that row
+  is included; shifting `date_to` one second earlier excludes it); `sku_id` with
+  `grain=summary` returns the same rows as `summary` alone (ignored); a `node_id`
   outside scope -> 404.
-- **Payroll export:** role-scoped (a rep gets only their own entries, a manager
-  their branch, an admin all); a payroll-off company (Acme) gets 403; the rows
-  carry `mgr_status` and `sealed`; the period filter works.
+- **chain does not leak across scope (dedicated):** a manager pinned at Central
+  filtering `chain=CVS` returns only the in-scope Chicago CVS store and excludes
+  the sibling-branch (Bay Area) CVS store, and never returns Acme's CVS store. (A
+  plain "narrows correctly" test would miss this, since CVS stores exist in
+  several branches and tenants.)
+- **Payroll export:** role-scoped against the concrete seed topology, e.g. as
+  Sarah (manager pinned at Central) the export returns Rico's entry only and
+  excludes Marcus's Bay Area entry; as Marcus (rep) only his own; an admin sees
+  all. A payroll-off company (Acme) gets 403. A returned row carries non-null
+  `period_name`, `start_date`, `end_date`, `period_status`, `rep_name`,
+  `rep_email`, `mgr_status`, `sealed`, and `rep_node_name` (and a `LEFT`-joined
+  unpinned rep exports with a blank `rep_node_name`, not dropped). The
+  `period_id` and date-range filters work and stay tenant-scoped even with no
+  period filter.
 - **Compliance export:** the rows match the numbers `GET /analytics/compliance`
-  returns for the same node (same brain, flat shape); branch-scoped.
-- **Scope isolation:** a manager's export excludes sibling branches; another
-  company's data never appears in any export; cross-company `node_id` -> 404.
+  returns for the same node (same brain, flat shape), including a `scored == 0`
+  assignment whose `pass_pct` is blank in both the export and the dashboard, not
+  `0`; branch-scoped.
+- **Scope + unpinned isolation:** a manager's export excludes sibling branches;
+  another company's data never appears in any export; cross-company `node_id` ->
+  404; an unpinned caller (`Newbie NoPin`) gets an empty responses/compliance
+  export (200, zero rows) and, for payroll, only their own entries by user id.
 - **Streaming smoke test:** a multi-row CSV export returns a well-formed file
   (header + rows, UTF-8) without error.
 - The full backend suite plus the existing 27 frontend checks stay green.
