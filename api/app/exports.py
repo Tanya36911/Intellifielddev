@@ -115,3 +115,26 @@ def export_compliance(
     if rows is None:
         raise HTTPException(status_code=404, detail="Node not found in your scope")
     return _deliver(fmt, COMPLIANCE_COLUMNS, rows, "intelli_compliance.csv")
+
+
+@router.get("/responses")
+def export_responses(
+    fmt: str = Query("json", alias="format"),
+    grain: str = "summary",
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    survey_id: UUID | None = None,
+    chain: str | None = None,
+    node_id: UUID | None = None,
+    sku_id: UUID | None = None,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+):
+    _check_format(fmt)
+    if grain not in ("summary", "sku"):
+        raise HTTPException(status_code=400, detail="grain must be summary or sku")
+    rows = repo.export_responses(grain, date_from, date_to, survey_id, chain, node_id, sku_id)
+    if rows is None:
+        raise HTTPException(status_code=404, detail="Node not found in your scope")
+    columns = RESPONSE_SUMMARY_COLUMNS if grain == "summary" else RESPONSE_SKU_COLUMNS
+    filename = f"intelli_responses_{grain}_{_date_tag(date_from)}_{_date_tag(date_to)}.csv"
+    return _deliver(fmt, columns, rows, filename)

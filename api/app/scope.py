@@ -1139,6 +1139,123 @@ class ScopedRepo:
         an unpinned caller gets []."""
         return self.assignment_compliance(node_id)
 
+    def export_responses(self, grain, date_from=None, date_to=None, survey_id=None,
+                         chain=None, node_id=None, sku_id=None):
+        """Flat response rows for export. grain='summary' returns EVERY stored
+        response in scope (the audit trail, not latest-per-store); grain='sku'
+        returns one row per stored response_item. Every filter is ANDed on top of
+        the unconditional tenant + path-prefix scope filter. Pass/fail is the live
+        evaluate_response output (full items + question verdicts). Returns None
+        only if node_id is given but out of scope (-> 404); an unpinned caller
+        gets []."""
+        if self.scope_path is None:
+            return []  # unpinned: sees nothing (never a 404, never a leak)
+        with engine.connect() as conn:
+            base = self._base_path_in_scope(conn, node_id)
+            if base is None:
+                return None  # node_id given but out of scope -> 404
+
+            clauses = ["r.tenant_id = cast(:tid as uuid)", "n.path like :base || '%'"]
+            params = {"tid": str(self.tenant_id), "base": base}
+            if survey_id is not None:
+                clauses.append("s.id = cast(:sid as uuid)")
+                params["sid"] = str(survey_id)
+            if chain is not None:
+                clauses.append("n.chain = :chain")  # extra AND, never replaces scope
+                params["chain"] = chain
+            if date_from is not None:
+                clauses.append("r.submitted_at >= cast(:df as timestamptz)")
+                params["df"] = date_from.isoformat()
+            if date_to is not None:
+                clauses.append("r.submitted_at <= cast(:dt as timestamptz)")
+                params["dt"] = date_to.isoformat()
+            where = " and ".join(clauses)
+            rows = conn.execute(
+                text("select r.id, r.survey_version_id, r.store_node_id, n.name as store_name, "
+                     "n.chain, s.id as survey_id, s.name as survey_name, v.version_number, "
+                     "r.user_id, r.submitted_at, r.online "
+                     "from responses r join nodes n on n.id = r.store_node_id "
+                     "join survey_versions v on v.id = r.survey_version_id "
+                     "join surveys s on s.id = v.survey_id "
+                     f"where {where} order by r.submitted_at, r.id"),
+                params,
+            ).mappings().all()
+
+            # Batch-score: group response ids by version, load each version's
+            # questions once + that version's items in bulk, run evaluate_response.
+            by_version: dict = {}
+            for r in rows:
+                by_version.setdefault(str(r["survey_version_id"]), []).append(str(r["id"]))
+            scored: dict = {}
+            for vid, resp_ids in by_version.items():
+                questions = conn.execute(
+                    text("select questions from survey_versions where id = cast(:vid as uuid)"),
+                    {"vid": vid},
+                ).mappings().first()["questions"]
+                item_rows = conn.execute(
+                    text("select response_id, question_id, sku_id, value from response_items "
+                         "where response_id = any(cast(:ids as uuid[])) order by question_id, sku_id"),
+                    {"ids": resp_ids},
+                ).mappings().all()
+                items_by_resp: dict = {}
+                for it in item_rows:
+                    items_by_resp.setdefault(str(it["response_id"]), []).append(dict(it))
+                for rid in resp_ids:
+                    scored[rid] = evaluate_response(questions, items_by_resp.get(rid, []))
+
+            if grain == "summary":
+                out = []
+                for r in rows:
+                    verdicts = list(scored[str(r["id"])]["questions"].values())
+                    out.append({
+                        "response_id": str(r["id"]),
+                        "store_node_id": str(r["store_node_id"]),
+                        "store_name": r["store_name"],
+                        "chain": r["chain"],
+                        "survey_id": str(r["survey_id"]),
+                        "survey_name": r["survey_name"],
+                        "survey_version_id": str(r["survey_version_id"]),
+                        "version_number": r["version_number"],
+                        "user_id": str(r["user_id"]),
+                        "submitted_at": r["submitted_at"],
+                        "online": r["online"],
+                        "overall": scored[str(r["id"])]["overall"],
+                        "num_passed": sum(1 for v in verdicts if v is True),
+                        "num_failed": sum(1 for v in verdicts if v is False),
+                    })
+                return out
+
+            # grain == "sku": one row per stored item, with denormalized sku.
+            sku_map: dict = {}
+            for sk in conn.execute(
+                text("select id, line, variant from skus where tenant_id = cast(:tid as uuid)"),
+                {"tid": str(self.tenant_id)},
+            ).mappings().all():
+                sku_map[str(sk["id"])] = (sk["line"], sk["variant"])
+            out = []
+            for r in rows:
+                for it in scored[str(r["id"])]["items"]:
+                    sid_str = str(it["sku_id"]) if it["sku_id"] is not None else None
+                    if sku_id is not None and sid_str != str(sku_id):
+                        continue
+                    line, variant = sku_map.get(sid_str, (None, None))
+                    out.append({
+                        "response_id": str(r["id"]),
+                        "store_node_id": str(r["store_node_id"]),
+                        "store_name": r["store_name"],
+                        "chain": r["chain"],
+                        "survey_name": r["survey_name"],
+                        "version_number": r["version_number"],
+                        "submitted_at": r["submitted_at"],
+                        "question_id": it["question_id"],
+                        "sku_id": sid_str,
+                        "sku_line": line,
+                        "sku_variant": variant,
+                        "value": it["value"],
+                        "item_pass": it["pass"],
+                    })
+            return out
+
 
 def _count_question(questions, question_id):
     """Return the question if it is a per-product number question, else raise
