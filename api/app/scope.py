@@ -433,13 +433,25 @@ class ScopedRepo:
     _RESPONSE_COLS_R = ("r.id, r.survey_version_id, r.store_node_id, r.store_path, "
                         "r.user_id, r.online, r.submitted_at, r.created_at")
 
-    def create_response(self, survey_version_id, store_node_id, answers, user_id) -> dict | None:
+    def create_response(self, survey_version_id, store_node_id, answers, user_id,
+                        idempotency_key=None) -> dict | None:
         """Store one completed response. Returns None if the store is not a store
         in the caller's scope. Raises VersionNotPublishedError if the version is
         missing/unpublished, ValueError if an answer does not fit the version."""
         if self.scope_path is None:
             return None
         with engine.begin() as conn:
+            # Idempotency: a re-sent submission carrying a ticket we have already
+            # seen returns the original (re-scored), never a duplicate. Tenant-only
+            # lookup (no path filter); get_response re-applies the caller's scope.
+            if idempotency_key is not None:
+                existing = conn.execute(
+                    text("select id from responses where tenant_id = cast(:tid as uuid) "
+                         "and idempotency_key = cast(:idem as uuid)"),
+                    {"tid": str(self.tenant_id), "idem": str(idempotency_key)},
+                ).mappings().first()
+                if existing is not None:
+                    return self.get_response(existing["id"])
             version = conn.execute(
                 text(
                     "select v.id, v.questions from survey_versions v "
@@ -466,12 +478,14 @@ class ScopedRepo:
             resp = conn.execute(
                 text(
                     "insert into responses (tenant_id, survey_version_id, store_node_id, "
-                    "store_path, user_id) values (cast(:tid as uuid), cast(:vid as uuid), "
-                    "cast(:nid as uuid), :spath, cast(:uid as uuid)) "
+                    "store_path, user_id, idempotency_key) values (cast(:tid as uuid), "
+                    "cast(:vid as uuid), cast(:nid as uuid), :spath, cast(:uid as uuid), "
+                    "cast(:idem as uuid)) "
                     f"returning {self._RESPONSE_COLS}"
                 ),
                 {"tid": str(self.tenant_id), "vid": str(survey_version_id),
-                 "nid": str(store_node_id), "spath": store["path"], "uid": str(user_id)},
+                 "nid": str(store_node_id), "spath": store["path"], "uid": str(user_id),
+                 "idem": str(idempotency_key) if idempotency_key is not None else None},
             ).mappings().first()
             for r in rows:
                 conn.execute(

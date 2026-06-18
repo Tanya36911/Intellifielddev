@@ -26,6 +26,7 @@ class ResponseCreate(BaseModel):
     survey_version_id: UUID
     store_node_id: UUID
     answers: list[Answer] = []
+    idempotency_key: UUID | None = None
 
 
 @router.post("/responses")
@@ -42,6 +43,7 @@ def submit_response(
             body.store_node_id,
             [a.model_dump(mode="json") for a in body.answers],
             claims["sub"],
+            body.idempotency_key,
         )
     except VersionNotPublishedError:
         raise HTTPException(status_code=400, detail="Survey version not found or not published")
