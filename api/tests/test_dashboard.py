@@ -225,3 +225,14 @@ def test_dashboard_weekly_trend(client, login):
     # the week marcus responded shows at least 1 responded store, completion >= 50%
     hit = [p for p in trend if p["responded"] >= 1]
     assert hit and hit[0]["completion_pct"] >= 50.0
+
+
+def test_dashboard_manager_scoped_to_branch(client, login):
+    # Sarah (manager at Central) sees only Central's footprint, never West's.
+    body = client.get("/analytics/dashboard",
+                      headers=_auth(login("sarah@lumenbeauty.com"))).json()
+    fp = body["footprint"]
+    # Central subtree: central, chicago, chicago-store => 1 store; rico is the
+    # only pinned rep under Central. West's sf/oakland and marcus never appear.
+    assert fp["stores"] == 1
+    assert fp["reps"] == 1

@@ -196,6 +196,9 @@ fast-follow, never the headline.
   tenant settings, node-edit). Phase 5 (Field mobile app + offline sync) is RESEQUENCED to after the
   web screens (it is the long, hard, last push); nothing built is discarded. NEXT: W1 (app shell +
   Home), then W2 (analytics dashboard), each via the usual mockup-approve-then-build flow.
+- 2026-06-19: W1 Stage A - /analytics/dashboard endpoint (footprint, distinct-coverage compliance
+  aggregate, overdue, weekly trend, previous-window) + login company/pin names; backend-only, no new
+  tables; gate green: 183 backend tests.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR

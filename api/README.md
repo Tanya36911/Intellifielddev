@@ -66,7 +66,11 @@ password arrive, it:
 1. looks up the person with that email in the database,
 2. asks `security.py` to check the password,
 3. if correct, asks `security.py` for a fresh wristband (token) and sends it
-   back along with the person's name and role,
+   back along with the person's name and role. As of W1 it also looks up and
+   returns the company's name (`company_name`) and the name of the node the
+   person is pinned to (`pinned_node_name`, or null if they have no pin), so the
+   web app's sidebar can show "you are signed in to {company}, pinned to {node}"
+   without a second request. These are plain lookups; no new table was added.
 4. if wrong, replies "Invalid email or password" without saying which part was
    wrong (telling an attacker "the email exists but the password is wrong"
    would leak a hint, so we never do).
@@ -225,10 +229,23 @@ as Acme in the demo). All endpoints also go through the standard wristband check
   actions.
 
 ### app/analytics.py  (the read-only reports API)
-Defines four read-only report endpoints, all branch-scoped through the
+Defines five read-only report endpoints, all branch-scoped through the
 ScopedRepo. No new database tables were added; all numbers are computed live
 from the existing response rows each time you ask.
 
+- `GET /analytics/dashboard` is the one-call landing-page summary for the Admin
+  dashboard (added in W1). It returns, for your part of the org: a footprint
+  (how many nodes, stores, and pinned reps you can see); the headline compliance
+  figures (completion % and pass % over the distinct set of store-by-survey
+  obligations, so a store covered by two assignments of the same survey counts
+  once, never twice); how many surveys were completed; how many are overdue (a
+  past-deadline assignment whose stores still owe a response; a survey with no
+  deadline is never overdue); an optional previous-period block (the same figures
+  for the equal-length window just before your date range, so the screen can show
+  an up/down delta); and a weekly completion trend (one point per ISO week, Monday
+  start, in UTC). Pass an optional `node_id` to narrow to a sub-branch, and
+  `date_from`/`date_to` to set the window. A node outside your scope returns 404;
+  an unpinned caller gets an all-zero summary, never an error.
 - `GET /analytics/compliance` answers "how compliant is each survey in this
   part of the org?" It returns, per survey version, how many stores were
   expected to respond, how many did (completion %), and of those scored, how
