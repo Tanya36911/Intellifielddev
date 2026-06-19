@@ -222,9 +222,11 @@ def test_dashboard_weekly_trend(client, login):
     assert len(trend) >= 1                       # weekly buckets across the range
     assert all(set(p) == {"week_start", "completion_pct", "responded", "expected"} for p in trend)
     assert all(p["expected"] == 2 for p in trend)  # expected is the constant covered-store count
-    # the week marcus responded shows at least 1 responded store, completion >= 50%
+    # the week marcus responded shows 1-2 responded stores (the seed also has an
+    # oakland response dated now()), completion bounded 50-100%, never over.
     hit = [p for p in trend if p["responded"] >= 1]
-    assert hit and hit[0]["completion_pct"] >= 50.0
+    assert hit and 1 <= hit[0]["responded"] <= 2
+    assert 50.0 <= hit[0]["completion_pct"] <= 100.0
 
 
 def test_dashboard_manager_scoped_to_branch(client, login):

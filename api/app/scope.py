@@ -808,10 +808,14 @@ class ScopedRepo:
             ).mappings().all()}
         else:
             counts = {}
-        # walk Monday-aligned weeks across the range
+        # walk Monday-aligned weeks across the range. Normalize to UTC first so
+        # the Python week key lines up with Postgres date_trunc('week', ... at
+        # time zone 'UTC') even if the caller sends a non-UTC offset.
         import datetime as _dt
-        start = (date_from - _dt.timedelta(days=date_from.weekday())).date()
-        end = date_to.date()
+        df_utc = date_from.astimezone(timezone.utc) if date_from.tzinfo else date_from
+        dt_utc = date_to.astimezone(timezone.utc) if date_to.tzinfo else date_to
+        start = (df_utc - _dt.timedelta(days=df_utc.weekday())).date()
+        end = dt_utc.date()
         wk = start
         while wk <= end:
             key = wk.isoformat()
