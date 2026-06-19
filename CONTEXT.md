@@ -34,11 +34,12 @@ fast-follow, never the headline.
   - [x] **Phase 4b** - analytics (compliance %, OOS by SKU, trends). Gate met (tests green).
   - [x] **Phase 4c** - payroll. Gate met (tests green).
   - [x] **Phase 4d** - export (CSV + read-only JSON feed). Gate met (tests green).
-- [ ] **Web Screens track (NOW the priority - see ROADMAP.md)** - the Admin web
+- [~] **Web Screens track (NOW the priority - see ROADMAP.md)** - the Admin web
   screens over the existing backend, built in demo-value order so stakeholders see
   results. Almost all are buildable on today's endpoints; a few need a small
   backend brick first (users, tenant settings, node-edit).
-  - [ ] **W1** app shell + Home dashboard; [ ] **W2** analytics/compliance dashboard;
+  - [x] **W1** app shell + Analytics dashboard (the old W2 analytics is folded into
+    W1: the shell ships with the real dashboard as its first screen, not a stub Home);
     [ ] **W3** catalog; [ ] **W4** survey builder + assignments; [ ] **W5** responses
     + detail; [ ] **W6** payroll; [ ] **W7** org hierarchy (view).
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
@@ -199,6 +200,32 @@ fast-follow, never the headline.
 - 2026-06-19: W1 Stage A - /analytics/dashboard endpoint (footprint, distinct-coverage compliance
   aggregate, overdue, weekly trend, previous-window) + login company/pin names; backend-only, no new
   tables; gate green: 183 backend tests.
+- 2026-06-19: W1 COMPLETE - the Admin app's first real screen (the Analytics dashboard inside the app
+  shell). Built in 4 staged plans plus a seed enrichment, each adversarially reviewed by a fresh
+  checker. Stage A (backend, above): a new read-only GET /analytics/dashboard endpoint, branch-scoped
+  with no new tables, returns the headline figures (footprint Nodes/Stores/Reps; compliance computed
+  over the distinct set of store-survey obligations so nothing is double-counted; surveys-completed
+  count; overdue count; a weekly completion trend; and a previous-period block for the up/down deltas),
+  and the login response now also returns company_name and pinned_node_name for the sidebar. Stage B
+  (frontend foundation): the full design-token set (layout vars, density, dark mode, fonts), a small UI
+  kit ported from the prototype (apps/admin/src/ui/: Icon, Avatar, Chip, Button, Card, Segmented,
+  Switch, Spark, Bar), TanStack Query wired in main.tsx for server data, and an authenticated API
+  client (apiGet / downloadCsv in lib/api.ts reading the login token via a shared lib/session.ts). Stage
+  C (the dashboard screen, apps/admin/src/pages/Dashboard/): KPI cards (avg compliance, surveys
+  completed, overdue) with sparklines and deltas, a weekly completion-trend line, a compliance-by-node
+  list with click-to-drill (region to store to the per-product reason it failed), an Export-to-CSV
+  button, and the AI gap list clearly badged "preview". Numbers are real, computed from the backend;
+  out-of-stock by SKU was deferred (it needs a survey/question picker) and avg-completion-time was
+  dropped (no duration data exists). Stage D (the shell, apps/admin/src/shell/): the persistent left
+  sidebar (Intelli brand, the company card, the nav with the unbuilt screens shown as "coming soon"
+  placeholders, the Nodes/Stores/Reps footprint, the user card and sign out) and a per-page top bar.
+  Web trims: no tenant switcher, no "Synced" control, and the setup-wizard item and notifications bell
+  are "coming soon". The seed was enriched so the dashboard shows fuller real numbers (more responses
+  across weeks, a covering assignment, a past-deadline so overdue is non-zero, out-of-stock variety);
+  footprint counts unchanged. Home was replaced by the Dashboard at /. Gate GREEN: 183 backend tests +
+  48 frontend checks, build compiles. The old W1 (app shell + a stub Home) and W2 (analytics dashboard)
+  are merged: the shell ships with the real dashboard as its first screen. W1 COMPLETE; the remaining
+  Admin web screens (catalog, survey builder, responses, payroll, org tree) are NEXT, per ROADMAP.
 - 2026-06-15: DB script hardening (senior-DBA pass). All three migrations rewritten to be
   self-protecting: `-- migrate:up transaction:false` + explicit begin/commit + `set local
   timezone='UTC'` (and same for down), so each file is atomic and UTC-correct under dbmate OR

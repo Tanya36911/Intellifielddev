@@ -86,6 +86,20 @@ lets the server return the original row instead of creating a duplicate. Sending
 no ticket behaves exactly as before, so nothing already live is affected. This
 is the groundwork for the offline queue the field app will use.
 
+As of W1 (the first Admin web screen), the Admin dining room is no longer just a
+login plus a near-empty welcome page. It now has the **app shell** (the
+persistent left sidebar and a per-page top bar, in `apps/admin/src/shell/`), a
+small shared **UI kit** ported from the prototype (`apps/admin/src/ui/`: Icon,
+Avatar, Chip, Button, Card, Segmented, Switch, Spark, Bar), and its first real
+screen, the **Analytics dashboard** (`apps/admin/src/pages/Dashboard/`): headline
+cards with sparklines and deltas, a weekly completion-trend line, a
+compliance-by-node list you click to drill into, an Export-to-CSV button, and an
+AI gap list badged "preview". To feed it, the backend gained one read-only
+endpoint, `GET /analytics/dashboard` (branch-scoped, no new tables), which returns
+the dashboard's headline figures in one call, and the login response now also
+returns the company and pinned-node names for the sidebar. (This W1 merged the old
+plan's W1 and W2: the shell ships with the real dashboard as its first screen.)
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+
@@ -104,7 +118,7 @@ is the groundwork for the offline queue the field app will use.
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses (login is built). Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W1 it has the app shell (sidebar + top bar), a shared UI kit, and the Analytics dashboard wired to `/analytics/dashboard`, on top of the login screen. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |

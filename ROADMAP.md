@@ -8,11 +8,11 @@ stakeholders can actually look at.
 ## Why we changed the order
 
 For eight phases we built the engine: login, the org tree, the catalog, surveys,
-responses, analytics, payroll, and export, all proven by 169 automated checks.
-But the only screen that exists is the login page and a near-empty welcome page.
-Leadership and partners read *screens*, not databases, and the thing that sells
-Intelli (self-serve configurability) literally *is* the screens: the survey
-builder, the catalog, the dashboards. So the plan now is:
+responses, analytics, payroll, and export, all proven by automated checks. But
+for a long time the only screen that existed was the login page and a near-empty
+welcome page. Leadership and partners read *screens*, not databases, and the
+thing that sells Intelli (self-serve configurability) literally *is* the screens:
+the survey builder, the catalog, the dashboards. So the plan now is:
 
 1. **Build the Admin web screens first**, over the backend that already exists.
    This is low-risk, high-visibility work: the hard part (the data and the
@@ -42,20 +42,25 @@ Every screen goes through the same flow we have used all along: a quick mockup y
 approve, then a test-first build, then it is committed. The prototype screen it
 ports from is named for each.
 
-**W1: The app shell + a real Home.** The sidebar, the top bar, the brand, and a
-Home page that shows your company and a few headline compliance numbers instead
-of the empty welcome page. Backend it uses: `/analytics/compliance`, `/nodes`
-(both exist). After this: it looks and feels like a real product you log into and
-land inside. This is the frame every other screen hangs on, so it goes first.
-
-**W2: The Analytics / Compliance dashboard (the headline screen).** Compliance
-percent for each part of the org, drill from a region down to a single store and
-the exact product that failed, out-of-stock by product, and a product's shelf
-count over time, plus a Download (CSV) button. Backend: `/analytics/compliance`,
-`/analytics/compliance/drill`, `/analytics/oos`, `/analytics/trend`,
-`/export/compliance` (all exist). After this: the visual proof the platform
-works, live numbers and drill-down in front of leadership. Recommended as the
-first "wow."
+**W1: The app shell + the Analytics dashboard (DONE).** The sidebar, the top bar,
+the brand, and the headline screen all in one, instead of a stub Home followed by
+a separate dashboard. We **merged the old W1 and W2** here: rather than ship an
+empty Home and then the dashboard, the shell ships with the real Analytics
+dashboard as its first screen. Delivered: the persistent left sidebar (brand,
+company card, nav with unbuilt screens shown as "coming soon", the
+Nodes/Stores/Reps footprint, user card + sign out) and per-page top bar; a small
+UI kit ported from the prototype; and the dashboard itself: headline cards (avg
+compliance, surveys completed, overdue) with sparklines and deltas, a weekly
+completion-trend line, a compliance-by-node list with click-to-drill (region to
+store to the per-product reason it failed), and an Export-to-CSV button, plus an
+AI gap list badged "preview". To feed it in one call, the backend gained a
+read-only `GET /analytics/dashboard` (branch-scoped, no new tables) and the login
+response now also returns the company and pinned-node names. Out-of-stock by SKU
+was deferred (needs a survey/question picker) and avg-completion-time was dropped
+(no duration data). Gate: 183 backend tests + 48 frontend checks, all green. This
+is the frame every other screen hangs on, so it went first. After this: it looks
+and feels like a real product you log into and land inside, with live numbers and
+drill-down in front of leadership.
 
 **W3: The Catalog.** Your product list as a list and a gallery, with add and edit.
 Backend: `/skus` (exists). After this: a self-managed product catalog, the

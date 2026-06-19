@@ -108,13 +108,27 @@ which works even with no signal) is large, so it is being built in small pieces.
   original record instead of making a duplicate. Nothing that was already working
   changes. Backend only, no screen yet.
 
-**What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we
-pivot to building the **Admin web screens** over the backend that already exists,
-so stakeholders can finally see the product on a screen. The backend is done and
-proven, but the only screen so far is login plus a near-empty welcome page. So the
-next steps are screens, in demo order: the app shell + a real Home, then the
-analytics/compliance dashboard, then catalog, survey builder, responses, payroll,
-and the org tree. The rest of Phase 5 (the Field mobile app + offline sync) is
+**W1 (Admin dashboard + shell) DONE:** the Admin app now has its first real
+screen, so it finally looks and feels like a product you log into and land
+inside. The persistent left sidebar (the Intelli brand, your company card, the
+menu, your footprint of Nodes/Stores/Reps, and Sign out) frames every screen,
+and the first screen inside it is the **Analytics dashboard**: headline cards
+(average compliance, surveys completed, overdue) each with a tiny trend line and
+an up/down change, a weekly completion-trend chart, a list of how compliant each
+part of the org is that you can click to drill from a region down to a store and
+the exact product that failed, an Export button that downloads a spreadsheet, and
+an AI gap list clearly marked "preview". The numbers are real, worked out by the
+backend. The menu items for screens we have not built yet show a friendly "coming
+soon" placeholder. (This merged the old plan's W1 and W2: instead of a stub Home
+followed by a separate dashboard, the shell ships with the real dashboard as its
+first screen.)
+
+**What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we are
+building the **Admin web screens** over the backend that already exists, so
+stakeholders can finally see the product on a screen. The first one, W1 (the app
+shell + the Analytics dashboard), is **done** (above). The next steps are the rest
+of the screens, in demo order: catalog, survey builder, responses, payroll, and
+the org tree. The rest of Phase 5 (the Field mobile app + offline sync) is
 **resequenced to after the web screens**, because it is the long, hard, last push.
 
 ---
@@ -289,14 +303,20 @@ project memory, so a new chat in this folder already knows them.)
 - Export (responses, payroll, compliance as CSV or JSON, branch-scoped): DONE and tested.
 - Idempotency keys (the "claim ticket" so an offline phone can safely re-send a
   survey or hours without duplicating): DONE and tested. This is Phase 5's first
-  piece (backend robot green: 169 backend checks, plus 27 frontend checks).
-- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done), plus Phase 5's
-  first piece (5-BE-a idempotency keys). 169 backend checks + 27 frontend, green.
-- **NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)): build the Admin
-  web screens over the existing backend, so stakeholders see results.** In order:
-  app shell + Home, analytics/compliance dashboard, catalog, survey builder,
-  responses, payroll, org tree. The Field mobile app + offline sync (the rest of
-  Phase 5) is resequenced to after the web screens.
+  piece.
+- W1 (the Admin app shell + the Analytics dashboard): DONE and tested. The Admin
+  app now has a real dashboard inside the app shell (the sidebar/top-bar frame),
+  not the old near-empty welcome page. Headline numbers, a weekly trend, a
+  compliance-by-org list you can click to drill into, an Export-to-CSV button, and
+  the not-yet-built menu items shown as "coming soon".
+- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done), Phase 5's
+  first piece (5-BE-a idempotency keys), and W1 (the Admin dashboard + shell).
+  183 backend checks + 48 frontend, green.
+- **NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)): build the rest
+  of the Admin web screens over the existing backend, so stakeholders see results.**
+  W1 (shell + dashboard) is done; next in order are catalog, survey builder,
+  responses, payroll, and the org tree. The Field mobile app + offline sync (the
+  rest of Phase 5) is resequenced to after the web screens.
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

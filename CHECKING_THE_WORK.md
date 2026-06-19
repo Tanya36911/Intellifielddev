@@ -14,13 +14,13 @@ Run all commands from the project folder (`cd ~/Documents/intelli-app`).
 
 ### Check 1: The test robot (catches broken behavior)
 A "test" is a tiny robot that uses the app the way a person would and shouts if
-something misbehaves. We have 27 of them for the Admin app.
+something misbehaves. We have 48 of them for the Admin app.
 
 Run:
 ```
 pnpm test:admin
 ```
-- GOOD looks like: `Tests  27 passed (27)` near the bottom, all green ticks.
+- GOOD looks like: `Tests  48 passed (48)` near the bottom, all green ticks.
 - BAD looks like: any red `FAIL`, or a number in `failed`. The red text names
   the file and what it expected. You do not need to fix it; copy it to me.
 
@@ -236,6 +236,41 @@ to me.
 What it proves: the same field data can be pulled out as a CSV file or as JSON
 from one address, the two always match, and the export stays inside the caller's
 own branch.
+
+### Check 10: See the Admin dashboard (W1, in the browser, no coding)
+This is the first real Admin screen: the Analytics dashboard inside the app
+shell. You judge it by looking at it.
+
+1. Make sure the backend is on: `docker compose up -d`
+2. Start the screens: `pnpm dev:admin`
+3. Open http://localhost:5173 and log in as `dana@lumenbeauty.com` / `demo1234`.
+
+What GOOD looks like:
+- A **sidebar** down the left with the Intelli brand, your company name and your
+  pinned spot, a menu, your footprint counts (Nodes, Stores, Reps), and Sign out.
+- Three **headline cards** at the top (average compliance, surveys completed,
+  overdue), each with a tiny trend line and a small up or down change versus the
+  period before. The numbers are real, not placeholders.
+- A **weekly completion-trend** line below the cards.
+- A **compliance-by-org list**: click a row to drill in, from a region down to a
+  single store and the exact product that failed (the "why it failed" view).
+- A **range control** to switch the time window the numbers cover.
+- An **Export** button: clicking it downloads a spreadsheet (a CSV file) of the
+  data, which you can open in Excel or Google Sheets.
+- An **AI gap list** clearly marked "preview" (a glimpse of a later feature).
+- The menu items for screens we have not built yet (catalog, surveys, and so on)
+  open a friendly **"coming soon" placeholder** rather than a broken page.
+
+What BAD looks like: the page is blank, a number reads as "NaN" or stays empty, a
+menu item crashes instead of showing the placeholder, or Export does nothing.
+Tell me what you saw.
+
+To confirm the automated gate: run `pnpm test:api` (backend on) and
+`pnpm test:admin`. GOOD looks like `183 passed` for the backend and `48 passed`
+for the frontend. If anything goes red, copy the text to me.
+
+What it proves: the Admin app now has a real, live dashboard inside a proper app
+shell, with drill-down and export, all reading real numbers from the backend.
 
 ---
 
