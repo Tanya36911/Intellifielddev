@@ -81,6 +81,34 @@ export async function apiGet<T = unknown>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// Authenticated write (POST/PATCH). Mirrors apiGet's token + error handling:
+// ApiError(0) when unreachable, ApiError(status) on a non-2xx with the backend's
+// detail when present.
+export async function apiSend<T = unknown>(
+  method: 'POST' | 'PATCH',
+  path: string,
+  body: unknown,
+): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, CANT_REACH)
+  }
+  if (!res.ok) {
+    const detail = await res
+      .json()
+      .then((d) => d?.detail)
+      .catch(() => null)
+    throw new ApiError(res.status, typeof detail === 'string' ? detail : 'Request failed.')
+  }
+  return res.json() as Promise<T>
+}
+
 // Authenticated CSV download. A bare <a download> would 401 (no auth header),
 // so fetch with the token, turn the body into a Blob, and click a temporary
 // anchor with a client-set filename (Content-Disposition is not honored for

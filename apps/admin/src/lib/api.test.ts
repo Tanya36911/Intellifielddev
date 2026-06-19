@@ -1,4 +1,4 @@
-import { ApiError, apiGet, health, login } from './api'
+import { ApiError, apiGet, apiSend, health, login } from './api'
 import { SESSION_KEY, readToken } from './session'
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -87,5 +87,39 @@ describe('apiGet', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 401 })))
     await expect(apiGet('/analytics/dashboard')).rejects.toMatchObject({ status: 401 })
     await expect(apiGet('/analytics/dashboard')).rejects.toBeInstanceOf(ApiError)
+  })
+})
+
+describe('apiSend', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('POSTs JSON with the auth header and returns the parsed body', async () => {
+    localStorage.setItem('intelli-admin-session', JSON.stringify({ token: 't.t.t' }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: '1', variant: 'Rosewood' }), { status: 200 }),
+    )
+    const out = await apiSend<{ id: string }>('POST', '/skus', { variant: 'Rosewood' })
+    expect(out.id).toBe('1')
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init?.method).toBe('POST')
+    expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer t.t.t')
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBe('application/json')
+    expect(init?.body).toBe(JSON.stringify({ variant: 'Rosewood' }))
+    localStorage.clear()
+  })
+
+  it('throws ApiError(status) with the backend detail on a non-2xx', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ detail: 'UPC already exists' }), { status: 400 }),
+    )
+    await expect(apiSend('POST', '/skus', {})).rejects.toMatchObject({
+      status: 400,
+      message: 'UPC already exists',
+    })
+  })
+
+  it('throws ApiError(0) when the backend is unreachable', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network'))
+    await expect(apiSend('PATCH', '/skus/1', {})).rejects.toBeInstanceOf(ApiError)
   })
 })
