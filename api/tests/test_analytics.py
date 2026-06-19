@@ -348,3 +348,111 @@ def test_compliance_expected_includes_store_added_later(client, login):
             with engine.begin() as conn:
                 conn.execute(text("delete from nodes where id = cast(:id as uuid)"),
                              {"id": str(nid)})
+
+
+# ----- node compliance (the dashboard 'Compliance by node' region drill) -----
+# Cross-survey rollup, so (like the dashboard no-double-count test) these assert
+# DELTAS against the shared, non-rolled-back DB rather than absolute counts.
+
+def _nodes(client, token, node_code=None, **params):
+    p = dict(params)
+    if node_code is not None:
+        p["node_id"] = str(_node_id(node_code))
+    return client.get("/analytics/compliance/nodes", headers=_auth(token), params=p)
+
+
+def _rose_q():
+    rose = _sku_id("LUM-VL-ROSE")
+    return [{"id": "q1", "prompt": "f", "type": "number", "perSku": True, "sku_ids": [str(rose)],
+             "pass": {"operator": ">=", "value": 4}, "passScope": "each"}], rose
+
+
+def test_node_compliance_lists_children_rollup(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+
+    def bay():
+        kids = _nodes(client, dana, "west").json()["children"]
+        return next(c for c in kids if c["name"] == "Bay Area")
+
+    base = bay()
+    assert base["is_store"] is False  # Bay Area is a district, not a store
+    vid = _publish_and_assign(client, dana, "Node Rollup", q, "bayarea")
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])  # pass
+    after = bay()
+    assert after["expected"] == base["expected"] + 2    # sf + oakland, new version
+    assert after["responded"] == base["responded"] + 1  # sf only
+    assert after["passed"] == base["passed"] + 1
+
+
+def test_node_compliance_no_double_count(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+
+    def bay_expected():
+        kids = _nodes(client, dana, "west").json()["children"]
+        return next(c for c in kids if c["name"] == "Bay Area")["expected"]
+
+    base = bay_expected()
+    vid = _publish_and_assign(client, dana, "Node NoDouble", q, "bayarea")  # +2
+    after_one = bay_expected()
+    assert after_one == base + 2
+    # A SECOND, overlapping assignment of the SAME version at West covers the same
+    # two stores; the distinct-coverage rollup must add ZERO.
+    client.post("/survey-assignments", headers=_auth(dana),
+                json={"survey_version_id": vid, "target_node_id": str(_node_id("west"))})
+    assert bay_expected() == after_one
+
+
+def test_node_compliance_store_shows_why_failed(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish_and_assign(client, dana, "Node Why Failed", q, "bayarea")
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 2}])  # fail
+    body = _nodes(client, dana, "sf").json()
+    assert body["is_store"] is True
+    assert body["name"] == "SF store"
+    block = next(b for b in body["surveys"] if b["survey_version_id"] == vid)
+    assert block["responded"] is True
+    assert block["overall"] is False
+    assert block["questions"]["q1"] is False
+
+
+def test_node_compliance_store_no_response(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish_and_assign(client, dana, "Node No Resp", q, "bayarea")
+    body = _nodes(client, dana, "oakland").json()
+    assert body["is_store"] is True
+    block = next(b for b in body["surveys"] if b["survey_version_id"] == vid)
+    assert block["responded"] is False
+    assert block["items"] == []
+    assert block["overall"] is None
+
+
+def test_node_compliance_node_out_of_scope_404(client, login):
+    resp = _nodes(client, login("sarah@lumenbeauty.com"), "bayarea")  # Central can't reach West
+    assert resp.status_code == 404, resp.text
+
+
+def test_node_compliance_unpinned_empty(client, login):
+    body = _nodes(client, login("newbie@lumenbeauty.com")).json()
+    assert body == {"is_store": False, "children": []}
+
+
+def test_node_compliance_respects_window(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish_and_assign(client, dana, "Node Window", q, "bayarea")
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])  # now()
+    # An ancient window excludes every response: responded falls to 0, but the
+    # structural coverage (expected) is unchanged. Proves the window is threaded
+    # exactly like the headline KPI.
+    kids = _nodes(client, dana, "west", date_from="2000-01-01T00:00:00Z",
+                  date_to="2000-01-02T00:00:00Z").json()["children"]
+    bay = next(c for c in kids if c["name"] == "Bay Area")
+    assert bay["responded"] == 0
+    assert bay["expected"] >= 2

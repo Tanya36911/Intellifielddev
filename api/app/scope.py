@@ -1000,6 +1000,90 @@ class ScopedRepo:
                 })
         return {"is_store": False, "children": rows}
 
+    def node_compliance(self, node_id=None, date_from=None, date_to=None):
+        """Compliance rolled up by ORG NODE for the dashboard 'Compliance by node'
+        card, WINDOWED to match the headline KPI. For a non-store base, returns its
+        immediate child nodes, each aggregated over the DISTINCT (store, version)
+        coverage beneath it (latest-in-window response per store, via the same
+        _dashboard_window the headline uses, so the rows aggregate to the headline).
+        For a store, returns the per-product why-it-(failed) across the version(s)
+        covering it. None if node_id is given but out of scope (-> 404); an unpinned
+        caller (scope_path None) returns an empty children payload (200)."""
+        if self.scope_path is None:
+            return {"is_store": False, "children": []}
+        with engine.connect() as conn:
+            base = self._base_path_in_scope(conn, node_id)
+            if base is None:
+                return None  # node_id out of scope -> 404
+            maxlvl = self._max_level(conn)
+            node = conn.execute(
+                text("select id, name, level_order, path from nodes "
+                     "where tenant_id = cast(:tid as uuid) and path = :base"),
+                {"tid": str(self.tenant_id), "base": base},
+            ).mappings().first()
+            if node is None:
+                return None  # scope_path with no matching node (defensive)
+            if node["level_order"] == maxlvl:
+                return self._store_node_compliance(conn, node, date_from, date_to)
+            children = conn.execute(
+                text("select id, name, level_order, path from nodes "
+                     "where parent_id = cast(:nid as uuid) and tenant_id = cast(:tid as uuid) "
+                     "order by level_order, name"),
+                {"nid": str(node["id"]), "tid": str(self.tenant_id)},
+            ).mappings().all()
+            rows = []
+            # N+1: one _dashboard_window per child (each a few queries). Same bounded
+            # caveat as assignment_compliance; fine for the handful of regions per
+            # branch. Revisit with a single roll-up if node counts ever grow large.
+            for c in children:
+                m = self._dashboard_window(conn, c["path"], maxlvl, date_from, date_to)
+                rows.append({"node_id": c["id"], "name": c["name"],
+                             "level_order": c["level_order"],
+                             "is_store": c["level_order"] == maxlvl, **m})
+        return {"is_store": False, "children": rows}
+
+    def _store_node_compliance(self, conn, node, date_from, date_to):
+        """The store branch of node_compliance: one block per survey version that
+        covers this store (assignment target is an ancestor-or-self), each scored
+        from the store's latest-in-window response. ALWAYS includes items/questions/
+        overall (empty defaults when unresponded) so the frontend reads them without
+        optional-chaining surprises (unlike the leaner legacy compliance_drill)."""
+        versions = conn.execute(
+            text("select distinct a.survey_version_id as vid, s.name as survey_name "
+                 "from survey_assignments a "
+                 "join nodes tn on tn.id = a.target_node_id "
+                 "join survey_versions v on v.id = a.survey_version_id "
+                 "join surveys s on s.id = v.survey_id "
+                 "where a.tenant_id = cast(:tid as uuid) "
+                 "and :spath like tn.path || '%' "
+                 "order by s.name"),
+            {"tid": str(self.tenant_id), "spath": node["path"]},
+        ).mappings().all()
+        df = date_from.isoformat() if date_from is not None else None
+        dt = date_to.isoformat() if date_to is not None else None
+        df_clause = "and submitted_at >= cast(:df as timestamptz) " if df else ""
+        dt_clause = "and submitted_at <= cast(:dt as timestamptz) " if dt else ""
+        blocks = []
+        for ver in versions:
+            questions = self._version_questions(conn, ver["vid"])
+            latest = conn.execute(
+                text("select id from responses where survey_version_id = cast(:vid as uuid) "
+                     "and store_node_id = cast(:nid as uuid) and tenant_id = cast(:tid as uuid) "
+                     + df_clause + dt_clause +
+                     "order by submitted_at desc limit 1"),
+                {"vid": str(ver["vid"]), "nid": str(node["id"]), "tid": str(self.tenant_id),
+                 "df": df, "dt": dt},
+            ).mappings().first()
+            if latest is None:
+                blocks.append({"survey_version_id": ver["vid"], "survey_name": ver["survey_name"],
+                               "responded": False, "items": [], "questions": {}, "overall": None})
+            else:
+                scored = self._score_one(conn, questions, latest["id"])
+                blocks.append({"survey_version_id": ver["vid"], "survey_name": ver["survey_name"],
+                               "responded": True, "items": scored["items"],
+                               "questions": scored["questions"], "overall": scored["overall"]})
+        return {"is_store": True, "name": node["name"], "surveys": blocks}
+
     def oos_by_sku(self, survey_version_id, question_id, node_id=None):
         """Out-of-stock by product for a per-product count question, using each
         store's latest response under the node. Out of stock = answer 0. Returns
