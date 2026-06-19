@@ -1,0 +1,7 @@
+/* Ported from the prototype .card rule (shared/styles.css). */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+}

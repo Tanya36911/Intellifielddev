@@ -1,0 +1,11 @@
+// The shared UI kit barrel. Screens import primitives from here.
+export { Icon } from './Icon'
+export { ICONS, type IconShape } from './icons'
+export { Spark } from './Spark'
+export { Bar } from './Bar'
+export { Chip, type ChipTone } from './Chip'
+export { Button, type ButtonVariant, type ButtonSize } from './Button'
+export { Card } from './Card'
+export { Segmented } from './Segmented'
+export { Switch } from './Switch'
+export { Avatar } from './Avatar'

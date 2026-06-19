@@ -1,0 +1,12 @@
+/* Ported from the prototype Avatar primitive (shared/primitives.jsx). The size
+   and background color are set inline since they are per-instance. */
+.avatar {
+  border-radius: 99px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
