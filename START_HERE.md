@@ -272,18 +272,32 @@ to run the checks, what "good" and "bad" look like, and how to undo anything.
 When you start a new session, **open Claude Code with the `intelli-app` folder**
 (not the prototype folder), and paste this as your first message:
 
-> Read START_HERE.md, CONTEXT.md, and CODEBASE_MAP.md in this repo first, then
-> TECH_STACK.txt and Intelli_Complete_Handoff.md in the sibling ../hi-fi-intelli
-> repo. Phases 0, 1, 2, 3a, and 3b are done (monorepo + Docker; login backend +
-> Admin login screen; org hierarchy + the scope-follows-pin security guard; the
-> product catalog; surveys with immutable versions, assignments to org nodes, and
-> structured pass rules), plus a config-hardening pass and a DB-script-hardening
-> pass. The next task is Phase 4: responses + analytics + payroll + export (see
-> handoff PART 6, build step 4). My name is Tanya. Always address me as Tanya,
-> explain everything in plain non-coder terms, design and let me approve before
-> building, build test-first, commit to git after each change, no em dashes, and
-> keep all the docs updated (START_HERE.md, CONTEXT.md, CODEBASE_MAP.md, the
-> per-folder READMEs, and the handoff CHANGELOG).
+> Read START_HERE.md, CONTEXT.md, CODEBASE_MAP.md, and ROADMAP.md in this repo
+> first, then TECH_STACK.txt and Intelli_Complete_Handoff.md in the sibling
+> ../hi-fi-intelli repo.
+>
+> Where we are: the whole backend is done (Phases 0-4d: login, org hierarchy +
+> the scope-follows-pin guard, catalog, surveys with frozen versions, responses
+> with live pass/fail, analytics, payroll, export), plus Phase 5-BE-a (idempotency
+> keys). We then pivoted to screens-first (see ROADMAP.md). W1 is DONE: the Admin
+> app shell (sidebar + top bar) plus the Analytics dashboard as the landing screen,
+> wired to a new branch-scoped GET /analytics/dashboard endpoint, with the demo
+> seed enriched. 183 backend tests + 48 frontend checks are green. Everything is
+> committed to main but NOT pushed yet (pushing auto-deploys to the dev server).
+>
+> What's next: the next Admin web screen, W3 the Catalog (fully backed by /skus
+> today), unless I say otherwise. The setup wizard is later: it needs small Users
+> (list + invite) and Hierarchy (node add/edit) backend bricks first.
+>
+> My name is Tanya. Always address me as Tanya, explain everything in plain
+> non-coder terms, design and let me approve before building (show me a browser
+> mockup for any screen), build test-first, commit to git (straight to main) after
+> each change, no em dashes, and run an adversarial multi-reviewer pass on each
+> spec before building. Use the brainstorm -> spec -> plan ->
+> subagent-driven-development flow; specs and plans live in docs/superpowers/.
+> Keep all the docs updated (START_HERE.md, CONTEXT.md, CODEBASE_MAP.md,
+> ROADMAP.md, the per-folder READMEs, CHECKING_THE_WORK.md, and the prototype
+> handoff CHANGELOG).
 
 That paragraph hands the new chat: where the docs are, what's done, what's next,
 and how you like to work. With it plus these files, a fresh chat picks up right
