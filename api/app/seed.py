@@ -158,6 +158,40 @@ def _survey(conn, tenant_id, name, type_, questions, assign_node=None, created_b
     return survey_id
 
 
+def _assign_survey(conn, tenant_id, survey_name, target_node, created_by=None, deadline=None):
+    """Add a coverage assignment for an existing published survey at target_node.
+    Idempotent by (tenant, latest published version, target node): a second run
+    finds the existing row and does nothing, so it never duplicates coverage.
+    deadline is an ISO/UTC string (or None for 'never overdue')."""
+    version_id = conn.execute(
+        text(
+            "select v.id from survey_versions v join surveys s on s.id = v.survey_id "
+            "where s.tenant_id = :tid and s.name = :name and v.published_at is not null "
+            "order by v.version_number desc limit 1"
+        ),
+        {"tid": tenant_id, "name": survey_name},
+    ).scalar()
+    assert version_id, f"no published version for survey {survey_name!r}"
+    existing = conn.execute(
+        text(
+            "select id from survey_assignments where tenant_id = :tid "
+            "and survey_version_id = :vid and target_node_id = :nid"
+        ),
+        {"tid": tenant_id, "vid": version_id, "nid": target_node["id"]},
+    ).scalar()
+    if existing:
+        return existing
+    return conn.execute(
+        text(
+            "insert into survey_assignments (tenant_id, survey_version_id, target_node_id, "
+            "deadline, created_by) values (:tid, :vid, :nid, cast(:dl as timestamptz), :cb) "
+            "returning id"
+        ),
+        {"tid": tenant_id, "vid": version_id, "nid": target_node["id"],
+         "dl": deadline, "cb": created_by},
+    ).scalar()
+
+
 def _response(conn, tenant_id, survey_name, store_code, user_email, answers, submitted_at=None):
     """Insert one demo response with its atomic answer rows. Idempotent: if this
     user already has a response for this store+version, do nothing."""
@@ -303,6 +337,8 @@ def run() -> None:
              {"question_id": "q2", "value": False}],
         )
         # An earlier SF reading so the facings trend has more than one point.
+        # NOTE: an export test filters to exactly this instant and expects 1 row,
+        # so do NOT add another response at 2026-06-10T09:00:00Z.
         _response(
             conn, lumen, "Velvet Lip Shelf Check", "sf", "dana@lumenbeauty.com",
             [{"question_id": "q1", "sku_id": str(rose), "value": 6}],
@@ -314,6 +350,45 @@ def run() -> None:
         conn.execute(text("update tenants set payroll_enabled = true where id = :id"),
                      {"id": lumen})
         _user(conn, lumen, "rico@lumenbeauty.com", "Rico Vance", "rep", chicago)
+
+        # Company-wide coverage with a PAST deadline. This makes sf + oakland count
+        # toward completion (they have responses) and leaves Chicago store overdue
+        # (it has none), so the dashboard shows a real completion %, a non-zero
+        # Overdue, and a "compliance by node" picture. The earlier central
+        # assignment (no deadline) stays; the latest published version is shared,
+        # so coverage de-dupes per distinct (store, version) and never double-counts.
+        # Placed here (not next to the survey) because the spread below needs rico,
+        # who is created just above in the payroll section.
+        _assign_survey(
+            conn, lumen, "Velvet Lip Shelf Check", l_root,
+            created_by=dana_id, deadline="2026-06-12T00:00:00Z",
+        )
+
+        # A spread of Velvet Lip readings at sf and oakland across the last ~8
+        # weeks (UTC), one per (store, user) pair since the seed is idempotent on
+        # that key. Varied Rosewood facings: passing (>=4), failing (<4), and 0
+        # (out of stock), with the endcap boolean mixed. This gives the weekly
+        # trend several points that rise as more stores report, and fills the
+        # out-of-stock panel with real entries. Chicago store stays unanswered so
+        # Overdue stays > 0. None of these use 2026-06-10T09:00:00Z (export test).
+        _spread = [
+            # week, store, author, rosewood facings, endcap present
+            ("2026-04-28T10:00:00Z", "oakland", "dana@lumenbeauty.com", 2, False),
+            ("2026-05-05T11:00:00Z", "sf", "sarah@lumenbeauty.com", 3, False),
+            ("2026-05-12T10:30:00Z", "oakland", "sarah@lumenbeauty.com", 0, False),
+            ("2026-05-19T09:30:00Z", "sf", "rico@lumenbeauty.com", 4, True),
+            ("2026-05-26T14:00:00Z", "oakland", "rico@lumenbeauty.com", 5, True),
+            ("2026-06-02T10:00:00Z", "sf", "newbie@lumenbeauty.com", 6, True),
+            ("2026-06-02T15:00:00Z", "oakland", "newbie@lumenbeauty.com", 0, False),
+        ]
+        for when, store_code, author, facings, endcap in _spread:
+            _response(
+                conn, lumen, "Velvet Lip Shelf Check", store_code, author,
+                [{"question_id": "q1", "sku_id": str(rose), "value": facings},
+                 {"question_id": "q2", "value": endcap}],
+                submitted_at=when,
+            )
+
         period = _pay_period(conn, lumen, "June 1-15", "2026-06-01", "2026-06-15")
         _time_entry(conn, lumen, period, "marcus@lumenbeauty.com", 480, 60, 90, 42, "pending")
         _time_entry(conn, lumen, period, "rico@lumenbeauty.com", 510, 45, 70, 33, "approved")
@@ -341,7 +416,7 @@ def run() -> None:
             [{"question_id": "q1", "value": True}],
         )
 
-    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 3 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
+    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 2 assignments, 10 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
 
 
 if __name__ == "__main__":
