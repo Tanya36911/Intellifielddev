@@ -37,31 +37,47 @@ const DASH = {
     { week_start: '2026-06-15', completion_pct: 50, responded: 2, expected: 4 },
   ],
 }
-const COMPLIANCE = {
-  rows: [
+// The root compliance-by-node rollup: one region row (West).
+const NODES = {
+  is_store: false,
+  children: [
     {
-      assignment_id: 'a1',
-      survey_id: 's1',
-      survey_name: 'Velvet Lip Shelf Check',
-      survey_version_id: 'v1',
-      target_node_id: 'n1',
-      target_node_name: 'Central',
-      expected: 1,
-      responded: 0,
-      scored: 0,
-      passed: 0,
-      completion_pct: 0.0,
-      pass_pct: null,
+      node_id: 'west',
+      name: 'West',
+      level_order: 1,
+      is_store: false,
+      expected: 2,
+      responded: 2,
+      scored: 2,
+      passed: 1,
+      completion_pct: 100.0,
+      pass_pct: 50.0,
     },
   ],
-  count: 1,
+}
+// What a drill (?node_id=...) returns: a store's per-product detail.
+const STORE_BLOCK = {
+  is_store: true,
+  name: 'SF store',
+  surveys: [
+    {
+      survey_version_id: 'v1',
+      survey_name: 'Velvet Lip Shelf Check',
+      responded: true,
+      items: [{ question_id: 'q1', sku_id: 'sku-1', value: 3, pass: false }],
+      questions: { q1: false },
+      overall: false,
+    },
+  ],
 }
 
 function route(path: string) {
   if (path.startsWith('/analytics/dashboard')) return Promise.resolve(DASH)
-  if (path.startsWith('/analytics/compliance/drill'))
-    return Promise.resolve({ is_store: false, children: [] })
-  if (path.startsWith('/analytics/compliance')) return Promise.resolve(COMPLIANCE)
+  // The root list and the drill share the /compliance/nodes prefix; branch on the
+  // node_id query string FIRST so the bare prefix does not shadow the drill.
+  if (path.startsWith('/analytics/compliance/nodes') && path.includes('node_id='))
+    return Promise.resolve(STORE_BLOCK)
+  if (path.startsWith('/analytics/compliance/nodes')) return Promise.resolve(NODES)
   return Promise.resolve({})
 }
 
@@ -76,11 +92,11 @@ describe('Dashboard', () => {
     expect(screen.getByText('3')).toBeTruthy() // Overdue
   })
 
-  it('renders a compliance row and a null pass_pct as a no-data dash', async () => {
+  it('renders a compliance-by-node region row with its pass-%', async () => {
     vi.mocked(apiGet).mockImplementation(route as never)
     renderApp(<Dashboard />)
-    expect(await screen.findByText('Velvet Lip Shelf Check')).toBeTruthy()
-    expect(screen.getByText('Central')).toBeTruthy()
+    expect(await screen.findByText('West')).toBeTruthy()
+    expect(screen.getByText('50%')).toBeTruthy()
   })
 
   it('shows the AI gap list with a preview badge', async () => {
@@ -117,29 +133,16 @@ describe('Dashboard', () => {
     )
   })
 
-  it('drilling a store renders the real per-product detail without throwing', async () => {
-    // The real backend shape for a store-targeted drill with a response: items
-    // is an array of {question_id, sku_id, value, pass}; questions is an object
-    // map {question_id: bool|null}; plus is_store/responded/overall.
-    const storeDrill = {
-      is_store: true,
-      responded: true,
-      items: [{ question_id: 'q1', sku_id: 'sku-1', value: 3, pass: false }],
-      questions: { q1: false },
-      overall: false,
-    }
-    vi.mocked(apiGet).mockImplementation(((path: string) => {
-      if (path.startsWith('/analytics/dashboard')) return Promise.resolve(DASH)
-      if (path.startsWith('/analytics/compliance/drill')) return Promise.resolve(storeDrill)
-      if (path.startsWith('/analytics/compliance')) return Promise.resolve(COMPLIANCE)
-      return Promise.resolve({})
-    }) as never)
+  it('drilling a node renders the per-product store detail without throwing', async () => {
+    vi.mocked(apiGet).mockImplementation(route as never)
     renderApp(<Dashboard />)
-    // Open the compliance row to trigger the drill fetch.
-    fireEvent.click(await screen.findByText('Velvet Lip Shelf Check'))
-    // The drill renders the question id (once for the per-product item row and
-    // once for the per-question verdict row) plus the failed item's sku/value.
+    // Open the region row, which drills (?node_id=) into the store block.
+    fireEvent.click(await screen.findByText('West'))
+    // The store block renders the question id twice (per-product item row + the
+    // per-question verdict row) plus the failed item's sku/value, and the survey
+    // name as the block header.
     expect((await screen.findAllByText('q1')).length).toBe(2)
     expect(screen.getByText(/sku-1/)).toBeTruthy()
+    expect(screen.getByText('Velvet Lip Shelf Check')).toBeTruthy()
   })
 })

@@ -31,22 +31,18 @@ export type DashboardData = {
   trend: { week_start: string; completion_pct: number | null; responded: number; expected: number }[]
 }
 
-export type ComplianceRow = {
-  assignment_id: string
-  survey_id: string
-  survey_name: string
-  survey_version_id: string
-  target_node_id: string
-  target_node_name: string
-  expected: number
-  responded: number
-  scored: number
-  passed: number
-  completion_pct: number | null
-  pass_pct: number | null
+// One scored per-product line: which question + product, the raw answer value,
+// and whether it passed (null = no rule / blank, not counted).
+export type DrillItem = {
+  question_id: string
+  sku_id: string | null
+  value: unknown
+  pass: boolean | null
 }
 
-export type DrillChild = {
+// One row of the "Compliance by node" rollup: an org node with its windowed
+// completion %/pass % over the coverage beneath it.
+export type NodeComplianceRow = {
   node_id: string
   name: string
   level_order: number
@@ -59,26 +55,23 @@ export type DrillChild = {
   pass_pct: number | null
 }
 
-// A scored per-product line for a store drill: which question + product, the
-// raw answer value, and whether it passed (null = no rule / blank, not counted).
-export type DrillItem = {
-  question_id: string
-  sku_id: string | null
-  value: unknown
-  pass: boolean | null
+// A store's per-survey detail when you drill all the way down: one block per
+// survey version covering the store. items/questions are ALWAYS present (empty
+// when the store has no response in the window).
+export type StoreSurveyBlock = {
+  survey_version_id: string
+  survey_name: string
+  responded: boolean
+  items: DrillItem[]
+  questions: Record<string, boolean | null>
+  overall: boolean | null
 }
 
-export type DrillResult =
-  | { is_store: false; children: DrillChild[] }
-  | {
-      is_store: true
-      responded: boolean
-      // Present only when responded: items is an array of scored per-product
-      // lines; questions is a map of question_id -> verdict (null = not counted).
-      items?: DrillItem[]
-      questions?: Record<string, boolean | null>
-      overall?: boolean | null
-    }
+// The node-compliance payload: either a non-store node's children (region ->
+// district -> store) or a store's survey blocks. Discriminated on is_store.
+export type NodeCompliance =
+  | { is_store: false; children: NodeComplianceRow[] }
+  | { is_store: true; name: string; surveys: StoreSurveyBlock[] }
 
 // The headline dashboard fetch, re-queried whenever the range changes.
 export function useDashboard(range: Range) {
@@ -92,26 +85,16 @@ export function useDashboard(range: Range) {
   })
 }
 
-// The compliance-by-node list (one row per survey assignment).
-export function useCompliance() {
+// The compliance-by-node rollup for a node (omit nodeId for the caller's scope
+// root). Windowed with the SAME range the dashboard uses, so the region rows
+// aggregate to the headline "Avg. compliance" KPI. Each drill level calls this
+// again with the child's node_id.
+export function useNodeCompliance(nodeId: string | undefined, range: Range) {
+  const { date_from, date_to } = rangeToDates(range)
+  const params = new URLSearchParams({ date_from, date_to })
+  if (nodeId) params.set('node_id', nodeId)
   return useQuery({
-    queryKey: ['compliance'],
-    queryFn: () => apiGet<{ rows: ComplianceRow[]; count: number }>('/analytics/compliance'),
-  })
-}
-
-// The per-row drill, only fetched once a row is expanded (enabled).
-export function useComplianceDrill(
-  nodeId: string,
-  surveyVersionId: string,
-  enabled: boolean,
-) {
-  return useQuery({
-    queryKey: ['compliance-drill', nodeId, surveyVersionId],
-    enabled,
-    queryFn: () =>
-      apiGet<DrillResult>(
-        `/analytics/compliance/drill?node_id=${encodeURIComponent(nodeId)}&survey_version_id=${encodeURIComponent(surveyVersionId)}`,
-      ),
+    queryKey: ['node-compliance', range, nodeId ?? 'root'],
+    queryFn: () => apiGet<NodeCompliance>('/analytics/compliance/nodes?' + params.toString()),
   })
 }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button, Card, Icon, Segmented } from '../../ui'
 import { Topbar } from '../../shell/Topbar'
 import { downloadCsv } from '../../lib/api'
-import { useCompliance, useDashboard, type Range } from './useDashboard'
+import { useDashboard, type Range } from './useDashboard'
 import KpiCard from './KpiCard'
 import TrendChart from './TrendChart'
 import ComplianceList from './ComplianceList'
@@ -15,7 +15,6 @@ const DASH = '—'
 export default function Dashboard() {
   const [range, setRange] = useState<Range>('12w')
   const dash = useDashboard(range)
-  const comp = useCompliance()
 
   const c = dash.data?.current
   const p = dash.data?.previous
@@ -74,7 +73,7 @@ export default function Dashboard() {
             </Card>
             <Card className={styles.compCard}>
               <div className={styles.cardTitle}>Compliance by node</div>
-              <ComplianceList rows={comp.data?.rows ?? []} />
+              <ComplianceList range={range} />
             </Card>
           </div>
 

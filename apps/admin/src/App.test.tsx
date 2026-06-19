@@ -41,7 +41,8 @@ const DASH = {
   trend: [],
 }
 function dashboardRoute(path: string) {
-  if (path.startsWith('/analytics/compliance')) return Promise.resolve({ rows: [], count: 0 })
+  if (path.startsWith('/analytics/compliance'))
+    return Promise.resolve({ is_store: false, children: [] })
   if (path.startsWith('/analytics/dashboard')) return Promise.resolve(DASH)
   return Promise.resolve({})
 }

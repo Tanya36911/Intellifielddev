@@ -89,6 +89,16 @@
   font-size: 11.5px;
   color: var(--text-3);
 }
+/* Survey-name header above a store's per-product detail in the drill. */
+.surveyHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
 /* Neutral no-data verdict mark, sized to line up with the 13px verdict icons. */
 .drillDash {
   width: 13px;
