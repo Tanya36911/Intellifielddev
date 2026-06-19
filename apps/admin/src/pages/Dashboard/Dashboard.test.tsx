@@ -116,4 +116,30 @@ describe('Dashboard', () => {
       expect.any(String),
     )
   })
+
+  it('drilling a store renders the real per-product detail without throwing', async () => {
+    // The real backend shape for a store-targeted drill with a response: items
+    // is an array of {question_id, sku_id, value, pass}; questions is an object
+    // map {question_id: bool|null}; plus is_store/responded/overall.
+    const storeDrill = {
+      is_store: true,
+      responded: true,
+      items: [{ question_id: 'q1', sku_id: 'sku-1', value: 3, pass: false }],
+      questions: { q1: false },
+      overall: false,
+    }
+    vi.mocked(apiGet).mockImplementation(((path: string) => {
+      if (path.startsWith('/analytics/dashboard')) return Promise.resolve(DASH)
+      if (path.startsWith('/analytics/compliance/drill')) return Promise.resolve(storeDrill)
+      if (path.startsWith('/analytics/compliance')) return Promise.resolve(COMPLIANCE)
+      return Promise.resolve({})
+    }) as never)
+    renderApp(<Dashboard />)
+    // Open the compliance row to trigger the drill fetch.
+    fireEvent.click(await screen.findByText('Velvet Lip Shelf Check'))
+    // The drill renders the question id (once for the per-product item row and
+    // once for the per-question verdict row) plus the failed item's sku/value.
+    expect((await screen.findAllByText('q1')).length).toBe(2)
+    expect(screen.getByText(/sku-1/)).toBeTruthy()
+  })
 })

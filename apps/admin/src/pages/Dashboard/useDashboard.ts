@@ -59,14 +59,25 @@ export type DrillChild = {
   pass_pct: number | null
 }
 
+// A scored per-product line for a store drill: which question + product, the
+// raw answer value, and whether it passed (null = no rule / blank, not counted).
+export type DrillItem = {
+  question_id: string
+  sku_id: string | null
+  value: unknown
+  pass: boolean | null
+}
+
 export type DrillResult =
   | { is_store: false; children: DrillChild[] }
   | {
       is_store: true
       responded: boolean
-      items?: { name: string; ok: boolean; detail?: string }[]
-      questions?: { prompt: string; ok: boolean; answer?: string }[]
-      overall?: number | null
+      // Present only when responded: items is an array of scored per-product
+      // lines; questions is a map of question_id -> verdict (null = not counted).
+      items?: DrillItem[]
+      questions?: Record<string, boolean | null>
+      overall?: boolean | null
     }
 
 // The headline dashboard fetch, re-queried whenever the range changes.
