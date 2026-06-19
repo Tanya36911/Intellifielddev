@@ -323,18 +323,21 @@ def run() -> None:
             assign_node=central, created_by=dana_id,
         )
 
-        # A real response at SF (Bay Area, Marcus's scope): Rosewood below the
-        # bar (3 < 4) so q1 fails, endcap present so q2 passes -> overall fail.
+        # SF's LATEST reading (no submitted_at -> now(), so it is the current
+        # reading): Rosewood 6 >= 4 and endcap present -> overall PASS. Bay Area's
+        # SF store reads healthy on the dashboard.
         _response(
             conn, lumen, "Velvet Lip Shelf Check", "sf", "marcus@lumenbeauty.com",
-            [{"question_id": "q1", "sku_id": str(rose), "value": 3},
+            [{"question_id": "q1", "sku_id": str(rose), "value": 6},
              {"question_id": "q2", "value": True}],
         )
-        # Oakland: Rosewood out of stock (0) -> shows in the OOS report.
+        # Oakland's LATEST reading: Rosewood 2 < 4 (two facings short of the
+        # planogram) so q1 FAILS, even though the endcap is present. This is the
+        # drillable failure: West -> Bay Area -> Oakland -> "Rosewood: 2".
         _response(
             conn, lumen, "Velvet Lip Shelf Check", "oakland", "marcus@lumenbeauty.com",
-            [{"question_id": "q1", "sku_id": str(rose), "value": 0},
-             {"question_id": "q2", "value": False}],
+            [{"question_id": "q1", "sku_id": str(rose), "value": 2},
+             {"question_id": "q2", "value": True}],
         )
         # An earlier SF reading so the facings trend has more than one point.
         # NOTE: an export test filters to exactly this instant and expects 1 row,
@@ -351,14 +354,14 @@ def run() -> None:
                      {"id": lumen})
         _user(conn, lumen, "rico@lumenbeauty.com", "Rico Vance", "rep", chicago)
 
-        # Company-wide coverage with a PAST deadline. This makes sf + oakland count
-        # toward completion (they have responses) and leaves Chicago store overdue
-        # (it has none), so the dashboard shows a real completion %, a non-zero
-        # Overdue, and a "compliance by node" picture. The earlier central
-        # assignment (no deadline) stays; the latest published version is shared,
-        # so coverage de-dupes per distinct (store, version) and never double-counts.
-        # Placed here (not next to the survey) because the spread below needs rico,
-        # who is created just above in the payroll section.
+        # Company-wide coverage (all three stores). The earlier central assignment
+        # (no deadline) stays; the latest published version is shared, so coverage
+        # de-dupes per distinct (store, version) and never double-counts. A past
+        # deadline is kept for realism, but every covered store now has a reading
+        # (see the chicago response below), so the dashboard shows a healthy
+        # "compliance by node" with no empty rows and Overdue 0. Placed here (not
+        # next to the survey) because the spread below needs rico, created just
+        # above in the payroll section.
         _assign_survey(
             conn, lumen, "Velvet Lip Shelf Check", l_root,
             created_by=dana_id, deadline="2026-06-12T00:00:00Z",
@@ -368,9 +371,10 @@ def run() -> None:
         # weeks (UTC), one per (store, user) pair since the seed is idempotent on
         # that key. Varied Rosewood facings: passing (>=4), failing (<4), and 0
         # (out of stock), with the endcap boolean mixed. This gives the weekly
-        # trend several points that rise as more stores report, and fills the
-        # out-of-stock panel with real entries. Chicago store stays unanswered so
-        # Overdue stays > 0. None of these use 2026-06-10T09:00:00Z (export test).
+        # completion trend several points that rise as more stores report. The
+        # current (latest) readings are set by the now()-dated sf/oakland responses
+        # above plus the recent chicago response below. None of these use
+        # 2026-06-10T09:00:00Z (an export test pins exactly one response there).
         _spread = [
             # week, store, author, rosewood facings, endcap present
             ("2026-04-28T10:00:00Z", "oakland", "dana@lumenbeauty.com", 2, False),
@@ -388,6 +392,17 @@ def run() -> None:
                  {"question_id": "q2", "value": endcap}],
                 submitted_at=when,
             )
+
+        # Chicago store's reading (rico, pinned at Chicago): Rosewood 5 >= 4 and
+        # endcap present -> overall PASS. This is Central's only store, so Central
+        # reads 100% on the dashboard and is no longer overdue. Dated recently so
+        # it lifts the latest weekly-trend point.
+        _response(
+            conn, lumen, "Velvet Lip Shelf Check", "chicago-store", "rico@lumenbeauty.com",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5},
+             {"question_id": "q2", "value": True}],
+            submitted_at="2026-06-16T10:00:00Z",
+        )
 
         period = _pay_period(conn, lumen, "June 1-15", "2026-06-01", "2026-06-15")
         _time_entry(conn, lumen, period, "marcus@lumenbeauty.com", 480, 60, 90, 42, "pending")
@@ -416,7 +431,7 @@ def run() -> None:
             [{"question_id": "q1", "value": True}],
         )
 
-    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 2 assignments, 10 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
+    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 2 assignments, 11 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
 
 
 if __name__ == "__main__":
