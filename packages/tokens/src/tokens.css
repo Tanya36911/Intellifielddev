@@ -53,11 +53,73 @@
   --r-2xl: 20px;
   --r-full: 999px;
 
-  --gap: 14px;
+  /* density (regular) — overridden by data-density */
+  --gap: 20px;
   --pad: 22px;
   --row-h: 40px;
-
   --font-base: 14px;
+
   --sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* layout */
+  --sidebar-w: 248px;
+  --topbar-h: 56px;
+}
+
+/* The headings font (Space Grotesk) plus the body/mono fonts are loaded by the
+   app shell (a <link> in apps/admin/index.html), so no @import is needed here. */
+
+[data-density="compact"] {
+  --gap: 14px;
+  --pad: 16px;
+  --row-h: 34px;
+  --font-base: 13px;
+}
+[data-density="comfy"] {
+  --gap: 26px;
+  --pad: 28px;
+  --row-h: 46px;
+  --font-base: 15px;
+}
+
+[data-theme="dark"] {
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-press: #a5b4fc;
+  --accent-fg: #ffffff;
+  --accent-subtle: #1e1b3a;
+  --accent-subtle-2: #2a2553;
+  --accent-ring: rgba(99, 102, 241, 0.28);
+
+  --bg: #0a0a0c;
+  --bg-elev: #0f0f12;
+  --surface: #151518;
+  --surface-2: #18181c;
+  --surface-hover: #1d1d22;
+  --surface-active: #232329;
+
+  --border: #26262c;
+  --border-strong: #34343c;
+  --border-faint: #1c1c21;
+
+  --text: #f4f4f5;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
+  --text-4: #52525b;
+
+  --green-bg: #07271a;
+  --green-fg: #4ade80;
+  --amber-bg: #2a1e07;
+  --amber-fg: #fbbf24;
+  --red-bg: #2c1413;
+  --red-fg: #fca5a5;
+  --blue-bg: #0c1f3d;
+  --violet-bg: #1e1438;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.6);
 }

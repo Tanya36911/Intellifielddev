@@ -55,9 +55,15 @@ export const radius = {
 } as const;
 
 export const space = {
-  gap: 14,
+  gap: 20,
   pad: 22,
   rowH: 40,
+} as const;
+
+// Layout scalars used by the app shell (sidebar width, top bar height).
+export const layout = {
+  sidebarW: '248px',
+  topbarH: '56px',
 } as const;
 
 export const type = {
@@ -74,5 +80,5 @@ export const shadow = {
   pop: '0 12px 40px rgba(24, 24, 27, 0.14), 0 2px 8px rgba(24, 24, 27, 0.06)',
 } as const;
 
-export const tokens = { color, radius, space, type, shadow } as const;
+export const tokens = { color, radius, space, layout, type, shadow } as const;
 export default tokens;
