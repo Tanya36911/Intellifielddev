@@ -13,6 +13,19 @@ from .scope import ScopedRepo, get_scoped_repo
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
+@router.get("/dashboard")
+def dashboard(
+    node_id: UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+) -> dict:
+    result = repo.dashboard(node_id, date_from, date_to)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Node not found in your scope")
+    return result
+
+
 @router.get("/compliance")
 def compliance(
     node_id: UUID | None = None,

@@ -719,6 +719,69 @@ class ScopedRepo:
                 })
         return out
 
+    @staticmethod
+    def _zero_dashboard():
+        return {
+            "footprint": {"nodes": 0, "stores": 0, "reps": 0},
+            "current": {"completion_pct": None, "pass_pct": None, "expected": 0,
+                        "responded": 0, "scored": 0, "passed": 0,
+                        "surveys_completed": 0, "overdue": 0},
+            "previous": None,
+            "trend": [],
+        }
+
+    def dashboard(self, node_id=None, date_from=None, date_to=None):
+        """Headline figures for the Admin dashboard, branch-scoped. Returns None
+        only if node_id is given but out of scope (-> 404); an unpinned caller
+        (scope_path None) returns the zero payload (200)."""
+        if self.scope_path is None:
+            return self._zero_dashboard()
+        with engine.connect() as conn:
+            base = self._base_path_in_scope(conn, node_id)
+            if base is None:
+                return None  # node_id out of scope -> 404
+            maxlvl = self._max_level(conn)
+            footprint = {
+                "nodes": conn.execute(
+                    text("select count(*) from nodes where tenant_id = cast(:tid as uuid) "
+                         "and path like :base || '%'"),
+                    {"tid": str(self.tenant_id), "base": base}).scalar(),
+                "stores": conn.execute(
+                    text("select count(*) from nodes where tenant_id = cast(:tid as uuid) "
+                         "and level_order = :ml and path like :base || '%'"),
+                    {"tid": str(self.tenant_id), "ml": maxlvl, "base": base}).scalar(),
+                "reps": conn.execute(
+                    text("select count(*) from users u "
+                         "join assignments a on a.user_id = u.id and a.tenant_id = cast(:tid as uuid) "
+                         "join nodes n on n.id = a.node_id "
+                         "where u.tenant_id = cast(:tid as uuid) and u.role = 'rep' "
+                         "and n.path like :base || '%'"),
+                    {"tid": str(self.tenant_id), "base": base}).scalar(),
+            }
+            current = self._dashboard_window(conn, base, maxlvl, date_from, date_to)
+            current["surveys_completed"] = self._surveys_completed(conn, base, maxlvl, date_from, date_to)
+            current["overdue"] = 0  # filled in Task 4
+            previous = None         # filled in Task 3
+            trend = []              # filled in Task 5
+        return {"footprint": footprint, "current": current, "previous": previous, "trend": trend}
+
+    def _surveys_completed(self, conn, base, maxlvl, date_from, date_to):
+        clauses = ["r.tenant_id = cast(:tid as uuid)", "n.path like :base || '%'",
+                   "n.level_order = :ml"]
+        params = {"tid": str(self.tenant_id), "base": base, "ml": maxlvl}
+        if date_from is not None:
+            clauses.append("r.submitted_at >= cast(:df as timestamptz)"); params["df"] = date_from.isoformat()
+        if date_to is not None:
+            clauses.append("r.submitted_at <= cast(:dt as timestamptz)"); params["dt"] = date_to.isoformat()
+        return conn.execute(
+            text("select count(*) from responses r join nodes n on n.id = r.store_node_id "
+                 "where " + " and ".join(clauses)), params).scalar()
+
+    def _dashboard_window(self, conn, base, maxlvl, date_from, date_to):
+        # Filled in Task 3 (distinct-coverage date-bounded compliance aggregate).
+        return {"completion_pct": None, "pass_pct": None, "expected": 0,
+                "responded": 0, "scored": 0, "passed": 0}
+
     def _version_questions(self, conn, version_id):
         """The version's questions if it belongs to the caller's company, else
         None (-> 404)."""
