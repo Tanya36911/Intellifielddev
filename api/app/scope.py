@@ -768,8 +768,58 @@ class ScopedRepo:
                 previous = self._dashboard_window(conn, base, maxlvl, prev_from, prev_to)
                 previous["surveys_completed"] = self._surveys_completed(conn, base, maxlvl, prev_from, prev_to)
                 previous["overdue"] = 0  # overdue is as-of-now only (see Task 4); not windowed
-            trend = []              # filled in Task 5
+            trend = self._trend(conn, base, maxlvl, date_from, date_to)
         return {"footprint": footprint, "current": current, "previous": previous, "trend": trend}
+
+    def _covered_store_ids(self, conn, base, maxlvl):
+        assigns = conn.execute(
+            text("select n.path as target_path from survey_assignments a "
+                 "join nodes n on n.id = a.target_node_id "
+                 "where a.tenant_id = cast(:tid as uuid) "
+                 "and (:base like n.path || '%' or n.path like :base || '%')"),
+            {"tid": str(self.tenant_id), "base": base},
+        ).mappings().all()
+        ids = set()
+        for a in assigns:
+            measured = a["target_path"] if len(a["target_path"]) >= len(base) else base
+            for sid in self._store_ids_under(conn, measured, maxlvl):
+                ids.add(str(sid))
+        return ids
+
+    def _trend(self, conn, base, maxlvl, date_from, date_to):
+        if date_from is None or date_to is None:
+            return []
+        store_ids = self._covered_store_ids(conn, base, maxlvl)
+        expected = len(store_ids)
+        rows = []
+        # ISO weeks: bucket start = Monday 00:00 UTC. date_trunc('week', ...) in
+        # Postgres is Monday-based. Group distinct responders per week.
+        if expected and store_ids:
+            counts = {r["wk"].date().isoformat(): r["n"] for r in conn.execute(
+                text("select date_trunc('week', submitted_at at time zone 'UTC') as wk, "
+                     "count(distinct store_node_id) as n from responses "
+                     "where tenant_id = cast(:tid as uuid) "
+                     "and store_node_id = any(cast(:sids as uuid[])) "
+                     "and submitted_at >= cast(:df as timestamptz) "
+                     "and submitted_at <= cast(:dt as timestamptz) "
+                     "group by wk"),
+                {"tid": str(self.tenant_id), "sids": list(store_ids),
+                 "df": date_from.isoformat(), "dt": date_to.isoformat()},
+            ).mappings().all()}
+        else:
+            counts = {}
+        # walk Monday-aligned weeks across the range
+        import datetime as _dt
+        start = (date_from - _dt.timedelta(days=date_from.weekday())).date()
+        end = date_to.date()
+        wk = start
+        while wk <= end:
+            key = wk.isoformat()
+            responded = counts.get(key, 0)
+            rows.append({"week_start": key, "responded": responded,
+                         "expected": expected, "completion_pct": self._pct(responded, expected)})
+            wk = wk + _dt.timedelta(days=7)
+        return rows
 
     def _overdue(self, conn, base, maxlvl):
         """As-of-now overdue: covered stores under a past-deadline assignment that

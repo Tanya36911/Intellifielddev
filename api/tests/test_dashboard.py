@@ -205,3 +205,23 @@ def test_dashboard_overdue_counts_past_deadline_unanswered(client, login):
     body = client.get("/analytics/dashboard", headers=_auth(dana),
                       params={"node_id": str(_node_id("bayarea"))}).json()
     assert body["current"]["overdue"] == 1
+
+
+def test_dashboard_weekly_trend(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish(client, dana, "W1a Trend", q)
+    _assign(client, dana, vid, "bayarea")  # expected = 2 stores (sf, oakland)
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    body = client.get("/analytics/dashboard", headers=_auth(dana),
+                      params={"node_id": str(_node_id("bayarea")),
+                              "date_from": "2026-06-15T00:00:00Z",
+                              "date_to": "2026-06-29T00:00:00Z"}).json()
+    trend = body["trend"]
+    assert len(trend) >= 1                       # weekly buckets across the range
+    assert all(set(p) == {"week_start", "completion_pct", "responded", "expected"} for p in trend)
+    assert all(p["expected"] == 2 for p in trend)  # expected is the constant covered-store count
+    # the week marcus responded shows at least 1 responded store, completion >= 50%
+    hit = [p for p in trend if p["responded"] >= 1]
+    assert hit and hit[0]["completion_pct"] >= 50.0
