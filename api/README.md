@@ -229,7 +229,7 @@ as Acme in the demo). All endpoints also go through the standard wristband check
   actions.
 
 ### app/analytics.py  (the read-only reports API)
-Defines five read-only report endpoints, all branch-scoped through the
+Defines six read-only report endpoints, all branch-scoped through the
 ScopedRepo. No new database tables were added; all numbers are computed live
 from the existing response rows each time you ask.
 
@@ -252,10 +252,20 @@ from the existing response rows each time you ask.
   many passed (pass %). An ancestor rule means a company-wide survey assigned
   at the company root still shows correctly when you look from a region: it
   measures only that region's own stores.
-- `GET /analytics/compliance/drill` lets you step down the org tree. At a
-  region you see its districts and stores; at a single store you see the
-  per-product reason each question failed. This is the "why did this store
-  fail?" view.
+- `GET /analytics/compliance/drill` lets you step down the org tree for ONE
+  survey version. At a region you see its districts and stores; at a single
+  store you see the per-product reason each question failed.
+- `GET /analytics/compliance/nodes` is the org-node version of compliance, and
+  the one the dashboard's "Compliance by node" card uses (added with the
+  region-drill rework). Instead of one row per survey, it returns one row per
+  child node (the regions when you look from the company root), each rolled up
+  ACROSS all surveys over the distinct store-by-survey obligations beneath it,
+  so two overlapping assignments of the same survey never double-count. Pass a
+  `node_id` to step down (region -> district -> store); at a store it returns the
+  per-product reason each covering survey passed or failed. It takes the same
+  `date_from`/`date_to` window as the dashboard, so the card and the headline
+  "Avg. compliance" KPI always agree. A node outside your scope returns 404; an
+  unpinned caller gets an empty list.
 - `GET /analytics/oos` counts out-of-stock by product (a product is out of
   stock when a rep recorded a count of zero for it). It uses each store's most
   recent response, not all responses.

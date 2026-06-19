@@ -93,12 +93,15 @@ small shared **UI kit** ported from the prototype (`apps/admin/src/ui/`: Icon,
 Avatar, Chip, Button, Card, Segmented, Switch, Spark, Bar), and its first real
 screen, the **Analytics dashboard** (`apps/admin/src/pages/Dashboard/`): headline
 cards with sparklines and deltas, a weekly completion-trend line, a
-compliance-by-node list you click to drill into, an Export-to-CSV button, and an
-AI gap list badged "preview". To feed it, the backend gained one read-only
-endpoint, `GET /analytics/dashboard` (branch-scoped, no new tables), which returns
-the dashboard's headline figures in one call, and the login response now also
-returns the company and pinned-node names for the sidebar. (This W1 merged the old
-plan's W1 and W2: the shell ships with the real dashboard as its first screen.)
+**compliance-by-node** card that lists your org nodes (the regions when you are at
+the company root) and drills region -> district -> store -> the per-product reason
+a store failed, an Export-to-CSV button, and an AI gap list badged "preview". To
+feed it, the backend has `GET /analytics/dashboard` (the one-call headline summary)
+and `GET /analytics/compliance/nodes` (the org-node rollup behind the
+compliance-by-node card), both branch-scoped, no new tables, and both windowed to
+the same date range so the card and the headline always agree; the login response
+also returns the company and pinned-node names for the sidebar. (This W1 merged the
+old plan's W1 and W2: the shell ships with the real dashboard as its first screen.)
 
 ```
    YOU (browser)              THE WAITER                THE PANTRY

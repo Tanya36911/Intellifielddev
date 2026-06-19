@@ -235,3 +235,20 @@ fast-follow, never the headline.
   semicolon splitter; Postgres parses statement boundaries). Verified: 32 backend tests green,
   dbmate down+up of the latest migration succeeds with the new format, schema unchanged. Authoring
   rule recorded in db/README: never edit an already-applied migration in production; add a new one.
+- 2026-06-19: Compliance-by-node region drill + healthy demo seed (a W1 dashboard refinement). The
+  "Compliance by node" card was reshaped from a per-survey-assignment list (which showed duplicate
+  survey rows and empty 0%/dash bars, and did not match the prototype) into a recursive ORG-NODE
+  drill: it lists your nodes (the regions at the company root) and steps region -> district -> store
+  -> the per-product reason a store failed. New read-only GET /analytics/compliance/nodes
+  (ScopedRepo.node_compliance, cross-survey, no new tables) rolls each child node up over the distinct
+  (store, version) coverage beneath it via the same _dashboard_window the headline uses, windowed by
+  date_from/date_to so the card and the "Avg. compliance" KPI always agree. Frontend: useNodeCompliance
+  (sends the dashboard's range) + a rewritten ComplianceList (recursive NodeRow/NodeDrill, narrows on
+  data.is_store); the now-unused useCompliance/useComplianceDrill hooks were removed. Seed retuned
+  (response values only; footprint 8/3/2, the protected 2026-06-10 export instant, payroll, and Acme
+  isolation all unchanged): SF latest passes, Oakland latest fails (Rosewood 2, a drillable "two
+  facings short"), Chicago answers and passes - so the demo reads West 50%, Central 100%, avg
+  compliance 67%, completion 100%, overdue 0, with filled bars and a real drillable failure (no more
+  0%/empty look). Reviewed by two 3-reviewer adversarial passes (spec, then code). Gate GREEN: 190
+  backend tests + 54 frontend checks, tsc + vite build clean. Numbers appear on screen only after a
+  fresh seed (the dev DB must be reseeded; the seed is idempotent so it will not overwrite old rows).

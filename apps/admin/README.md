@@ -131,15 +131,19 @@ All of the kit is checked together by `ui/ui.test.tsx`.
   - `KpiCard.tsx`: a single headline card (a number like average compliance, with
     a tiny trend line and an up/down change). The dashboard shows three.
   - `TrendChart.tsx`: the weekly completion-trend line.
-  - `ComplianceList.tsx`: the list of how compliant each part of the org is, which
-    you click to drill from a region down to a single store and the exact product
-    that failed.
+  - `ComplianceList.tsx`: the "Compliance by node" card. It lists your org nodes
+    (the regions when you are at the company root), and you click a row to drill
+    region -> district -> store -> the exact product that failed. Each level fetches
+    `/analytics/compliance/nodes` for that node, windowed to the same date range as
+    the headline cards so the two always agree.
   - `AiPreview.tsx`: the AI gap list, clearly badged "preview" (it is a glimpse of
     a later feature, not live yet).
-  - `useDashboard.ts`: the "hook" that actually fetches the dashboard numbers from
-    the backend's `/analytics/dashboard` address (via `apiGet`) and hands them to
-    the screen. Keeping the data-fetching in its own file keeps the screen file
-    about layout. Checked by `useDashboard.test.ts`.
+  - `useDashboard.ts`: the "hooks" that fetch the screen's numbers from the backend
+    (via `apiGet`): `useDashboard` for the headline figures (`/analytics/dashboard`)
+    and `useNodeCompliance` for the compliance-by-node rollup
+    (`/analytics/compliance/nodes`), both sending the selected date range. Keeping
+    the data-fetching in its own file keeps the screen file about layout. Checked by
+    `useDashboard.test.ts`.
   (Each `.tsx` above has a matching `.module.css` for its look.)
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
   for the menu items whose screens we have not built yet.
