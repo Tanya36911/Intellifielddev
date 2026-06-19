@@ -761,7 +761,13 @@ class ScopedRepo:
             current = self._dashboard_window(conn, base, maxlvl, date_from, date_to)
             current["surveys_completed"] = self._surveys_completed(conn, base, maxlvl, date_from, date_to)
             current["overdue"] = 0  # filled in Task 4
-            previous = None         # filled in Task 3
+            previous = None
+            if date_from is not None and date_to is not None:
+                window = date_to - date_from
+                prev_from, prev_to = date_from - window, date_from
+                previous = self._dashboard_window(conn, base, maxlvl, prev_from, prev_to)
+                previous["surveys_completed"] = self._surveys_completed(conn, base, maxlvl, prev_from, prev_to)
+                previous["overdue"] = 0  # overdue is as-of-now only (see Task 4); not windowed
             trend = []              # filled in Task 5
         return {"footprint": footprint, "current": current, "previous": previous, "trend": trend}
 
@@ -778,9 +784,51 @@ class ScopedRepo:
                  "where " + " and ".join(clauses)), params).scalar()
 
     def _dashboard_window(self, conn, base, maxlvl, date_from, date_to):
-        # Filled in Task 3 (distinct-coverage date-bounded compliance aggregate).
-        return {"completion_pct": None, "pass_pct": None, "expected": 0,
-                "responded": 0, "scored": 0, "passed": 0}
+        assigns = conn.execute(
+            text("select a.survey_version_id, n.path as target_path "
+                 "from survey_assignments a join nodes n on n.id = a.target_node_id "
+                 "where a.tenant_id = cast(:tid as uuid) "
+                 "and (:base like n.path || '%' or n.path like :base || '%')"),
+            {"tid": str(self.tenant_id), "base": base},
+        ).mappings().all()
+        # distinct (store_id, version_id) obligations
+        pairs = set()
+        for a in assigns:
+            measured = a["target_path"] if len(a["target_path"]) >= len(base) else base
+            for sid in self._store_ids_under(conn, measured, maxlvl):
+                pairs.add((str(sid), str(a["survey_version_id"])))
+        expected = len(pairs)
+        if expected == 0:
+            return {"completion_pct": None, "pass_pct": None, "expected": 0,
+                    "responded": 0, "scored": 0, "passed": 0}
+        # group obligations by version; per version find each store's latest
+        # in-window response, then score in bulk.
+        by_version = {}
+        for sid, vid in pairs:
+            by_version.setdefault(vid, set()).add(sid)
+        df = date_from.isoformat() if date_from is not None else None
+        dt = date_to.isoformat() if date_to is not None else None
+        df_clause = "and submitted_at >= cast(:df as timestamptz) " if df else ""
+        dt_clause = "and submitted_at <= cast(:dt as timestamptz) " if dt else ""
+        responded = scored = passed = 0
+        for vid, store_ids in by_version.items():
+            latest = conn.execute(
+                text("select distinct on (store_node_id) id, store_node_id from responses "
+                     "where survey_version_id = cast(:vid as uuid) "
+                     "and tenant_id = cast(:tid as uuid) "
+                     "and store_node_id = any(cast(:sids as uuid[])) "
+                     + df_clause + dt_clause +
+                     "order by store_node_id, submitted_at desc"),
+                {"vid": vid, "tid": str(self.tenant_id), "sids": list(store_ids),
+                 "df": df, "dt": dt},
+            ).mappings().all()
+            responded += len(latest)
+            overalls = self._overall_for(conn, vid, [r["id"] for r in latest])
+            scored += sum(1 for v in overalls.values() if v is not None)
+            passed += sum(1 for v in overalls.values() if v is True)
+        return {"completion_pct": self._pct(responded, expected),
+                "pass_pct": self._pct(passed, scored), "expected": expected,
+                "responded": responded, "scored": scored, "passed": passed}
 
     def _version_questions(self, conn, version_id):
         """The version's questions if it belongs to the caller's company, else

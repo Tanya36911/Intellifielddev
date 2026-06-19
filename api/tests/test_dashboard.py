@@ -94,14 +94,18 @@ def test_dashboard_surveys_completed_counts_responses(client, login):
     dana = login("dana@lumenbeauty.com")
     q, rose = _rose_q()
     vid = _publish(client, dana, "W1a Surveys Completed", q)
-    _assign(client, dana, vid, "bayarea")
-    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+    # Assign + submit under Central (chicago-store), via dana (pinned at root, so
+    # she can submit anywhere), NOT under West. This keeps West free of extra
+    # coverage so the no-double-count test (which is West-scoped) is not polluted
+    # by this test's assignment in the shared, non-rolled-back DB.
+    _assign(client, dana, vid, "chicago")
+    _submit(client, dana, vid, "chicago-store",
             [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
     # Count over just this survey by reading the per-version count is awkward via
     # the aggregate; instead assert the company-wide count is at least the 3 seed
     # responses + this one, and that a fresh submit increments it.
     before = client.get("/analytics/dashboard", headers=_auth(dana)).json()["current"]["surveys_completed"]
-    _submit(client, login("marcus@lumenbeauty.com"), vid, "oakland",
+    _submit(client, dana, vid, "chicago-store",
             [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
     after = client.get("/analytics/dashboard", headers=_auth(dana)).json()["current"]["surveys_completed"]
     assert after == before + 1
@@ -121,3 +125,58 @@ def test_dashboard_unpinned_caller_zero_payload(client, login):
     assert body["current"]["completion_pct"] is None
     assert body["previous"] is None
     assert body["trend"] == []
+
+
+def test_dashboard_compliance_no_double_count(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish(client, dana, "W1a No Double Count", q)
+
+    def west_current():
+        return client.get("/analytics/dashboard", headers=_auth(dana),
+                          params={"node_id": str(_node_id("west"))}).json()["current"]
+
+    # The dashboard compliance aggregate is company-wide over the DISTINCT set of
+    # (store, survey_version) obligations in scope. The shared seeded DB is not
+    # rolled back, so West already carries coverage from other tests/files; we
+    # therefore prove the no-double-count contract with DELTAS against this version
+    # rather than an absolute count (which would assume a pristine West).
+    base = west_current()
+
+    # First assignment of THIS version at Bay Area: covers {sf, oakland} = 2 new
+    # distinct (store, version) obligations under West.
+    _assign(client, dana, vid, "bayarea")
+    after_one = west_current()
+    assert after_one["expected"] == base["expected"] + 2  # sf + oakland, once each
+
+    # A SECOND, overlapping assignment of the SAME version at West: it covers the
+    # same two stores. A per-assignment SUM would add 2 again (double-count); the
+    # distinct-coverage aggregate must add ZERO.
+    _assign(client, dana, vid, "west")
+    after_two = west_current()
+    assert after_two["expected"] == after_one["expected"]  # no double-count
+
+    # One passing response at sf: responded/scored/passed each rise by exactly 1
+    # for this store+version (counted once, not once per overlapping assignment).
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])  # pass
+    after_resp = west_current()
+    assert after_resp["responded"] == after_two["responded"] + 1
+    assert after_resp["scored"] == after_two["scored"] + 1
+    assert after_resp["passed"] == after_two["passed"] + 1
+
+
+def test_dashboard_previous_window(client, login):
+    dana = login("dana@lumenbeauty.com")
+    # With a date range, previous is the equal-length window before date_from.
+    body = client.get("/analytics/dashboard", headers=_auth(dana),
+                      params={"date_from": "2026-06-15T00:00:00Z",
+                              "date_to": "2026-06-22T00:00:00Z"}).json()
+    assert body["previous"] is not None
+    assert "completion_pct" in body["previous"]
+
+
+def test_dashboard_previous_null_without_range(client, login):
+    dana = login("dana@lumenbeauty.com")
+    body = client.get("/analytics/dashboard", headers=_auth(dana)).json()
+    assert body["previous"] is None
