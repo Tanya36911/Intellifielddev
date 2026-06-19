@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>W3 Catalog mockup</title>
+<style>
+/* ---- Tokens ported from the prototype shared/styles.css (deep-ocean accent) ---- */
+:root{
+  --accent:#1B4F8A; --accent-hover:#174274; --accent-fg:#fff; --accent-subtle:#e8edf3; --accent-ring:rgba(27,79,138,.16);
+  --bg:#fafafa; --bg-elev:#f4f4f5; --surface:#fff; --surface-2:#fafafa; --surface-hover:#f4f4f5;
+  --border:#e9e9ec; --border-strong:#dcdce0; --border-faint:#f1f1f3;
+  --text:#18181b; --text-2:#52525b; --text-3:#8a8a93; --text-4:#b4b4bb;
+  --green:#16a34a; --green-bg:#ecfdf3; --green-fg:#157f3c; --red:#dc2626; --red-bg:#fef3f2; --red-fg:#b42318;
+  --shadow-xs:0 1px 2px rgba(24,24,27,.04); --shadow-sm:0 1px 2px rgba(24,24,27,.05),0 1px 3px rgba(24,24,27,.04);
+  --shadow-pop:0 12px 40px rgba(24,24,27,.14),0 2px 8px rgba(24,24,27,.06);
+  --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-full:999px;
+  --sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sidebar-w:248px; --topbar-h:56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:var(--mono)}
+.mut{color:var(--text-3)}
+.hint{font-size:12.5px;color:var(--text-3);line-height:1.5}
+.label{font-size:12.5px;font-weight:600;color:var(--text-2)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.divider{height:1px;background:var(--border);border:none;margin:0}
+
+/* layout: a faux sidebar + the catalog page, so it reads like the real app */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.companycard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px}
+.companycard .sq{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#c9a0e0,#9b6bd1)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;font-size:13.5px;font-weight:600}
+.nav a.active{background:var(--accent-subtle);color:var(--accent)}
+.nav a.soon{color:var(--text-4)}
+.nav a.soon .soonchip{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-4);border:1px solid var(--border);border-radius:var(--r-full);padding:1px 7px;text-transform:uppercase}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-4);padding:14px 10px 6px}
+.footprint{margin-top:auto;display:flex;gap:14px;padding:12px 10px;border-top:1px solid var(--border)}
+.footprint b{font-size:17px;font-weight:700;display:block}
+.footprint span{font-size:10.5px;color:var(--text-3)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:var(--topbar-h);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 22px}
+.topbar .ttl{font-size:15.5px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text-3)}
+.topbar .sp{flex:1}
+.page{padding:22px;max-width:1080px;width:100%;margin:0 auto}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;height:36px;padding:0 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-hover)}
+.btn svg{width:15px;height:15px}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px;border-radius:var(--r-xs)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:var(--shadow-xs)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled,.btn.disabled{opacity:.5;cursor:not-allowed}
+.btn.icon{width:36px;padding:0}.btn.icon.sm{width:30px}
+
+/* inputs */
+.input{height:38px;padding:0 12px;width:100%;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;outline:none;font-family:inherit}
+.input::placeholder{color:var(--text-4)}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+select.input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a8a93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+
+/* card / chip / segmented / table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xs)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:var(--r-full);font-size:11.5px;font-weight:600;background:var(--bg-elev);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.chip.green{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+.segmented{display:inline-flex;padding:3px;gap:2px;background:var(--bg-elev);border-radius:var(--r-sm);border:1px solid var(--border)}
+.segmented button{border:none;background:transparent;color:var(--text-2);height:28px;padding:0 12px;border-radius:var(--r-xs);font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-xs)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--text-3);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border-faint);font-size:13.5px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.clickable{cursor:pointer}
+.tbl tr.clickable:hover td{background:var(--surface-hover)}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.stat{display:flex;align-items:center;gap:13px;padding:16px}
+.stat .ic{width:38px;height:38px;border-radius:10px;background:var(--accent-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+.stat .big{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.searchwrap{position:relative;flex:1;min-width:220px}
+.searchwrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3)}
+.searchwrap .input{padding-left:34px}
+
+/* line section */
+.lines{display:flex;flex-direction:column;gap:12px}
+.line{padding:0;overflow:hidden}
+.linehead{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:14px 16px;border:none;background:var(--surface-2);cursor:pointer;border-bottom:1px solid var(--border)}
+.line.collapsed .linehead{border-bottom:none}
+.swatchstack{display:flex;align-items:center}
+.swatchstack span{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--surface);box-shadow:0 0 0 1px var(--border);flex-shrink:0}
+.linename{font-weight:700;font-size:14.5px;letter-spacing:-.01em}
+.lineform{font-size:12px;color:var(--text-3);margin-left:6px}
+.thumb{width:40px;height:40px;border-radius:7px;flex-shrink:0;border:1px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-4)}
+.varname{font-weight:600;font-size:13px}
+.statuspill .chip{height:20px}
+.discont td{opacity:.55}
+.body.collapsed{display:none}
+
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:14px}
+.gcard{display:flex;flex-direction:column;gap:9px;padding:11px;text-align:left;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);cursor:pointer}
+.gcard:hover{box-shadow:var(--shadow-sm);border-color:var(--border-strong)}
+.gthumb{width:124px;height:124px;border-radius:10px;align-self:center;border:1px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-4)}
+.gcard .row{display:flex;align-items:center;gap:7px}
+.gdot{width:13px;height:13px;border-radius:4px;flex-shrink:0;box-shadow:0 0 0 1px var(--border)}
+.hidden{display:none!important}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(9,9,12,.42);z-index:8000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);width:560px;max-width:100%;max-height:88vh;box-shadow:var(--shadow-pop);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.modalhead{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.modalbody{overflow-y:auto;padding:22px}
+.formgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+.field .label{display:block;margin-bottom:6px}
+.colorrow{display:flex;gap:8px;align-items:center}
+.colorrow input[type=color]{width:40px;height:38px;padding:0;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);cursor:pointer}
+.deferbox{margin-top:18px;border:1px dashed var(--border-strong);border-radius:var(--r-md);background:var(--surface-2);padding:14px;display:flex;align-items:center;gap:11px;color:var(--text-3)}
+.modalfoot{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.callout{margin:18px auto 0;max-width:1080px;padding:0 22px}
+.callout .box{background:#fffdf5;border:1px solid #f0e2b8;border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;color:#6b5a1f}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- faux sidebar so it reads like the real shell -->
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">I</div><div><div style="font-weight:800;font-size:15px">Intelli</div><div class="hint" style="font-size:10.5px">Field Execution</div></div></div>
+    <div class="companycard"><div class="sq"></div><div><div style="font-weight:700;font-size:13px">Lumen Beauty</div><div class="hint" style="font-size:10.5px">Tenant</div></div></div>
+    <nav class="nav">
+      <a href="#">Analytics</a>
+      <a href="#" class="soon">Form Builder <span class="soonchip">soon</span></a>
+      <a href="#" class="soon">Surveys <span class="soonchip">soon</span></a>
+      <a href="#" class="active">Catalog</a>
+      <div class="navgroup">Organization</div>
+      <a href="#" class="soon">Hierarchy <span class="soonchip">soon</span></a>
+      <a href="#" class="soon">Users &amp; Roles <span class="soonchip">soon</span></a>
+      <a href="#" class="soon">Settings <span class="soonchip">soon</span></a>
+    </nav>
+    <div class="footprint"><div><b>165</b><span>Nodes</span></div><div><b>112</b><span>Stores</span></div><div><b>18</b><span>Reps</span></div></div>
+  </aside>
+
+  <div class="main">
+    <!-- topbar -->
+    <div class="topbar">
+      <div><div class="ttl">Catalog</div><div class="sub">Lumen Beauty. Each SKU is one variant.</div></div>
+      <div class="sp"></div>
+      <button class="btn sm disabled" title="Coming soon">Import SKUs <span class="soonchip" style="font-size:9px;border:1px solid var(--border);border-radius:99px;padding:0 6px;margin-left:2px">soon</span></button>
+      <button class="btn sm disabled" title="Coming soon">Export <span class="soonchip" style="font-size:9px;border:1px solid var(--border);border-radius:99px;padding:0 6px;margin-left:2px">soon</span></button>
+      <button class="btn sm primary" onclick="openModal('add')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Add product
+      </button>
+    </div>
+
+    <div class="page">
+      <!-- stat tiles -->
+      <div class="stats">
+        <div class="card stat"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div><div><div class="big">6</div><div class="hint">Product lines</div></div></div>
+        <div class="card stat"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg></div><div><div class="big">33</div><div class="hint">SKUs (variants)</div></div></div>
+        <div class="card stat"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div><div><div class="big">32</div><div class="hint">Active SKUs</div></div></div>
+      </div>
+
+      <!-- toolbar -->
+      <div class="toolbar">
+        <div class="searchwrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <input class="input" placeholder="Search variant, line, or UPC…" oninput="doSearch(this.value)" />
+        </div>
+        <div class="segmented" id="statusSeg">
+          <button class="active" onclick="setStatus(this,'all')">All</button>
+          <button onclick="setStatus(this,'active')">Active</button>
+          <button onclick="setStatus(this,'discontinued')">Discontinued</button>
+        </div>
+        <div class="segmented" id="viewSeg" title="Switch between list and gallery">
+          <button class="active" onclick="setView(this,'list')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>List</button>
+          <button onclick="setView(this,'gallery')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18"/><path d="M3 12h18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Gallery</button>
+        </div>
+      </div>
+
+      <!-- grouped lines -->
+      <div class="lines" id="lines"></div>
+    </div>
+  </div>
+</div>
+
+<!-- guidance callout (mockup only) -->
+<div class="callout"><div class="box"><b>This is a mockup for approval.</b> Real data comes from <span class="mono">/skus</span>. Photo upload, CSV/PIM import, the "used in N surveys" badge, catalog export, and the "New" status are deliberately deferred and shown as quiet "soon" affordances. Click a row, or "Add product", to preview the add/edit pop-up.</div></div>
+
+<!-- add / edit modal -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modalhead">
+      <div><h3 id="modalTitle" style="font-size:16px">Add product</h3><p class="hint" id="modalSub" style="margin-top:3px">Velvet Lip · Matte Lipstick</p></div>
+      <button class="btn icon sm ghost" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div class="modalbody">
+      <div class="eyebrow" style="margin-bottom:12px">Product details</div>
+      <div class="formgrid">
+        <div class="field"><span class="label">Product line</span>
+          <select class="input"><option>Velvet Lip</option><option>Silk Foundation</option><option>Lash Volume</option><option>Glow Blush</option><option>Cushion Compact</option><option>Brow Define</option><option>+ New line…</option></select>
+        </div>
+        <div class="field"><span class="label">Status</span>
+          <select class="input"><option>Active</option><option>Discontinued</option></select>
+        </div>
+        <div class="field"><span class="label">Variant</span><input class="input" id="mVariant" placeholder="e.g. Rosewood" /></div>
+        <div class="field"><span class="label">UPC</span><input class="input mono" id="mUpc" placeholder="040123 1104 5" /></div>
+        <div class="field"><span class="label">Colour</span>
+          <div class="colorrow"><input type="color" id="mColor" value="#9b5b5b" /><input class="input mono" id="mColorHex" value="#9b5b5b" style="flex:1" /></div>
+        </div>
+      </div>
+      <div class="deferbox">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <div><div style="font-weight:600;color:var(--text-2);font-size:13px">Reference photos</div><div class="hint">Photo upload coming soon. Any existing reference links still show in the list.</div></div>
+      </div>
+    </div>
+    <div class="modalfoot">
+      <span class="hint" style="font-size:12">Admins only. Saves to <span class="mono">/skus</span>.</span>
+      <span style="flex:1"></span>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="closeModal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg> <span id="saveLabel">Add product</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- data: ported from the prototype data.js CATALOG (new -> active for our backend) ----
+const CATALOG = [
+  {line:'Velvet Lip', form:'Matte Lipstick', open:true, skus:[
+    ['Rosewood','#9b5b5b','040123 1104 5','active'],['Mauve','#a9748c','040123 1105 2','active'],['Coral','#e2725b','040123 1106 9','active'],
+    ['Brick','#8d3b2f','040123 1107 6','active'],['Nude Petal','#c98e83','040123 1108 3','active'],['Crimson','#b01030','040123 1109 0','active'],
+    ['Plum','#6d3b5e','040123 1110 6','active'],['Terracotta','#b5613f','040123 1111 3','active'],
+  ]},
+  {line:'Silk Foundation', form:'Serum Foundation', open:false, skus:[
+    ['Porcelain','#f0d8c4','040123 2201 8','active'],['Ivory','#ecd0b5','040123 2202 5','active'],['Beige','#ddb591','040123 2203 2','active'],
+    ['Sand','#cda077','040123 2204 9','active'],['Honey','#b9885a','040123 2205 6','active'],['Caramel','#9c6b41','040123 2206 3','active'],
+    ['Almond','#7d5237','040123 2207 0','active'],['Espresso','#4a3122','040123 2208 7','active'],
+  ]},
+  {line:'Lash Volume', form:'Mascara', open:false, skus:[
+    ['Blackest Black','#0b0b0d','040123 3301 4','active'],['Brown-Black','#2a211c','040123 3302 1','active'],['Cocoa','#4a3328','040123 3303 8','active'],
+  ]},
+  {line:'Glow Blush', form:'Powder Blush', open:true, skus:[
+    ['Peach','#f0a07a','040123 4401 0','active'],['Rose','#e08aa0','040123 4402 7','active'],['Berry','#b14a6e','040123 4403 4','active'],
+    ['Bronze','#b3754a','040123 4404 1','discontinued'],
+  ]},
+  {line:'Cushion Compact', form:'Cushion Foundation', open:false, skus:[
+    ['Fair','#f2dcc8','040123 5501 6','active'],['Light','#e8c3a3','040123 5502 3','active'],['Medium','#cf9e74','040123 5503 0','active'],
+    ['Tan','#b07d4f','040123 5504 7','active'],['Deep','#6e4a30','040123 5505 4','active'],
+  ]},
+  {line:'Brow Define', form:'Brow Pencil', open:false, skus:[
+    ['Blonde','#b89968','040123 6601 2','active'],['Taupe','#8a7355','040123 6602 9','active'],['Soft Brown','#6d513a','040123 6603 6','active'],
+    ['Dark Brown','#4a3526','040123 6604 3','active'],['Ebony','#211913','040123 6605 0','active'],
+  ]},
+];
+let view='list', statusFilter='all', query='';
+const camSvg='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>';
+const chevSvg=o=>'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a8a93" stroke-width="2" stroke-linecap="round">'+(o?'<path d="m6 9 6 6 6-6"/>':'<path d="m9 18 6-6-6-6"/>')+'</svg>';
+const chevRsm='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a93" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>';
+
+function statusPill(s){return s==='discontinued'
+  ?'<span class="chip" style="height:20px;color:var(--text-3)">Discontinued</span>'
+  :'<span class="chip green" style="height:20px"><span class="dot"></span>Active</span>';}
+
+function matches(sku,lineName){
+  const [variant,,upc,status]=sku;
+  if(statusFilter!=='all'&&status!==statusFilter)return false;
+  if(query){const q=query.toLowerCase();return variant.toLowerCase().includes(q)||upc.replace(/\s/g,'').includes(q.replace(/\s/g,''))||lineName.toLowerCase().includes(q);}
+  return true;
+}
+
+function render(){
+  const root=document.getElementById('lines');root.innerHTML='';
+  CATALOG.forEach((L,li)=>{
+    const skus=L.skus.filter(s=>matches(s,L.line));
+    if(!skus.length)return;
+    const swatches=L.skus.slice(0,6).map((s,i)=>'<span style="background:'+s[1]+';margin-left:'+(i?-5:0)+'px"></span>').join('');
+    let bodyHtml='';
+    if(view==='gallery'){
+      bodyHtml='<div class="gallery">'+skus.map(s=>{
+        const op=s[3]==='discontinued'?'opacity:.6':'';
+        return '<div class="gcard" style="'+op+'" onclick="openModal(\'edit\','+li+',\''+esc(s[0])+'\',\''+esc(L.line)+'\',\''+esc(L.form)+'\',\''+s[1]+'\')">'+
+          '<div class="gthumb" style="background:color-mix(in srgb,'+s[1]+' 13%, var(--surface-2))">'+camSvg+'</div>'+
+          '<div class="row"><span class="gdot" style="background:'+s[1]+'"></span><span class="varname">'+s[0]+'</span></div>'+
+          '<div class="row" style="justify-content:space-between"><span>'+statusPill(s[3])+'</span><span class="hint mono" style="font-size:10.5px">No photo</span></div></div>';
+      }).join('')+'</div>';
+    } else {
+      bodyHtml='<table class="tbl"><thead><tr><th style="width:56px"></th><th>Variant</th><th style="width:116px">Photos</th><th style="width:180px">UPC</th><th style="width:130px">Status</th><th style="width:40px"></th></tr></thead><tbody>'+
+        skus.map(s=>{
+          const cls=s[3]==='discontinued'?'clickable discont':'clickable';
+          return '<tr class="'+cls+'" onclick="openModal(\'edit\','+li+',\''+esc(s[0])+'\',\''+esc(L.line)+'\',\''+esc(L.form)+'\',\''+s[1]+'\')">'+
+            '<td><div class="thumb" style="background:color-mix(in srgb,'+s[1]+' 13%, var(--surface-2))">'+camSvg+'</div></td>'+
+            '<td class="varname">'+s[0]+'</td>'+
+            '<td><span class="hint">No photo</span></td>'+
+            '<td class="mono" style="font-size:12.5px;color:var(--text-2)">'+s[2]+'</td>'+
+            '<td>'+statusPill(s[3])+'</td>'+
+            '<td>'+chevRsm+'</td></tr>';
+        }).join('')+'</tbody></table>';
+    }
+    const collapsed=!L.open;
+    root.insertAdjacentHTML('beforeend',
+      '<div class="card line'+(collapsed?' collapsed':'')+'">'+
+        '<button class="linehead" onclick="toggleLine('+li+')">'+chevSvg(L.open)+
+          '<span class="swatchstack">'+swatches+'</span>'+
+          '<span style="flex:1;min-width:0"><span class="linename">'+L.line+'</span><span class="lineform">'+L.form+'</span>'+
+            '<div class="hint" style="font-size:11.5px;margin-top:2px"><span class="mono">'+L.skus.length+' SKUs</span> <span style="color:var(--text-4);margin-left:8px">Not yet in a survey</span></div></span>'+
+          '<span class="chip">'+skus.length+(skus.length!==L.skus.length?' / '+L.skus.length:'')+'</span>'+
+        '</button>'+
+        '<div class="body'+(collapsed?' collapsed':'')+'">'+bodyHtml+'</div>'+
+      '</div>');
+  });
+}
+function esc(s){return String(s).replace(/'/g,"\\'");}
+function toggleLine(i){CATALOG[i].open=!CATALOG[i].open;render();}
+function setView(btn,v){view=v;[...document.querySelectorAll('#viewSeg button')].forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
+function setStatus(btn,s){statusFilter=s;[...document.querySelectorAll('#statusSeg button')].forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
+function doSearch(v){query=v;render();}
+function openModal(mode,li,variant,line,form,color){
+  const overlay=document.getElementById('overlay');
+  if(mode==='edit'){
+    document.getElementById('modalTitle').textContent=variant;
+    document.getElementById('modalSub').textContent=line+' · '+form;
+    document.getElementById('mVariant').value=variant;
+    document.getElementById('mColor').value=color;document.getElementById('mColorHex').value=color;
+    document.getElementById('saveLabel').textContent='Save changes';
+  } else {
+    document.getElementById('modalTitle').textContent='Add product';
+    document.getElementById('modalSub').textContent='New SKU (one variant)';
+    document.getElementById('mVariant').value='';
+    document.getElementById('saveLabel').textContent='Add product';
+  }
+  overlay.classList.add('open');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+document.getElementById('mColor').addEventListener('input',e=>document.getElementById('mColorHex').value=e.target.value);
+render();
+</script>
+</body>
+</html>
