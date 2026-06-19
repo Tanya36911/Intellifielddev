@@ -1,5 +1,5 @@
 /**
- * Intelli design tokens — single source of truth, ported verbatim from the
+ * Intelli design tokens, single source of truth, ported verbatim from the
  * prototype's shared/styles.css :root (light theme). Web consumes tokens.css;
  * React Native consumes this object via StyleSheet. Keep the two in sync.
  */

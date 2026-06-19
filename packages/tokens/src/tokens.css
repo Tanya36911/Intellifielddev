@@ -1,4 +1,4 @@
-/* Intelli design tokens (light theme) — ported from the prototype.
+/* Intelli design tokens (light theme), ported from the prototype.
    Import once at the web app root: import '@intelli/tokens/tokens.css'. */
 :root {
   --accent: #1B4F8A;
@@ -53,7 +53,7 @@
   --r-2xl: 20px;
   --r-full: 999px;
 
-  /* density (regular) — overridden by data-density */
+  /* density (regular), overridden by data-density */
   --gap: 20px;
   --pad: 22px;
   --row-h: 40px;
