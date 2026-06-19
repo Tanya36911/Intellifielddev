@@ -1,0 +1,108 @@
+/* Ported from the prototype ComplianceCard rows (analytics.jsx). */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.row:hover {
+  background: var(--surface-hover);
+}
+.name {
+  width: 168px;
+  min-width: 0;
+}
+.survey {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.node {
+  font-size: 11.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar {
+  flex: 1;
+}
+.pct {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  width: 42px;
+  text-align: right;
+}
+.count {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  width: 56px;
+  text-align: right;
+}
+.drill {
+  margin: 2px 0 8px 30px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.drillRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.drillName {
+  width: 150px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.drillBar {
+  flex: 1;
+}
+.drillPct {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  width: 40px;
+  text-align: right;
+  color: var(--text-2);
+}
+.drillDetail {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.drillNote {
+  margin: 2px 0 8px 30px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.empty {
+  margin-top: 12px;
+  padding: 24px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-3);
+  font-size: 13px;
+}

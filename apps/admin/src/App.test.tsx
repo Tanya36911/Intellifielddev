@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import { ApiError } from './lib/api'
 import { makeStore } from './store'
@@ -12,23 +13,57 @@ vi.mock('./lib/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./lib/api')>()),
   login: vi.fn(),
   health: vi.fn(),
+  // The dashboard fetches on mount, so the journey/redirect tests stub the
+  // authenticated GET (and the CSV download) to keep the queries quiet.
+  apiGet: vi.fn(),
+  downloadCsv: vi.fn(),
 }))
 
-import { health, login } from './lib/api'
+import { apiGet, health, login } from './lib/api'
 const mockedLogin = vi.mocked(login)
 const mockedHealth = vi.mocked(health)
+const mockedApiGet = vi.mocked(apiGet)
+
+// The dashboard reads /analytics/dashboard and /analytics/compliance on mount.
+const DASH = {
+  footprint: { nodes: 0, stores: 0, reps: 0 },
+  current: {
+    completion_pct: null,
+    pass_pct: null,
+    expected: 0,
+    responded: 0,
+    scored: 0,
+    passed: 0,
+    surveys_completed: 0,
+    overdue: 0,
+  },
+  previous: null,
+  trend: [],
+}
+function dashboardRoute(path: string) {
+  if (path.startsWith('/analytics/compliance')) return Promise.resolve({ rows: [], count: 0 })
+  if (path.startsWith('/analytics/dashboard')) return Promise.resolve(DASH)
+  return Promise.resolve({})
+}
 
 function renderApp(startAt = '/') {
   const store = makeStore()
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <Provider store={store}>
-      <MemoryRouter initialEntries={[startAt]}>
-        <App />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[startAt]}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>
     </Provider>,
   )
   return store
 }
+
+beforeEach(() => {
+  mockedApiGet.mockImplementation(dashboardRoute as never)
+})
 
 describe('the doorman rules', () => {
   it('sends a stranger who opens / to the login page', () => {
@@ -46,13 +81,12 @@ describe('the doorman rules', () => {
   })
 
   it('lets a saved, still-valid session straight in, even at /login', async () => {
-    mockedHealth.mockResolvedValue(true)
     localStorage.setItem(
       SESSION_KEY,
       JSON.stringify({ token: fakeToken(Date.now() + HOUR), user: dana }),
     )
     renderApp('/login')
-    expect(await screen.findByRole('heading', { name: 'Welcome, Dana' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
   })
 
   it('sends any unknown address to the right place', () => {
@@ -62,15 +96,15 @@ describe('the doorman rules', () => {
 })
 
 describe('the whole journey', () => {
-  it('logs in, lands home, signs out', async () => {
+  it('logs in, lands on the dashboard, signs out', async () => {
     mockedHealth.mockResolvedValue(true)
     mockedLogin.mockResolvedValue({ token: fakeToken(Date.now() + HOUR), user: dana })
     renderApp('/')
     await userEvent.type(screen.getByLabelText('Email'), 'dana@lumenbeauty.com')
     await userEvent.type(screen.getByLabelText('Password'), 'demo1234')
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByRole('heading', { name: 'Welcome, Dana' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(localStorage.getItem(SESSION_KEY)).toBeNull()
   })

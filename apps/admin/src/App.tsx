@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import Home from './pages/Home'
+import Dashboard from './pages/Dashboard/Dashboard'
 import Login from './pages/Login'
 import { selectSession, useAppSelector } from './store'
 
@@ -9,7 +9,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/" element={session ? <Home /> : <Navigate to="/login" replace />} />
+      <Route path="/" element={session ? <Dashboard /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={session ? '/' : '/login'} replace />} />
     </Routes>
   )

@@ -1,0 +1,60 @@
+/* The standalone dashboard page. Stage C (the shell) will later wrap this in the
+   sidebar/topbar and move the range/export/sign-out controls into the topbar. */
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.sub {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 14px;
+}
+.trendCard,
+.compCard {
+  padding: var(--pad);
+}
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+}
+@media (max-width: 860px) {
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
