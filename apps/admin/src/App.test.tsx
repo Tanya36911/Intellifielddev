@@ -96,14 +96,17 @@ describe('the doorman rules', () => {
 })
 
 describe('the whole journey', () => {
-  it('logs in, lands on the dashboard, signs out', async () => {
+  it('logs in, lands on the dashboard inside the shell, signs out', async () => {
     mockedHealth.mockResolvedValue(true)
     mockedLogin.mockResolvedValue({ token: fakeToken(Date.now() + HOUR), user: dana })
     renderApp('/')
     await userEvent.type(screen.getByLabelText('Email'), 'dana@lumenbeauty.com')
     await userEvent.type(screen.getByLabelText('Password'), 'demo1234')
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    // The shell (sidebar brand) and the dashboard (Analytics topbar) both appear.
+    expect(await screen.findByText('Intelli')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
+    // Sign-out now lives in the sidebar's user card.
     await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(localStorage.getItem(SESSION_KEY)).toBeNull()

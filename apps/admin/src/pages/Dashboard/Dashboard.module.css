@@ -1,36 +1,17 @@
-/* The standalone dashboard page. Stage C (the shell) will later wrap this in the
-   sidebar/topbar and move the range/export/sign-out controls into the topbar. */
+/* The dashboard now lives inside the shell: the Topbar carries the title +
+   range + Export, and this is the scrolling content below it. */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
 .page {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 24px 64px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-.top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin: 0;
-}
-.sub {
-  font-size: 13px;
-  color: var(--text-3);
-  margin-top: 2px;
-}
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 .kpis {
   display: grid;
