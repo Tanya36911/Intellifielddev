@@ -1,7 +1,8 @@
 # W1: Admin app shell + Analytics dashboard design
 
 Approved in design by Tanya on 2026-06-18 (after studying the prototype frontend
-in depth). This is the first piece of the screens-first roadmap (see
+in depth), then tightened on 2026-06-19 after a 3-reviewer adversarial pass. This
+is the first piece of the screens-first roadmap (see
 [ROADMAP.md](../../../ROADMAP.md)): the production Admin web app gets its real
 shell (the navigation frame every screen lives in) and its landing screen, the
 Analytics dashboard, ported faithfully from the prototype and wired to the
@@ -12,188 +13,249 @@ existing backend. Plain-English throughout.
 Turn the Admin web app from "a login plus a near-empty welcome card" into a real,
 branded product a stakeholder can look at. You log in and land on the Analytics
 dashboard inside the app shell: a left navigation (Intelli brand, your company,
-your screens, your name and role) and a top bar, exactly matching the prototype's
-look. The dashboard shows live headline numbers (compliance, surveys completed,
-overdue), a weekly completion-trend line, a compliance-by-node list you click to
-drill from region to district to store, an out-of-stock-by-product panel, an
-Export button, and the AI gap list clearly badged "preview." It is faithful to
-the prototype's design system (same tokens, components, layout) and every number
-is real, computed by the backend and branch-scoped (a manager only sees their
-branch). One small read-only backend endpoint is added; no new tables.
+your screens, your name and role) and a top bar, matching the prototype's look.
+The dashboard shows live headline numbers (compliance, surveys completed,
+overdue), a weekly completion-trend line, and a compliance-by-node list you click
+to drill from a survey's coverage down to a single store and the exact product
+that failed, plus an Export button and the AI gap list clearly badged "preview."
+It is faithful to the prototype's design system (same tokens, components, layout)
+and every number is real, computed by the backend and branch-scoped (a manager
+only sees their branch). One small read-only backend endpoint and two small
+login-response fields are added; no new tables.
 
-## Decisions made with Tanya (2026-06-18)
+## Decisions made with Tanya (2026-06-18) and corrections from review (2026-06-19)
 
 1. **One combined first screen: the shell + the Analytics dashboard as the
    landing.** The prototype lands directly on Analytics; there is no separate
-   plain home, so we do not build one.
-2. **Make the numbers real, do not fake them.** A small `/analytics/dashboard`
-   endpoint backs the headline KPIs, the weekly trend, and the footprint counts;
-   compliance-by-node and out-of-stock reuse the endpoints that already exist.
-3. **Faithful port of the prototype design system.** Same tokens (deep ocean blue
-   `#1B4F8A` accent, Space Grotesk headings, Hanken Grotesk body, the radii /
-   shadows / spacing), same shell structure, same components (KPI cards with
-   sparklines, the hand-rolled SVG trend line and bars, the drill list).
-4. **Web-appropriate trims to the shell:** no tenant switcher (each login is one
-   company), and no "Synced" control (that is the phone's offline sync, a Phase 5
-   concept; the web app is always online). The "Re-run setup wizard",
-   notifications bell, and "Proof pack" appear as "coming soon" until their
-   backends exist. Unbuilt nav items show a small "coming soon" panel so nothing
-   dead-ends.
-5. **The out-of-stock-by-SKU panel is real** (it maps to the existing
-   `/analytics/oos`); only the rep-facing "fix it now" gap list (Restock /
-   Replenish) stays the labeled **AI preview** (the no-fake-AI rule).
-6. **Dropped: "Avg. completion time"** (survey duration is never recorded; it
-   would need the Field app to time surveys, a Phase 5 thing). Shown as three KPI
-   cards, not four.
-7. **Deferred to later screens (need the shelf-photo storage, 5-BE-c, or are
-   secondary):** the photo gallery, the Proof pack, the response-detail modal, and
-   the detailed overdue *list* (the overdue *count* shows now; the full list fits
-   with the Surveys/Responses screen later).
+   plain home, so we do not build one (and the old `Home.tsx` is replaced).
+2. **Make the numbers real.** A small `/analytics/dashboard` endpoint backs the
+   headline KPIs, the weekly trend, and the footprint counts; compliance-by-node
+   reuses the endpoints that already exist.
+3. **Faithful port of the prototype design system** (tokens, components, layout),
+   with intentional, enumerated content deviations (below). "Looks like the
+   prototype" means the design system + shell layout, not identical content.
+4. **Web-appropriate shell trims:** no tenant switcher (one company per login),
+   no "Synced" control (offline sync is a phone/Phase-5 concept). The setup
+   wizard, notifications bell, and Proof pack render as plain "coming soon"
+   (a disabled nav row / a no-badge bell), and unbuilt nav items open a shared
+   `ComingSoon` placeholder page so nothing dead-ends.
+5. **The sidebar company name and the user's "pinned to ..." need a real source,
+   so we add it.** Today `/auth/login` returns only `{name, role}` and the JWT
+   carries a tenant UUID, no display names. We add `company_name` and
+   `pinned_node_name` to the login response `user` object (a small lookup in
+   `auth.py`, no new table). The shell reads them.
+6. **Compliance-by-node is assignment-oriented** (this is a correction). The real
+   `GET /analytics/compliance` returns one row per survey assignment (survey name
+   + target node + completion%/pass% + counts), not the prototype's per-region
+   rollup. So the card lists those assignment rows; clicking one drills via its
+   `(target_node_id, survey_version_id)` through `GET /analytics/compliance/drill`
+   to child nodes, then to a store's per-product why-it-failed. The prototype's
+   per-region delta column is dropped (no per-node delta exists in the data).
+7. **Out-of-stock-by-SKU is DEFERRED out of W1** (this changes the earlier plan).
+   `GET /analytics/oos` needs a specific `survey_version_id` + `question_id`, which
+   needs a survey/question picker that belongs with the Surveys screen. For W1 the
+   "Per-SKU AI intelligence" section is **only** the labeled "preview" gap list
+   (Restock/Replenish, wired to nothing). OOS comes back, real, in a later step.
+8. **Dropped: "Avg. completion time"** (survey duration is never recorded). Three
+   KPI cards, not four.
+9. **Deferred (need shelf-photo storage 5-BE-c, or secondary):** the photo
+   gallery, Proof pack, response-detail modal, and the detailed overdue *list*
+   (the overdue *count* shows now).
+10. **W1 is built in four staged, separately-checkable phases** (see the plan):
+    (A) backend endpoint + repo methods + tests; (B) frontend foundation (tokens,
+    UI kit, TanStack Query, auth client); (C) the shell; (D) the dashboard screen.
 
 ## What gets built
 
+### Backend: a small login-response addition
+`POST /auth/login`'s returned `user` object gains `company_name` (the tenant's
+name) and `pinned_node_name` (the name of the node the user is pinned to, or null
+if unpinned). `auth.py` looks these up at login (tenant by id; the pinned node via
+the same `assignments -> nodes` join `scope_path_for` already uses). No new table,
+no JWT change. The frontend `SessionUser` type grows to match.
+
 ### Backend: one new read-only endpoint
 `GET /analytics/dashboard?node_id=<optional>&date_from=<optional>&date_to=<optional>`
-in `api/app/analytics.py`, branch-scoped through the shared `ScopedRepo`, no new
-tables (reads `responses` / `survey_assignments` / `nodes` / `users`). It returns
-the headline figures in one call. Shape:
+in `api/app/analytics.py`, branch-scoped through `ScopedRepo`, no new tables
+(reads `responses` / `survey_assignments` / `nodes` / `users` / `assignments`).
+Returns:
 
 ```
 {
   "footprint": { "nodes": int, "stores": int, "reps": int },
-  "current": {
-    "completion_pct": float|null,   "pass_pct": float|null,
-    "expected": int, "responded": int, "scored": int, "passed": int,
-    "surveys_completed": int,        // responses submitted in scope + range
-    "overdue": int                   // overdue (assignment, store) pairs
-  },
-  "previous": { ...same shape... } | null,   // the equal-length window before date_from, for the up/down deltas; null if no range given
-  "trend": [ { "week_start": "YYYY-MM-DD", "completion_pct": float|null, "responded": int, "expected": int } ]
+  "current":  { "completion_pct": float|null, "pass_pct": float|null,
+                "expected": int, "responded": int, "scored": int, "passed": int,
+                "surveys_completed": int, "overdue": int },
+  "previous": { ...same shape... } | null,
+  "trend":    [ { "week_start": "YYYY-MM-DD", "completion_pct": float|null,
+                  "responded": int, "expected": int } ]
 }
 ```
 
-- **compliance** (`completion_pct`, `pass_pct`, and the four raw counts): the
-  branch-wide aggregate of the existing `assignment_compliance` logic (summed
-  expected / responded / scored / passed across the branch's assignments, then the
-  zero-safe percentages). The "Avg. compliance" KPI card shows `pass_pct`;
-  `completion_pct` is available too. Reuses the one `compliance.py` evaluator, so
-  it can never disagree with the dashboard's own compliance-by-node list.
-- **surveys_completed:** count of `responses` in scope (and the date range).
-- **overdue:** count of (assignment, covered-store) pairs whose assignment
-  `deadline` is in the past and that store has no response for that
-  `survey_version`. Computed live from `survey_assignments.deadline` + the coverage
-  path + `responses` (no new column).
-- **previous:** the same block recomputed over the equal-length window immediately
-  before `date_from` (so the cards can show the up/down delta). `null` when no date
-  range is supplied (then the cards show no delta).
-- **trend:** weekly buckets over the selected range; each week's `completion_pct`
-  is the responded-vs-expected for the branch by that week (the rising completion
-  curve the prototype shows). Feeds the trend chart and the compliance sparkline;
-  the surveys-completed sparkline uses the weekly `responded` counts. (The overdue
-  card shows count + delta, no sparkline.)
-- **Validation/scope:** a `node_id` outside the caller's scope -> 404; an unpinned
-  caller -> empty/zero figures (200), mirroring the other analytics endpoints.
+Computation (the review corrected several of these; they are NOT a sum over
+`assignment_compliance`):
+- **footprint** (all filtered to the scope base path, so a `node_id` narrows them):
+  `nodes` = count of nodes under the base path; `stores` = count of max-level
+  nodes (`org_level_definitions` max `level_order`) under it; `reps` = count of
+  users with `role = 'rep'` whose pin (`assignments.node_id -> nodes.path`) is
+  under the base path. Unpinned reps (no `assignments` row) are excluded. No
+  "active" filter (the users table has no status column).
+- **compliance aggregate** (`completion_pct`, `pass_pct`, and the four counts):
+  computed over the **distinct set of (store, survey_version) coverage
+  obligations** in scope, NOT by summing per-assignment rows (which would
+  double-count a store covered by two assignments). Gather each covered max-level
+  store under each in-scope assignment's measured path, dedupe to distinct
+  `(store_node_id, survey_version_id)` pairs; `expected` = count of those pairs;
+  for `current`/`previous`, take each store's **latest response within the date
+  window** for that version and score it once via the existing `_overall_for`
+  (reusable as-is); `responded` = pairs with such a response, `scored`/`passed`
+  from the verdict; percentages via the existing `_pct` (null when the denominator
+  is 0). A store under two different versions counts once per version; a store
+  under two assignments of the same version counts once.
+- **surveys_completed** = count of `responses` in scope within the date window.
+- **overdue** (as of now, NOT date-filtered): for each in-scope assignment with
+  `deadline IS NOT NULL AND deadline < now()`, count its covered max-level stores
+  that have zero responses for that `survey_version_id`; sum across assignments. A
+  NULL deadline is never overdue (the seed assignments have no deadline, so a test
+  must seed a past deadline to exercise this).
+- **previous** = the same `current` block recomputed over the equal-length window
+  immediately before `date_from`; `null` when no date range is supplied (then the
+  KPI cards show no delta).
+- **trend**: weekly buckets over the selected range. Week boundary = ISO week,
+  `week_start` = Monday 00:00 UTC (responses bucketed by `submitted_at` in UTC,
+  consistent with `facings_trend`). Per week: `expected` = the constant distinct
+  covered-store count in scope; `responded` = distinct stores with at least one
+  response in that week; `completion_pct` = `_pct(responded, expected)`.
+- **scope semantics:** a `node_id` outside scope returns `None` -> the endpoint
+  404s (like the other analytics endpoints). An unpinned caller (`scope_path` is
+  None) returns a fully-populated **zero payload** (footprint 0s, current counts 0
+  with pct null, previous null, trend []) at 200, never None.
 
-### Frontend foundation (the reusable pieces the shell and every later screen need)
-- **Design tokens + global CSS:** extend `packages/tokens` to the full prototype
-  set (it already mirrors the colors): add `--sidebar-w` (248px), `--topbar-h`
-  (56px), the density variants (`data-density`), and the dark-mode block
-  (`data-theme="dark"`), plus the fonts (Space Grotesk headings, Hanken Grotesk
-  body, JetBrains Mono). The exact values are in the prototype `styles.css` and
-  were captured during design.
-- **A small shared UI kit** in `apps/admin/src/ui/` (promoted to a package later
-  when the Manager app arrives), porting the prototype primitives as React + CSS
-  Modules: `Icon` (the SVG icon map), `Avatar`, `Chip`, `Button`, `Card`,
-  `Segmented`, `Switch`, `Spark` (hand-rolled SVG sparkline polyline), `Bar`
-  (progress bar). Same markup/classes as the prototype.
-- **Server state with TanStack Query** (the decided stack for server data): add the
-  `QueryClientProvider` at the app root. Screens fetch with `useQuery`.
-- **Authenticated API client:** extend `apps/admin/src/lib/api.ts` with an
-  `apiGet(path)` (and a CSV-download helper) that attaches the session's Bearer
-  token and, on a 401, dispatches sign-out and routes to login. Keeps the
-  "one file talks to the backend" rule.
+New `ScopedRepo` methods (analytics section): `dashboard(node_id, date_from,
+date_to)` plus private helpers for the footprint counts, the date-bounded
+distinct-coverage aggregate, the overdue count, and the weekly trend. `_overall_for`
+and `_pct` are reused; `_metrics_for_stores` is NOT used (it is latest-only and
+has no date bound).
+
+### Frontend foundation (the reusable pieces the shell and later screens need)
+- **Design tokens + global CSS:** extend `packages/tokens` (already imported at the
+  admin root, exposing `./tokens.css` + a JS object) to the full prototype set: add
+  `--sidebar-w` (248px), `--topbar-h` (56px), the `data-density` variants, the
+  `data-theme="dark"` block, and the fonts (Space Grotesk headings, Hanken Grotesk
+  body, JetBrains Mono). Exact values captured from the prototype `styles.css`.
+- **A shared UI kit** in `apps/admin/src/ui/` (promoted to a package when the
+  Manager app arrives), porting the prototype primitives as React + CSS Modules:
+  `Icon` (the SVG icon map), `Avatar`, `Chip`, `Button`, `Card`, `Segmented`,
+  `Switch`, `Spark`, `Bar`. **Numeric convention:** `Bar`/`Spark`/the trend chart
+  consume 0..1 floats; the backend emits 0..100 or null, so the screen converts
+  (divide by 100) and handles null as "no data" (an em-dash in a KPI/bar label; a
+  dropped point/gap in the trend and sparkline, never a `NaN` SVG coordinate).
+- **Server state with TanStack Query** (new dependency `@tanstack/react-query`):
+  `QueryClientProvider` at the app root (a clean one-level add in `main.tsx`).
+- **Authenticated API client:** extend `apps/admin/src/lib/api.ts` with
+  `apiGet(path)` and a `downloadCsv(path)` helper. The Bearer token is read from
+  `localStorage[SESSION_KEY]` (the key `auth.ts` already exports and mirrors the
+  session to); `api.ts` must NOT import the Redux store (that would create a
+  store<->api cycle), so `SESSION_KEY` (and a tiny `readToken()`) move to a small
+  non-Redux module both can import. On a 401, `apiGet` throws `ApiError(401)`; a
+  thin React-side handler (the QueryClient `onError`, or an effect) dispatches
+  `signedOut()` and routes to `/login`. `downloadCsv` fetches with the Bearer
+  header (a bare `<a download>` would 401), reads the body as a Blob, and triggers
+  the download with a client-set filename (Content-Disposition is not honored for
+  blob downloads).
 
 ### The shell (`apps/admin/src/shell/`)
-Ported from the prototype's `shell.jsx`, as React Router layout components:
-- **`Sidebar`:** the Intelli brand mark + "Field Execution"; a static company card
-  (the signed-in user's company, no switcher); the nav in the prototype's two
-  groups (main: Analytics, Form Builder with an "AI" badge, Surveys, Catalog;
-  ORGANIZATION: Hierarchy, Users & Roles, Settings); the Nodes/Stores/Reps
-  footprint counts (from `/analytics/dashboard`); the user card (name, role,
-  "pinned to ...") with a working Sign out. A "Re-run setup wizard" item shows as
-  "coming soon".
+Ported from the prototype `shell.jsx` as React Router layout components:
+- **`Sidebar`:** the Intelli brand + "Field Execution"; a static company card
+  (`user.company_name`, no switcher); the nav in the prototype's two groups
+  (main: Analytics, Form Builder w/ "AI" badge, Surveys, Catalog; ORGANIZATION:
+  Hierarchy, Users & Roles, Settings); the Nodes/Stores/Reps footprint (from
+  `/analytics/dashboard`); the user card (`user.name`, `user.role`, "pinned to
+  {user.pinned_node_name}") with a working Sign out. The "Re-run setup wizard"
+  shows as a disabled "coming soon" row.
 - **`Topbar`:** page title + subtitle, a slot for per-screen controls, and a
-  notifications bell shown as "coming soon" (no "Synced" control on web).
+  notifications bell rendered "coming soon" (no badge, no dropdown; no "Synced").
 - **`Page`:** the scrolling, max-width content wrapper.
 - **Routing (`App.tsx`):** the authenticated area becomes a layout route that
-  renders the shell with an `<Outlet/>`. `/` is the Analytics dashboard; add routes
-  for `/catalog`, `/surveys`, `/forms`, `/hierarchy`, `/users`, `/settings`, each a
-  simple **"coming soon"** placeholder page for now. `/login` stays outside the
-  shell. The nav highlights the active route.
+  renders the shell with an `<Outlet/>`. `/` is the Analytics dashboard; add
+  routes for `/catalog`, `/surveys`, `/forms`, `/hierarchy`, `/users`,
+  `/settings`, each rendering a shared `ComingSoon` page (the nav item's
+  label/icon + one line of copy). `/login` stays outside the shell. The nav
+  highlights the active route.
 
 ### The Analytics dashboard screen (`apps/admin/src/pages/Analytics/`)
 Ported from the prototype `analytics.jsx`, wired to real data:
-- **3 KPI cards** (`Avg. compliance` = `pass_pct`, `Surveys completed`, `Overdue
-  surveys`), each a big number + (where available) a delta chip from `previous` +
-  a `Spark` sparkline.
-- **Completion trend** line chart (hand-rolled SVG), from `trend`.
-- **Compliance by node**: the region list with horizontal `Bar`, %, and store
-  count, from `GET /analytics/compliance`; clicking a row drills into its children
-  via `GET /analytics/compliance/drill`, down to a store's per-product
-  why-it-failed (the data 4b already returns).
-- **Out-of-stock by SKU**: the leadership-facing panel from `GET /analytics/oos`
-  (real). The rep-facing **real-time gap list** (Rosewood "2 facings short",
-  Restock/Replenish) stays a hardcoded, clearly **"AI fast-follow, preview"**
-  badged block, wired to nothing.
-- **The top-bar controls:** a `4w / 12w / YTD` segmented control that sets the date
-  range (re-queries the dashboard), and an **Export** button that downloads the
-  compliance CSV via the existing `/export/compliance`. (The richer scoped export
-  modal and Proof pack are a later polish.)
-
-### Data wiring map (so nothing is ambiguous)
-| Dashboard element | Source |
-|---|---|
-| KPI: Avg. compliance, Surveys completed, Overdue (+ deltas, sparklines) | `GET /analytics/dashboard` |
-| Completion trend line | `GET /analytics/dashboard` (`trend`) |
-| Footprint (Nodes/Stores/Reps) | `GET /analytics/dashboard` (`footprint`) |
-| Compliance by node + drill | `GET /analytics/compliance`, `GET /analytics/compliance/drill` |
-| Out-of-stock by SKU | `GET /analytics/oos` |
-| Export button | `GET /export/compliance` (CSV) |
-| Real-time AI gap list | none (labeled preview, hardcoded sample) |
+- **3 KPI cards** (Avg. compliance = `pass_pct`; Surveys completed; Overdue
+  surveys), each a big number + a `Spark` sparkline + a delta chip when `previous`
+  exists. **Delta rules:** Avg. compliance delta = percentage-point difference
+  (`current.pass_pct - previous.pass_pct`, shown like "+2.1 pts"); the count KPIs
+  use the absolute difference; **Overdue is "good when down"** (a decrease is
+  green). When `previous` is null the card hides the delta chip (a new
+  delta-absent variant the prototype lacks).
+- **Completion trend** line chart (hand-rolled SVG), **single series** = branch
+  completion % from `trend` (values /100; null weeks are gaps). The prototype's
+  second "Promo" series, its two-line legend, and the per-week hover tooltip are
+  dropped for W1 (an intentional deviation); x labels are the week index (W1..Wn).
+- **Compliance by node** (assignment-oriented, per decision 6): rows from
+  `GET /analytics/compliance` (survey name @ target node, a `Bar` of `pass_pct`/100,
+  the %, and the store count); clicking a row drills via its `(target_node_id,
+  survey_version_id)` through `GET /analytics/compliance/drill` to child nodes and
+  then a store's per-product why-it-failed. No per-node delta.
+- **Per-SKU AI intelligence:** ONLY the rep-facing real-time gap list (Rosewood
+  "2 facings short", Restock/Replenish), a hardcoded sample, clearly badged "AI
+  fast-follow, preview", wired to nothing. (OOS-by-SKU deferred, decision 7.)
+- **Top-bar controls:** a `4w / 12w / YTD` segmented control that sets the date
+  range and re-queries the dashboard; an **Export** button that downloads the
+  compliance CSV via `downloadCsv('/export/compliance?format=csv')`.
 
 ## The tests (the gate for W1)
-- **Backend (`api/tests/test_dashboard.py`):** `/analytics/dashboard` returns the
-  right footprint counts, the compliance aggregate matching the per-node numbers,
-  the surveys-completed count, and the overdue count for a known seeded world;
-  the date range filters; `previous` is the prior window (and `null` without a
-  range); a `node_id` out of scope is 404; a manager sees only their branch; an
-  unpinned caller gets zeros. Full backend suite stays green.
-- **Frontend (Vitest + Testing Library):** the shell renders the nav, the company,
-  and the user, Sign out works, and an unbuilt nav item shows the "coming soon"
-  placeholder; the dashboard, with the API layer mocked, renders the three KPI
-  numbers, the compliance-by-node rows and a drill interaction, the OOS rows, and
-  the AI section with its "preview" badge present; the segmented range control
-  re-queries; Export triggers the CSV download. The existing 27 checks stay green
-  and the count grows.
+- **Backend (`api/tests/test_dashboard.py`):** the login response now carries
+  `company_name`/`pinned_node_name`; `/analytics/dashboard` returns correct
+  footprint counts (nodes/stores/reps under scope, unpinned reps excluded), a
+  compliance aggregate that does NOT double-count a store covered by two
+  assignments (seed a second overlapping assignment and assert `expected` counts
+  the store once per version), the surveys-completed count, an overdue count that
+  is 0 with NULL deadlines and non-zero once a past deadline is seeded, a `previous`
+  block over the prior window (and null without a range), a weekly `trend` bucketed
+  by ISO week, a `node_id` out of scope -> 404, a manager sees only their branch,
+  and an unpinned caller gets the zero payload (200). Full backend suite stays
+  green.
+- **Frontend (Vitest + Testing Library):** a shared render helper wraps components
+  in `QueryClientProvider` (fresh client, retries off) + `Provider` + router,
+  mocking `./lib/api` (the established `vi.mock(importOriginal)` style). The shell
+  renders the company, the user's name/role/pin, and the nav; Sign out works; an
+  unbuilt nav item shows the `ComingSoon` page. The dashboard renders the three KPI
+  numbers (and an em-dash for a null pct), a compliance row and a drill
+  interaction, and the AI section with its "preview" badge; the range control
+  re-queries; Export calls `downloadCsv`. **`Home.tsx`, `Home.module.css`, and
+  `Home.test.tsx` are removed** (superseded by the dashboard), and the
+  `App.test.tsx` login journey is rewritten to land on the dashboard (it currently
+  asserts "Welcome, Dana"). The frontend check count therefore changes (some of
+  the 27 are rewritten/removed and new ones added); the suite ends green.
 
 ## The new and changed files
-- `api/app/analytics.py` - add the `/analytics/dashboard` endpoint. Modify.
-- `api/app/scope.py` - add the dashboard aggregate methods to the `ScopedRepo`
-  analytics section (footprint counts, the branch compliance aggregate, overdue
-  count, the weekly trend, the previous-window recompute). Modify.
-- `api/tests/test_dashboard.py` - the backend tests. New.
+- `api/app/auth.py` - add `company_name` + `pinned_node_name` to the login user.
+  Modify.
+- `api/app/analytics.py` - add `GET /analytics/dashboard`. Modify.
+- `api/app/scope.py` - add the dashboard repo methods (footprint, date-bounded
+  distinct-coverage aggregate, overdue, weekly trend, previous-window). Modify.
+- `api/tests/test_dashboard.py` - the backend tests (incl. a seeded second
+  overlapping assignment and a past-deadline assignment). New.
+- `api/app/seed.py` - if a test needs a past-deadline assignment / a second
+  overlapping assignment that the existing seed lacks. Modify if needed.
 - `packages/tokens/` - the full token set + density + dark mode + layout vars +
   fonts. Modify.
 - `apps/admin/src/ui/` - the shared UI kit (Icon, Avatar, Chip, Button, Card,
-  Segmented, Switch, Spark, Bar) with CSS Modules. New.
-- `apps/admin/src/lib/api.ts` - the authenticated `apiGet` + CSV-download helper.
-  Modify.
-- `apps/admin/src/shell/` - Sidebar, Topbar, Page, the shell layout. New.
+  Segmented, Switch, Spark, Bar) + CSS Modules. New.
+- `apps/admin/src/lib/api.ts` + a small `apps/admin/src/lib/session.ts`
+  (`SESSION_KEY`, `readToken`) shared by `api.ts` and `store/auth.ts` to avoid a
+  cycle. Modify/New.
+- `apps/admin/src/shell/` - Sidebar, Topbar, Page, layout. New.
 - `apps/admin/src/App.tsx` - the layout route + screen routes + placeholders.
-  Modify.
-- `apps/admin/src/pages/Analytics/` - the dashboard screen + its sub-components
-  (KpiCard, TrendChart, ComplianceCard, OosCard, the AI preview block). New.
-- `apps/admin/src/pages/placeholders/` - the "coming soon" pages. New.
+  Modify. `apps/admin/src/pages/ComingSoon.tsx` - the shared placeholder. New.
+- `apps/admin/src/pages/Analytics/` - the dashboard + sub-components. New.
+- `apps/admin/src/pages/Home.tsx` / `Home.module.css` / `Home.test.tsx` - removed.
+- `apps/admin/src/App.test.tsx` - journey rewritten to the dashboard. Modify.
 - `apps/admin/src/main.tsx` - mount `QueryClientProvider`. Modify.
 - `apps/admin/package.json` - add `@tanstack/react-query`. Modify.
 - Docs updated in the same breath: `apps/admin/README.md`, `CODEBASE_MAP.md`,
@@ -201,27 +263,30 @@ Ported from the prototype `analytics.jsx`, wired to real data:
   CHANGELOG, and tick W1 in `ROADMAP.md`.
 
 ## Deliberately NOT in W1 (so nothing is silently missing)
-- **The photo gallery, Proof pack, response-detail modal:** need the shelf-photo
-  storage (5-BE-c); later.
-- **The detailed overdue list:** the count shows now; the list comes with the
-  Surveys/Responses screen.
-- **The rich, scoped Export modal:** W1 has a one-click compliance-CSV download;
-  the prototype's filter-and-build modal is a later polish.
-- **Tenant switcher, "Synced", real notifications, the setup wizard, Users &
-  Roles / Settings / Catalog / Surveys / Form Builder / Hierarchy screens:** the
-  shell shows them, but they are "coming soon" placeholders, built in later W
-  steps (each its own design + spec + build).
+- **Out-of-stock-by-SKU panel:** deferred (needs a survey/question picker; pairs
+  with the Surveys screen). W1's AI section is the labeled preview gap list only.
+- **The photo gallery, Proof pack, response-detail modal:** need shelf-photo
+  storage (5-BE-c).
+- **The detailed overdue list:** the count shows now; the list comes later.
+- **The rich, scoped Export modal:** W1 has a one-click compliance-CSV download.
+- **The second trend series ("Promo"), per-node compliance delta, the trend hover
+  tooltip:** dropped for W1 (intentional content deviations from the prototype).
 - **Avg. completion time KPI:** dropped (no duration data).
-- **Dark mode / density toggles:** the tokens support them, but no UI toggle in
-  W1 (a later settings concern).
-- **The Manager web app:** a later track (reuses these pieces, branch-scoped).
+- **Tenant switcher, "Synced", real notifications, the setup wizard, and the
+  Catalog/Surveys/Form Builder/Hierarchy/Users/Settings screens:** "coming soon"
+  placeholders now; each is its own later W step.
+- **Dark mode / density UI toggles:** tokens support them; no toggle in W1.
+- **The Manager web app:** a later track.
 
 ## How we will know W1 is done
-The `/analytics/dashboard` tests are green and its numbers match the
-compliance-by-node view; the frontend builds, the shell renders with working
-navigation and sign-out, and the dashboard shows the live KPIs, trend,
-compliance drill, and out-of-stock, with the AI gap list badged "preview"; the
-full backend suite and the (grown) frontend checks stay green; and a live
-walk-through in the browser (log in, land on the dashboard, drill a region to a
-failing store, switch the 4w/12w/YTD range, download the CSV) behaves as
-described and looks like the prototype. All guides updated.
+The `/analytics/dashboard` tests are green and its compliance aggregate matches a
+hand-computed distinct-store figure (no double-count); the login response carries
+the company/pin names; the frontend builds, the shell renders with working
+navigation, the company/user/pin, and sign-out, and the dashboard shows the live
+KPIs (with null handled as an em-dash), the single-series trend, and the
+compliance drill, with the AI gap list badged "preview"; the full backend suite
+and the updated frontend suite end green; and a live browser walk-through (log in,
+land on the dashboard, drill an assignment row to a failing store, switch the
+4w/12w/YTD range, download the CSV) behaves as described and uses the prototype's
+design system. The screen looks like the prototype's design language, with the
+content deviations enumerated above. All guides updated.
