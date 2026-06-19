@@ -3,8 +3,11 @@
 // expiry-checked every time the app starts.
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { SessionUser } from '../lib/api'
+import { SESSION_KEY } from '../lib/session'
 
-export const SESSION_KEY = 'intelli-admin-session'
+// Re-exported so existing importers of SESSION_KEY from store/auth keep working.
+// The single definition now lives in lib/session.ts (shared with api.ts).
+export { SESSION_KEY }
 
 export type Session = { token: string; user: SessionUser }
 
