@@ -180,3 +180,28 @@ def test_dashboard_previous_null_without_range(client, login):
     dana = login("dana@lumenbeauty.com")
     body = client.get("/analytics/dashboard", headers=_auth(dana)).json()
     assert body["previous"] is None
+
+
+def test_dashboard_overdue_zero_without_deadline(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish(client, dana, "W1a No Deadline", q)
+    _assign(client, dana, vid, "bayarea")  # no deadline
+    # No deadline => never overdue, regardless of responses.
+    body = client.get("/analytics/dashboard", headers=_auth(dana),
+                      params={"node_id": str(_node_id("bayarea"))}).json()
+    assert body["current"]["overdue"] == 0
+
+
+def test_dashboard_overdue_counts_past_deadline_unanswered(client, login):
+    dana = login("dana@lumenbeauty.com")
+    q, rose = _rose_q()
+    vid = _publish(client, dana, "W1a Overdue", q)
+    past = "2020-01-01T00:00:00Z"
+    _assign(client, dana, vid, "bayarea", deadline=past)  # past deadline, 2 stores
+    # sf responds; oakland does not. Overdue = 1 (oakland still owes it).
+    _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
+            [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    body = client.get("/analytics/dashboard", headers=_auth(dana),
+                      params={"node_id": str(_node_id("bayarea"))}).json()
+    assert body["current"]["overdue"] == 1

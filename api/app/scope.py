@@ -760,7 +760,7 @@ class ScopedRepo:
             }
             current = self._dashboard_window(conn, base, maxlvl, date_from, date_to)
             current["surveys_completed"] = self._surveys_completed(conn, base, maxlvl, date_from, date_to)
-            current["overdue"] = 0  # filled in Task 4
+            current["overdue"] = self._overdue(conn, base, maxlvl)
             previous = None
             if date_from is not None and date_to is not None:
                 window = date_to - date_from
@@ -770,6 +770,34 @@ class ScopedRepo:
                 previous["overdue"] = 0  # overdue is as-of-now only (see Task 4); not windowed
             trend = []              # filled in Task 5
         return {"footprint": footprint, "current": current, "previous": previous, "trend": trend}
+
+    def _overdue(self, conn, base, maxlvl):
+        """As-of-now overdue: covered stores under a past-deadline assignment that
+        have no response for that version. NULL deadline = never overdue."""
+        assigns = conn.execute(
+            text("select a.survey_version_id, n.path as target_path "
+                 "from survey_assignments a join nodes n on n.id = a.target_node_id "
+                 "where a.tenant_id = cast(:tid as uuid) "
+                 "and a.deadline is not null and a.deadline < now() "
+                 "and (:base like n.path || '%' or n.path like :base || '%')"),
+            {"tid": str(self.tenant_id), "base": base},
+        ).mappings().all()
+        overdue = 0
+        for a in assigns:
+            measured = a["target_path"] if len(a["target_path"]) >= len(base) else base
+            store_ids = self._store_ids_under(conn, measured, maxlvl)
+            if not store_ids:
+                continue
+            responded = conn.execute(
+                text("select count(distinct store_node_id) from responses "
+                     "where survey_version_id = cast(:vid as uuid) "
+                     "and tenant_id = cast(:tid as uuid) "
+                     "and store_node_id = any(cast(:sids as uuid[]))"),
+                {"vid": str(a["survey_version_id"]), "tid": str(self.tenant_id),
+                 "sids": [str(s) for s in store_ids]},
+            ).scalar()
+            overdue += len(store_ids) - responded
+        return overdue
 
     def _surveys_completed(self, conn, base, maxlvl, date_from, date_to):
         clauses = ["r.tenant_id = cast(:tid as uuid)", "n.path like :base || '%'",
