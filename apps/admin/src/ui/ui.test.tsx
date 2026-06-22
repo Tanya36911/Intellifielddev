@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Bar, Chip, Icon, Segmented, Spark, Switch } from './index'
+import { Bar, Chip, Icon, Modal, Segmented, Spark, Switch } from './index'
 
 describe('Icon', () => {
   it('renders an svg for a known name and nothing crashes for unknown', () => {
@@ -58,5 +58,22 @@ describe('Switch', () => {
     render(<Switch on={false} onChange={onChange} label="dark" />)
     screen.getByRole('switch').click()
     expect(onChange).toHaveBeenCalledWith(true)
+  })
+})
+
+describe('Modal', () => {
+  it('renders nothing when closed and content when open', () => {
+    const { rerender } = render(<Modal open={false} onClose={() => {}} title="T">body</Modal>)
+    expect(screen.queryByText('body')).toBeNull()
+    rerender(<Modal open onClose={() => {}} title="T">body</Modal>)
+    expect(screen.getByText('body')).toBeTruthy()
+  })
+  it('closes on the close button and the backdrop, but NOT on a panel click', () => {
+    const onClose = vi.fn()
+    render(<Modal open onClose={onClose} title="Title">body</Modal>)
+    screen.getByRole('dialog').click() // panel click does not close
+    expect(onClose).not.toHaveBeenCalled()
+    screen.getByLabelText('Close').click()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
