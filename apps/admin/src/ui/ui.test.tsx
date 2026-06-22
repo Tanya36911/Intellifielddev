@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Bar, Chip, Icon, Modal, Segmented, Spark, Switch } from './index'
+import { Bar, Chip, Field, Icon, Input, Modal, Segmented, Select, Spark, Switch } from './index'
 
 describe('Icon', () => {
   it('renders an svg for a known name and nothing crashes for unknown', () => {
@@ -58,6 +58,30 @@ describe('Switch', () => {
     render(<Switch on={false} onChange={onChange} label="dark" />)
     screen.getByRole('switch').click()
     expect(onChange).toHaveBeenCalledWith(true)
+  })
+})
+
+describe('Field/Input/Select', () => {
+  it('associates the label with its control and passes props through', () => {
+    render(
+      <Field label="Variant">
+        <Input placeholder="e.g. Rosewood" defaultValue="Rosewood" />
+      </Field>,
+    )
+    const input = screen.getByLabelText('Variant') as HTMLInputElement
+    expect(input.placeholder).toBe('e.g. Rosewood')
+    expect(input.value).toBe('Rosewood')
+  })
+  it('Select passes options and value through', () => {
+    render(
+      <Field label="Status">
+        <Select defaultValue="active">
+          <option value="active">Active</option>
+          <option value="discontinued">Discontinued</option>
+        </Select>
+      </Field>,
+    )
+    expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('active')
   })
 })
 
