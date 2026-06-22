@@ -1,0 +1,54 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  width: 100%;
+}
+button.card {
+  cursor: pointer;
+  transition:
+    box-shadow 0.12s,
+    border-color 0.12s;
+}
+button.card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-strong);
+}
+.card[data-discontinued] {
+  opacity: 0.6;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.variant {
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.count {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+}
