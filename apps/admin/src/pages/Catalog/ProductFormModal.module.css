@@ -1,0 +1,62 @@
+.body {
+  padding: 22px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 14px;
+}
+.mono {
+  font-family: var(--mono);
+}
+.colorRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.colorPicker {
+  width: 40px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.defer {
+  margin-top: 18px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--text-3);
+}
+.deferTitle {
+  font-weight: 600;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.deferHint {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--red-bg);
+  color: var(--red-fg);
+  font-size: 13px;
+}
+.foot {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
