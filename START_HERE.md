@@ -302,13 +302,22 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > wired to a new branch-scoped GET /analytics/dashboard endpoint, with the demo
 > seed enriched. W3 is also DONE: the Catalog screen at /catalog, the company
 > product list in List and Gallery views with search, status filter, stat tiles,
-> and admin-only add/edit. 80 frontend checks are green. Backend tests to be
-> re-confirmed with the database running. Everything is committed to main but NOT
-> pushed yet (pushing auto-deploys to the dev server).
+> and admin-only add/edit. Baseline is green: 190 backend checks + 80 frontend
+> checks, and the app builds. Everything is committed to main but NOT pushed yet
+> (pushing auto-deploys to the dev server, so ask me before pushing).
 >
-> What's next: the next Admin web screen, W4 the Survey builder, unless I say
-> otherwise. The setup wizard is later: it needs small Users (list + invite) and
-> Hierarchy (node add/edit) backend bricks first.
+> What's next: W4, the Survey builder + assignments (the differentiator), per
+> ROADMAP.md, unless I say otherwise. Build a checklist (questions, optionally
+> per-product, with pass rules), publish it (which freezes that version forever),
+> and assign it to a spot on the org tree with a deadline. It is fully backed by
+> the existing backend (/surveys, /survey-assignments, /skus), so no backend brick
+> is needed. Port from the prototype screens
+> ../hi-fi-intelli/project/apps/admin/screens/formbuilder.jsx (+ formbuilder-parts.jsx)
+> and surveys.jsx. The "describe it and AI drafts the survey" feature is an optional
+> later fast-follow (it uses the Claude API), not the v1. After W4 the plan order is
+> W5 responses, W6 payroll, then W7 hierarchy (view); the setup wizard and on-screen
+> hierarchy editing are later and need small Users (GET/POST /users) and node-write
+> backend bricks first.
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser
