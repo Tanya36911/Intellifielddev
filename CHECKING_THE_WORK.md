@@ -14,13 +14,15 @@ Run all commands from the project folder (`cd ~/Documents/intelli-app`).
 
 ### Check 1: The test robot (catches broken behavior)
 A "test" is a tiny robot that uses the app the way a person would and shouts if
-something misbehaves. We have 48 of them for the Admin app.
+something misbehaves. We now have 80 of them for the Admin app (48 from W1,
+plus 32 new checks added in W3 covering the Catalog screen, its data helpers,
+and the new UI kit pieces).
 
 Run:
 ```
 pnpm test:admin
 ```
-- GOOD looks like: `Tests  48 passed (48)` near the bottom, all green ticks.
+- GOOD looks like: `Tests  80 passed (80)` near the bottom, all green ticks.
 - BAD looks like: any red `FAIL`, or a number in `failed`. The red text names
   the file and what it expected. You do not need to fix it; copy it to me.
 
@@ -265,12 +267,66 @@ What BAD looks like: the page is blank, a number reads as "NaN" or stays empty, 
 menu item crashes instead of showing the placeholder, or Export does nothing.
 Tell me what you saw.
 
-To confirm the automated gate: run `pnpm test:api` (backend on) and
-`pnpm test:admin`. GOOD looks like `183 passed` for the backend and `48 passed`
-for the frontend. If anything goes red, copy the text to me.
+To confirm the automated gate: run `pnpm test:admin`. GOOD looks like `80 passed`
+for the frontend. For the backend, run `pnpm test:api` (backend must be running);
+W3 adds no backend tests (it is a seed-only change), so the backend suite is to be
+re-confirmed with the database running. If anything goes red, copy the text to me.
 
 What it proves: the Admin app now has a real, live dashboard inside a proper app
 shell, with drill-down and export, all reading real numbers from the backend.
+
+### Check 11: Walk through the Catalog screen (W3, in the browser, no coding)
+This is the second real Admin screen: the product Catalog. You judge it by
+looking at it and trying the controls.
+
+1. Make sure the backend is on: `docker compose up -d`
+2. Make sure the demo data is loaded: `docker compose exec api python -m app.seed`
+   (this is safe to run again; it only adds what is missing). After this step
+   Lumen will have 33 products across 6 lines.
+3. Start the screens: `pnpm dev:admin`
+4. Open http://localhost:5173 and log in as `dana@lumenbeauty.com` / `demo1234`.
+5. Click **Catalog** in the left sidebar.
+
+What GOOD looks like:
+- The page heading reads "Catalog" with a subtitle naming Lumen Beauty. Three
+  **stat tiles** show the number of product lines, total products, and active
+  products. These are real numbers from the backend.
+- Products are **grouped by product line** (Velvet Lip, Silk Foundation, Lash
+  Volume, Glow Blush, Cushion Compact, Brow Define). Each group shows a header
+  with the line name and a count of its products.
+- The default view is the **List view** (a table). Click the Gallery toggle in
+  the top bar to switch to the **Gallery view** (a grid of cards), then switch
+  back to List.
+- In the toolbar, open the status selector and choose **Discontinued**. The list
+  narrows to one product: Glow Blush Bronze. This is the one product in the demo
+  seed that has been discontinued. Switch back to All.
+- Type a shade name (for example "Rosewood") in the search box. The list narrows
+  to the matching product and the other product lines disappear entirely. Clear
+  the search to see everything again.
+- As Dana (an admin), an **"Add product"** button is visible in the top bar.
+  Click it: a pop-up form opens with five fields (Product line, Variant, UPC,
+  Colour, Status). The Save button is greyed out until you fill in the line,
+  variant, and UPC. Fill them in, click Save, and the list refreshes with the
+  new product.
+- Click any existing product row or card. The same pop-up form opens, this time
+  showing the product's existing values. Edit a field and click Save. The list
+  refreshes with the change.
+- The top bar also shows **Import SKUs** and **Export** buttons. Both are
+  intentionally greyed out with a "coming soon" label (they need backend work not
+  yet built).
+- Sign out. Log back in as a manager or rep (for example `marcus@lumenbeauty.com`
+  / `demo1234`). Open Catalog. **GOOD: no "Add product" button appears, and
+  clicking a product row does nothing.** The list is read-only for non-admins.
+
+What BAD looks like: the Catalog menu item shows "coming soon" instead of the
+real screen, the stat tiles say 0 or NaN, the Gallery toggle does nothing, the
+status filter does not hide any products, saving a new product shows an error or
+the list does not refresh, or a non-admin sees the Add button. Tell me what you
+saw.
+
+What it proves: the Admin app now has a real, live product catalog with working
+search, filtering, and admin add/edit, all reading real product data from the
+backend, while managers and reps see it safely read-only.
 
 ---
 

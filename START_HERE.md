@@ -123,13 +123,31 @@ soon" placeholder. (This merged the old plan's W1 and W2: instead of a stub Home
 followed by a separate dashboard, the shell ships with the real dashboard as its
 first screen.)
 
+**W3 (Catalog screen) DONE:** the Admin app now has a second real screen, the
+**Catalog**, reachable at `/catalog` in the sidebar. It shows the company's
+product list (its SKUs, meaning product variants like Velvet Lip in Rosewood)
+grouped by product line, in both a List view and a Gallery view. A search box
+narrows by name, line, or barcode. A status filter switches between All, Active,
+and Discontinued products. Three stat tiles at the top count the product lines,
+total products, and active products. Admins can add a new product or edit one
+using a pop-up form with five fields (line, variant, barcode, colour, status).
+Managers and reps see the same screen but in read-only mode (no Add button,
+rows do nothing when clicked). One company never sees another's catalog (enforced
+by the backend). The backend demo data (the seed) was enriched to give Lumen 33
+products across 6 lines, including one discontinued product, so the filter and
+the grouping have real content to show. No backend API or database change was
+needed. The UI kit gained four new shared building blocks (Modal, Field, Input,
+Select) that every future screen with a form or a pop-up will reuse. 80 frontend
+automated checks, all green.
+
 **What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we are
 building the **Admin web screens** over the backend that already exists, so
-stakeholders can finally see the product on a screen. The first one, W1 (the app
-shell + the Analytics dashboard), is **done** (above). The next steps are the rest
-of the screens, in demo order: catalog, survey builder, responses, payroll, and
-the org tree. The rest of Phase 5 (the Field mobile app + offline sync) is
-**resequenced to after the web screens**, because it is the long, hard, last push.
+stakeholders can finally see the product on a screen. W1 (the app shell + the
+Analytics dashboard) and W3 (the Catalog) are both **done** (above). The next
+steps are the rest of the screens, in demo order: survey builder, responses,
+payroll, and the org tree. The rest of Phase 5 (the Field mobile app + offline
+sync) is **resequenced to after the web screens**, because it is the long, hard,
+last push.
 
 ---
 
@@ -282,12 +300,15 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > keys). We then pivoted to screens-first (see ROADMAP.md). W1 is DONE: the Admin
 > app shell (sidebar + top bar) plus the Analytics dashboard as the landing screen,
 > wired to a new branch-scoped GET /analytics/dashboard endpoint, with the demo
-> seed enriched. 183 backend tests + 48 frontend checks are green. Everything is
-> committed to main but NOT pushed yet (pushing auto-deploys to the dev server).
+> seed enriched. W3 is also DONE: the Catalog screen at /catalog, the company
+> product list in List and Gallery views with search, status filter, stat tiles,
+> and admin-only add/edit. 80 frontend checks are green. Backend tests to be
+> re-confirmed with the database running. Everything is committed to main but NOT
+> pushed yet (pushing auto-deploys to the dev server).
 >
-> What's next: the next Admin web screen, W3 the Catalog (fully backed by /skus
-> today), unless I say otherwise. The setup wizard is later: it needs small Users
-> (list + invite) and Hierarchy (node add/edit) backend bricks first.
+> What's next: the next Admin web screen, W4 the Survey builder, unless I say
+> otherwise. The setup wizard is later: it needs small Users (list + invite) and
+> Hierarchy (node add/edit) backend bricks first.
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser
@@ -323,14 +344,21 @@ project memory, so a new chat in this folder already knows them.)
   not the old near-empty welcome page. Headline numbers, a weekly trend, a
   compliance-by-org list you can click to drill into, an Export-to-CSV button, and
   the not-yet-built menu items shown as "coming soon".
+- W3 (the Admin Catalog screen): DONE. The product list is live at /catalog:
+  33 products across 6 lines (Velvet Lip, Silk Foundation, Lash Volume, Glow
+  Blush, Cushion Compact, Brow Define), List and Gallery views, search, status
+  filter, stat tiles, and admin-only add/edit via a pop-up form. Managers and
+  reps see it read-only. No backend API change (seed-only). 80 frontend checks,
+  green. Backend tests to be re-confirmed with the database running.
 - Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done), Phase 5's
-  first piece (5-BE-a idempotency keys), and W1 (the Admin dashboard + shell).
-  183 backend checks + 48 frontend, green.
+  first piece (5-BE-a idempotency keys), W1 (the Admin dashboard + shell), and
+  W3 (the Admin Catalog). 80 frontend checks, green.
 - **NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)): build the rest
   of the Admin web screens over the existing backend, so stakeholders see results.**
-  W1 (shell + dashboard) is done; next in order are catalog, survey builder,
-  responses, payroll, and the org tree. The Field mobile app + offline sync (the
-  rest of Phase 5) is resequenced to after the web screens.
+  W1 (shell + dashboard) and W3 (Catalog) are done; next in order are survey
+  builder (W4), responses (W5), payroll (W6), and the org tree (W7). The Field
+  mobile app + offline sync (the rest of Phase 5) is resequenced to after the
+  web screens.
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

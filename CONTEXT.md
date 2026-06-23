@@ -40,7 +40,7 @@ fast-follow, never the headline.
   backend brick first (users, tenant settings, node-edit).
   - [x] **W1** app shell + Analytics dashboard (the old W2 analytics is folded into
     W1: the shell ships with the real dashboard as its first screen, not a stub Home);
-    [ ] **W3** catalog; [ ] **W4** survey builder + assignments; [ ] **W5** responses
+    [x] **W3** catalog; [ ] **W4** survey builder + assignments; [ ] **W5** responses
     + detail; [ ] **W6** payroll; [ ] **W7** org hierarchy (view).
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
@@ -235,6 +235,30 @@ fast-follow, never the headline.
   semicolon splitter; Postgres parses statement boundaries). Verified: 32 backend tests green,
   dbmate down+up of the latest migration succeeds with the new format, schema unchanged. Authoring
   rule recorded in db/README: never edit an already-applied migration in production; add a new one.
+- 2026-06-22: W3 COMPLETE - the Admin Catalog screen. The Catalog screen at /catalog replaces
+  the "coming soon" placeholder and shows the company's product list (its SKUs, meaning product
+  variants such as Velvet Lip in Rosewood) grouped by product line, in a List view and a Gallery
+  view, with search (by variant name, line, or UPC barcode), a status filter (All / Active /
+  Discontinued), and three stat tiles (product lines, total products, active products). Admins
+  can add and edit products via a shared pop-up form with five fields (line, variant, UPC, colour,
+  status); the form validates that line, variant, and UPC are filled before enabling Save, handles
+  inline errors if the backend refuses, and closes and refreshes the list on success. Managers and
+  reps see the screen in read-only mode (no Add button; rows and cards are not clickable). One
+  company never sees another's catalog (the existing backend enforces this; no backend API or
+  schema change was needed). New files in apps/admin/src/pages/Catalog/: Catalog.tsx, useCatalog.ts
+  (with pure helpers groupByLine, catalogStats, filterSkus), LineSection.tsx, SkuThumb.tsx,
+  SkuCard.tsx, ProductFormModal.tsx, and tests. New shared UI-kit pieces in apps/admin/src/ui/:
+  Modal, Field, Input, Select (plus form.module.css), reusable by every future screen that needs
+  a form or a pop-up. lib/api.ts gained apiSend (the authenticated POST/PATCH write helper; before
+  W3 the file only had apiGet and downloadCsv). test/render.tsx can now seed a signed-in session
+  for tests; test/fixtures.ts gained a company_name for Dana and a rep fixture (Marcus). The sidebar
+  nav item for Catalog dropped its "coming soon" flag. Backend: the demo seed was enriched (additive,
+  idempotent) so Lumen now has 33 products across 6 lines (Velvet Lip, Silk Foundation, Lash Volume,
+  Glow Blush, Cushion Compact, Brow Define), including one discontinued product (Glow Blush Bronze),
+  so the status filter and grouping have real content. W3 adds no backend tests (a seed-only change);
+  the backend suite is to be re-confirmed with the database running. Frontend: 80 automated checks,
+  all green. Deliberately deferred (honest placeholders, not missing): real photo upload (needs object
+  storage, 5-BE-c), CSV import, PIM/API sync, "used in N surveys" badge, catalog CSV export, "New" status.
 - 2026-06-19: Compliance-by-node region drill + healthy demo seed (a W1 dashboard refinement). The
   "Compliance by node" card was reshaped from a per-survey-assignment list (which showed duplicate
   survey rows and empty 0%/dash bars, and did not match the prototype) into a recursive ORG-NODE

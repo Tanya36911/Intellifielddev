@@ -103,6 +103,19 @@ the same date range so the card and the headline always agree; the login respons
 also returns the company and pinned-node names for the sidebar. (This W1 merged the
 old plan's W1 and W2: the shell ships with the real dashboard as its first screen.)
 
+As of W3 (the second real Admin screen), the Admin app also has the **Catalog**
+screen (`apps/admin/src/pages/Catalog/`), reachable at `/catalog`. It shows the
+company's product list grouped by product line, in a List view and a Gallery view,
+with search, a status filter (All/Active/Discontinued), and three stat tiles
+(product lines, total products, active products). Admins can add and edit products
+via a pop-up form; managers and reps see it read-only. One company never sees
+another's catalog (enforced by the existing backend at `GET/POST/PATCH /skus`;
+no backend API or schema change was needed for W3). The UI kit gained four new
+shared pieces for the form: Modal, Field, Input, and Select (reusable by every
+future screen that needs a pop-up or a form). The backend's demo data (the seed)
+was enriched so Lumen now has 33 products across 6 product lines, including one
+discontinued product, so the screen has real content to show.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+
@@ -121,7 +134,7 @@ old plan's W1 and W2: the shell ships with the real dashboard as its first scree
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W1 it has the app shell (sidebar + top bar), a shared UI kit, and the Analytics dashboard wired to `/analytics/dashboard`, on top of the login screen. Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W3 it has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, and the Catalog screen wired to `/skus`, on top of the login screen. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |

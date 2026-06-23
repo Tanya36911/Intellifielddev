@@ -62,9 +62,23 @@ is the frame every other screen hangs on, so it went first. After this: it looks
 and feels like a real product you log into and land inside, with live numbers and
 drill-down in front of leadership.
 
-**W3: The Catalog.** Your product list as a list and a gallery, with add and edit.
-Backend: `/skus` (exists). After this: a self-managed product catalog, the
-foundation surveys point at.
+**W3: The Catalog (DONE).** The company's product list at `/catalog`, ported from
+the prototype's catalog screen and wired to the existing `/skus` backend. Delivered:
+the product list grouped by product line in a List view and a Gallery view; search
+(by variant name, line, or UPC barcode, with UPC search whitespace-insensitive);
+a status filter (All / Active / Discontinued); three stat tiles (product lines,
+total products, active products); admin-only add/edit via a shared pop-up form
+(five fields: line, variant, UPC, colour, status); read-only mode for managers and
+reps (no Add button, rows do nothing when clicked). One company never sees another's
+catalog (enforced by the existing backend). No backend API or schema change. The UI
+kit gained Modal, Field, Input, and Select for reuse by future screens. The demo
+seed was enriched to 33 products across 6 lines (Velvet Lip, Silk Foundation, Lash
+Volume, Glow Blush, Cushion Compact, Brow Define) with one discontinued product
+(Glow Blush Bronze) so the filter and grouping have real content. Frontend: 80
+automated checks, all green. Deliberately deferred with honest "coming soon" labels:
+real photo upload (needs object storage, 5-BE-c), CSV import, PIM/API sync, the
+"used in N surveys" badge, catalog CSV export, and the "New" status. After this: a
+self-managed product catalog on screen, the foundation surveys point at.
 
 **W4: The Survey builder + assignments (the differentiator).** Build a checklist
 (questions, per-product, pass rules), publish it (which freezes that version

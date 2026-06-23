@@ -7,9 +7,9 @@ backend waiter; it never touches the database directly.
 
 So far it has a working **login screen**, the **app shell** (the persistent left
 sidebar and a per-page top bar that frame every screen), a small shared **UI kit**
-(reusable building blocks like buttons and cards), and its first real screen, the
-**Analytics dashboard**. The old welcome page (`Home`) has been replaced by the
-dashboard at the `/` address. More Admin screens get added on top in later steps.
+(reusable building blocks like buttons and cards), and two real screens: the
+**Analytics dashboard** (the landing screen at `/`) and the **Catalog** (the
+company's product list at `/catalog`). More Admin screens get added on top in later steps.
 
 To see it: `pnpm dev:admin`, then open the address it prints (usually
 http://localhost:5173). To run its automated checks: `pnpm test:admin`.
@@ -63,7 +63,9 @@ and offers the calls every screen needs: `login` (send email + password, get a
 wristband back), `health` (is the backend awake?), and (added in W1) `apiGet`
 (fetch data from any backend address, automatically attaching the login
 wristband) and `downloadCsv` (ask the backend for a spreadsheet file and save it
-to your computer, also with the wristband attached). Every screen goes through
+to your computer, also with the wristband attached). Added in W3: `apiSend`
+(the write helper, used for POST and PATCH requests that save or update
+something, like adding or editing a product). Every screen goes through
 this file, so the backend's address is written in exactly one place. It also
 turns backend problems into friendly messages ("Invalid email or password", or
 "Can't reach the backend").
@@ -105,7 +107,7 @@ shown inside it.
   addresses, and whether each is built yet or still "coming soon"). Keeping the
   menu in one list means the sidebar and the route map agree.
 
-### ui/  (the shared UI kit, added in W1)
+### ui/  (the shared UI kit, added in W1 and extended in W3)
 Small reusable building blocks ported from the prototype, so every screen looks
 consistent and we are not re-styling a button each time. These are the Lego
 bricks the screens are built from.
@@ -116,6 +118,15 @@ bricks the screens are built from.
   `ui/Switch.tsx` (an on/off toggle), each with its own `.module.css` look.
 - `ui/Spark.tsx` (a tiny inline trend line) and `ui/Bar.tsx` (a simple bar), the
   little charts the dashboard cards use.
+- Added in W3: `ui/Modal.tsx` (the pop-up shell used for the add/edit form: a
+  darkened backdrop, a centered panel with a title and close button, and a
+  scrollable body; closes on the backdrop or the close button); `ui/Field.tsx`
+  (a labelled form field wrapper that pairs a label with its input, so the label
+  is always correctly wired to what it labels); `ui/Input.tsx` (a text input that
+  matches the app's look); `ui/Select.tsx` (a dropdown that also matches the
+  look). These four share a `ui/form.module.css` for their styling, and they are
+  designed to be reused by every future screen that has a form or a pop-up
+  (surveys, payroll, settings, and so on).
 - `ui/index.ts`: one tidy front door that re-exports the whole kit, so a screen
   imports all its bricks from one place.
 All of the kit is checked together by `ui/ui.test.tsx`.
@@ -145,6 +156,41 @@ All of the kit is checked together by `ui/ui.test.tsx`.
     the data-fetching in its own file keeps the screen file about layout. Checked by
     `useDashboard.test.ts`.
   (Each `.tsx` above has a matching `.module.css` for its look.)
+- `pages/Catalog/`: the Catalog screen, the second real screen (added in W3).
+  Shows the company's product list (each product variant, called a SKU, such as
+  Velvet Lip in Rosewood) grouped by product line, in either a List view or a
+  Gallery view, with search and a status filter. Three stat tiles at the top
+  show the number of product lines, total products, and active products. Admins
+  can add a new product or edit an existing one via a pop-up form. Managers and
+  reps see the same screen but in read-only mode: no Add button, and clicking a
+  row does nothing. One company never sees another's products (the backend
+  enforces this). The folder contains:
+  - `Catalog.tsx` + `Catalog.module.css`: the screen itself. Reads who is
+    signed in, shows the three stat tiles, the search bar, the view and status
+    controls, and the list of product-line sections. Checked by `Catalog.test.tsx`.
+  - `useCatalog.ts`: the data layer. Fetches the product list from the backend
+    (`/skus`) and provides helpers for grouping by line, computing the stat
+    numbers, and filtering by status or search term. The search matches a
+    product's name or line (ignoring upper/lower case) or its UPC barcode
+    (ignoring spaces). Checked by `useCatalog.test.ts`.
+  - `LineSection.tsx` + `LineSection.module.css`: one collapsible product-line
+    section (the header with the line name and product count, then either a list
+    table or a gallery grid of that line's products). Hides itself completely
+    when no products in that line match the current search or filter.
+  - `SkuThumb.tsx` + `SkuThumb.module.css`: the photo cell shown for each
+    product. If a real photo link exists it shows the photo; otherwise it shows
+    a tidy colour-swatch placeholder tinted with the product's colour (or a
+    neutral grey when no colour is set) and a small camera icon. Also shows a
+    count of photos ("No photo" or "1 photo" and so on).
+  - `SkuCard.tsx` + `SkuCard.module.css`: one gallery card (a large photo or
+    swatch, a colour dot, the variant name, and a status pill).
+  - `ProductFormModal.tsx` + `ProductFormModal.module.css`: the add/edit
+    pop-up form. Five fields: product line (choose an existing line or type a
+    new one), variant name, UPC barcode, colour (optional colour picker), and
+    status (Active or Discontinued). Save is only enabled once the line, variant,
+    and UPC are all filled in. On a successful save the form closes and the
+    list refreshes. Real photo upload is noted as "coming soon" (it needs
+    cloud photo storage, a later piece of work).
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
   for the menu items whose screens we have not built yet.
 A `.module.css` file is styling that applies ONLY to its own screen, so two
@@ -154,7 +200,16 @@ screens can use the same names without clashing.
 - `test/setup.ts`: prepares the test robot before each run (tidies up between
   checks).
 - `test/fixtures.ts`: small fake data the checks reuse, like a pretend
-  wristband and a pretend user named Dana.
+  wristband and a pretend user named Dana. In W3, the Dana fixture gained a
+  company name (so the Catalog subtitle is testable), and a second non-admin
+  fixture (Marcus, a rep) was added so the read-only mode of the Catalog can
+  be checked.
+- `test/render.tsx`: the shared helper that puts a screen on the page for a
+  test. In W3 it gained an optional session argument, so a test can say "render
+  this screen as if Dana is signed in" without any extra setup. Before W3, the
+  helper had no signed-in user, which was fine for the Dashboard (it does not
+  care who you are), but the Catalog does (admins see the Add button; everyone
+  else sees read-only).
 - `App.test.tsx`: the big end-to-end check that walks through the whole journey
   (land on login, wrong password shows an error, good login reaches the welcome
   page, sign out returns to login).
