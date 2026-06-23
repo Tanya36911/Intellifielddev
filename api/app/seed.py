@@ -306,10 +306,45 @@ def run() -> None:
         _user(conn, lumen, "marcus@lumenbeauty.com", "Marcus Bell", "rep", bayarea)
         _user(conn, lumen, "newbie@lumenbeauty.com", "Newbie NoPin", "rep", None)
 
+        # --- Velvet Lip (existing rose/mauve/coral kept; rose is referenced below) ---
         rose = _sku(conn, lumen, "Velvet Lip", "Rosewood", "LUM-VL-ROSE", "#9B5B5B")
         _sku(conn, lumen, "Velvet Lip", "Mauve", "LUM-VL-MAUVE", "#8B5E83")
         _sku(conn, lumen, "Velvet Lip", "Coral", "LUM-VL-CORAL", "#E5734D")
+        _sku(conn, lumen, "Velvet Lip", "Brick", "LUM-VL-BRICK", "#8d3b2f")
+        _sku(conn, lumen, "Velvet Lip", "Nude Petal", "LUM-VL-NUDE", "#c98e83")
+        _sku(conn, lumen, "Velvet Lip", "Crimson", "LUM-VL-CRIMSON", "#b01030")
+        _sku(conn, lumen, "Velvet Lip", "Plum", "LUM-VL-PLUM-SEED", "#6d3b5e")
+        _sku(conn, lumen, "Velvet Lip", "Terracotta", "LUM-VL-TERRA", "#b5613f")
+        # --- Silk Foundation (existing ivory kept) ---
         _sku(conn, lumen, "Silk Foundation", "Ivory", "LUM-SF-IVORY", "#E8D3B8")
+        _sku(conn, lumen, "Silk Foundation", "Porcelain", "LUM-SF-PORC", "#f0d8c4")
+        _sku(conn, lumen, "Silk Foundation", "Beige", "LUM-SF-BEIGE", "#ddb591")
+        _sku(conn, lumen, "Silk Foundation", "Sand", "LUM-SF-SAND", "#cda077")
+        _sku(conn, lumen, "Silk Foundation", "Honey", "LUM-SF-HONEY", "#b9885a")
+        _sku(conn, lumen, "Silk Foundation", "Caramel", "LUM-SF-CARAMEL", "#9c6b41")
+        _sku(conn, lumen, "Silk Foundation", "Almond", "LUM-SF-ALMOND", "#7d5237")
+        _sku(conn, lumen, "Silk Foundation", "Espresso", "LUM-SF-ESPRESSO", "#4a3122")
+        # --- Lash Volume ---
+        _sku(conn, lumen, "Lash Volume", "Blackest Black", "LUM-LV-BLACK", "#0b0b0d")
+        _sku(conn, lumen, "Lash Volume", "Brown-Black", "LUM-LV-BROWNBLACK", "#2a211c")
+        _sku(conn, lumen, "Lash Volume", "Cocoa", "LUM-LV-COCOA", "#4a3328")
+        # --- Glow Blush (Bronze discontinued, so the status filter has something) ---
+        _sku(conn, lumen, "Glow Blush", "Peach", "LUM-GB-PEACH", "#f0a07a")
+        _sku(conn, lumen, "Glow Blush", "Rose", "LUM-GB-ROSE", "#e08aa0")
+        _sku(conn, lumen, "Glow Blush", "Berry", "LUM-GB-BERRY", "#b14a6e")
+        _sku(conn, lumen, "Glow Blush", "Bronze", "LUM-GB-BRONZE", "#b3754a", status="discontinued")
+        # --- Cushion Compact ---
+        _sku(conn, lumen, "Cushion Compact", "Fair", "LUM-CC-FAIR", "#f2dcc8")
+        _sku(conn, lumen, "Cushion Compact", "Light", "LUM-CC-LIGHT", "#e8c3a3")
+        _sku(conn, lumen, "Cushion Compact", "Medium", "LUM-CC-MEDIUM", "#cf9e74")
+        _sku(conn, lumen, "Cushion Compact", "Tan", "LUM-CC-TAN", "#b07d4f")
+        _sku(conn, lumen, "Cushion Compact", "Deep", "LUM-CC-DEEP", "#6e4a30")
+        # --- Brow Define ---
+        _sku(conn, lumen, "Brow Define", "Blonde", "LUM-BD-BLONDE", "#b89968")
+        _sku(conn, lumen, "Brow Define", "Taupe", "LUM-BD-TAUPE", "#8a7355")
+        _sku(conn, lumen, "Brow Define", "Soft Brown", "LUM-BD-SOFTBROWN", "#6d513a")
+        _sku(conn, lumen, "Brow Define", "Dark Brown", "LUM-BD-DARKBROWN", "#4a3526")
+        _sku(conn, lumen, "Brow Define", "Ebony", "LUM-BD-EBONY", "#211913")
 
         _survey(
             conn, lumen, "Velvet Lip Shelf Check", "shelf_check",
@@ -431,7 +466,7 @@ def run() -> None:
             [{"question_id": "q1", "value": True}],
         )
 
-    print("Seeded Lumen (8 nodes, 4 products, 1 survey, 2 assignments, 11 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
+    print("Seeded Lumen (8 nodes, 33 products across 6 lines, 1 survey, 2 assignments, 11 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
 
 
 if __name__ == "__main__":
