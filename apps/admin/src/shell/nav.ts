@@ -25,7 +25,7 @@ export const NAV: NavItem[] = [
     comingSoon: true,
   },
   { id: 'surveys', label: 'Surveys', icon: 'file', group: 'main', path: '/surveys', comingSoon: true },
-  { id: 'catalog', label: 'Catalog', icon: 'grid', group: 'main', path: '/catalog', comingSoon: true },
+  { id: 'catalog', label: 'Catalog', icon: 'grid', group: 'main', path: '/catalog' },
   { id: 'hierarchy', label: 'Hierarchy', icon: 'tree', group: 'org', path: '/hierarchy', comingSoon: true },
   { id: 'users', label: 'Users & Roles', icon: 'users', group: 'org', path: '/users', comingSoon: true },
   { id: 'settings', label: 'Settings', icon: 'settings', group: 'org', path: '/settings', comingSoon: true },

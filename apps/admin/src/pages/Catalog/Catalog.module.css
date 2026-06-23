@@ -1,0 +1,116 @@
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+.page {
+  padding: 22px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.stat {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.statIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-md);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.statLabel {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 3px;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+}
+.search svg {
+  position: absolute;
+  left: 11px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.searchInput {
+  height: 38px;
+  width: 100%;
+  padding: 0 12px 0 34px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.searchInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.note {
+  padding: 28px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13.5px;
+}
+.empty {
+  padding: 44px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-lg);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.emptyTitle {
+  font-weight: 700;
+  font-size: 16px;
+}
+.emptyHint {
+  font-size: 13px;
+  color: var(--text-3);
+}

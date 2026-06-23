@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Shell from './shell/Shell'
 import Dashboard from './pages/Dashboard/Dashboard'
+import Catalog from './pages/Catalog/Catalog'
 import ComingSoon from './pages/ComingSoon'
 import Login from './pages/Login'
 import { selectSession, useAppSelector } from './store'
@@ -23,7 +24,7 @@ export default function App() {
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route element={<Shell />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/catalog" element={<ComingSoon title="Catalog" />} />
+        <Route path="/catalog" element={<Catalog />} />
         <Route path="/surveys" element={<ComingSoon title="Surveys" />} />
         <Route path="/forms" element={<ComingSoon title="Form Builder" />} />
         <Route path="/hierarchy" element={<ComingSoon title="Hierarchy" />} />
