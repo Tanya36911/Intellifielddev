@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession, repSession } from '../../test/fixtures'
 import Catalog from './Catalog'
@@ -42,7 +42,7 @@ describe('Catalog (admin)', () => {
   it('filters to Discontinued, hiding non-matching line sections', async () => {
     renderApp(<Catalog />, { session: adminSession() })
     await screen.findByText('Rosewood')
-    screen.getByRole('button', { name: 'Discontinued' }).click()
+    fireEvent.click(screen.getByRole('button', { name: 'Discontinued' }))
     expect(screen.getByText('Bronze')).toBeTruthy()
     expect(screen.queryByText('Rosewood')).toBeNull()
     expect(screen.queryByText('Velvet Lip')).toBeNull()
@@ -55,10 +55,10 @@ describe('Catalog (admin)', () => {
       .mockResolvedValue({ skus: [...SAMPLE.skus, mk({ variant: 'Coral' })], count: 4 })
     renderApp(<Catalog />, { session: adminSession() })
     await screen.findByText('Rosewood')
-    screen.getByRole('button', { name: /add product/i }).click()
+    fireEvent.click(screen.getByRole('button', { name: /add product/i }))
     fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'Coral' } })
     fireEvent.change(screen.getByLabelText('UPC'), { target: { value: 'LUM-VL-CORAL' } })
-    screen.getByRole('button', { name: /^add product$/i }).click()
+    fireEvent.click(screen.getByRole('button', { name: /^add product$/i }))
     await waitFor(() => expect(apiSend).toHaveBeenCalledTimes(1))
     await waitFor(() => expect(vi.mocked(apiGet).mock.calls.length).toBeGreaterThan(1))
     expect(await screen.findByText('Coral')).toBeTruthy()
@@ -70,7 +70,7 @@ describe('Catalog (non-admin)', () => {
     renderApp(<Catalog />, { session: repSession() })
     await screen.findByText('Rosewood')
     expect(screen.queryByRole('button', { name: /add product/i })).toBeNull()
-    screen.getByText('Rosewood').click()
+    fireEvent.click(screen.getByText('Rosewood'))
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

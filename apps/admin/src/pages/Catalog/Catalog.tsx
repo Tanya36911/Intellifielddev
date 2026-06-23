@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { flushSync } from 'react-dom'
 import { Button, Card, Icon, Segmented } from '../../ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
@@ -88,10 +87,8 @@ export default function Catalog() {
     : undefined
 
   function openAdd() {
-    flushSync(() => {
-      setEditing(null)
-      setModalOpen(true)
-    })
+    setEditing(null)
+    setModalOpen(true)
   }
 
   const empty = !isLoading && allSkus.length === 0
@@ -136,7 +133,7 @@ export default function Catalog() {
             <Segmented
               options={STATUS.map((s) => s.label)}
               value={statusLabel}
-              onChange={(label) => flushSync(() => setStatus(STATUS.find((s) => s.label === label)!.value))}
+              onChange={(label) => setStatus(STATUS.find((s) => s.label === label)!.value)}
             />
             <Segmented
               options={['List', 'Gallery']}
