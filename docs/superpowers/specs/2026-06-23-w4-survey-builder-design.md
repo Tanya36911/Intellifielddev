@@ -44,9 +44,11 @@ on its own.
    Assign is repeatable (assign an already-published survey again later). Editing
    a published survey starts a **new draft version** with a banner; past responses
    stay pinned to their version.
-5. **Add `required` and `unit` to questions** (a tiny additive backend change, no
-   migration and no new endpoint, see below). Lets the builder mark must-answer
-   questions and label a number's unit ("facings").
+5. **Add `required`, `unit`, and `lines` to questions** (a tiny additive backend
+   change, no migration and no new endpoint, see below). Lets the builder mark
+   must-answer questions, label a number's unit ("facings"), and remember which
+   product lines the author chose so the per-product picker round-trips without
+   re-deriving (and re-deriving could silently change a frozen question).
 6. **Mockup confirmations:** the look and the three-screen flow are approved; the
    builder's right rail is **Publish & assign (primary) + Save draft (secondary)**;
    the assign panel **keeps the rep-local / corporate timezone toggle** (the
@@ -83,42 +85,50 @@ The nav change: drop the "Form Builder" item; the **Surveys** item is now live
 Two read-or-validate-only changes to existing files. Surveys/versions/assignments
 already exist and are tested; we are not adding tables, endpoints, or a JWT change.
 
-### 1. Two optional fields on the question model
+### 1. Three optional fields on the question model
 
 In [api/app/surveys.py](../../../api/app/surveys.py), the `Question` model gains:
 
 ```python
 required: bool = False
 unit: str | None = None
+lines: list[str] = []   # the product-line names the author picked (display only)
 ```
 
 They flow through `_questions_json` (model_dump by_alias) into the existing
 `survey_versions.questions` JSONB blob. `compliance.py` ignores them (it reads
-only `pass`, `perSku`, `passScope`), so they are inert metadata and change no
-score. Backward compatible: existing seed surveys' questions simply lack the keys;
-reading is a raw JSONB passthrough (not re-validated), and writing now has
-defaults. This is the field-app-facing "must answer" flag and the number unit
-label; storing them now is correct and cheap.
+only `pass`, `perSku`, `passScope`, `id`), so they are inert metadata and change
+no score. Backward compatible: existing seed surveys' questions simply lack the
+keys; reading is a raw JSONB passthrough (not re-validated), and writing now has
+defaults. `required` is the field-app-facing "must answer" flag; `unit` is the
+number's unit label; `lines` records the chosen lines so editing a published
+survey can re-show the picker chips without re-deriving from `sku_ids` (the
+authoritative frozen product list). Storing these now is correct and cheap.
 
 ### 2. Enrich the survey list so the list screen has real content
 
 `GET /surveys` today returns only `{id, name, type, status, created_at}` per
-survey, with no version number and no assignment count. `ScopedRepo.list_surveys`
+survey, with no version number and no assignment signal. `ScopedRepo.list_surveys`
 ([scope.py:165](../../../api/app/scope.py)) is widened (read-only SQL, no schema
 change) to add, per survey row:
 
 - `latest_version`: `max(version_number)` across the survey's versions.
-- `assignment_count`: the number of `survey_assignments` **in the caller's scope**
-  (joined to `nodes` by the same `path LIKE scope_path || '%'` rule
-  `list_assignments` already uses) whose `survey_version_id` belongs to this
-  survey. When `scope_path` is None (an unpinned caller), `assignment_count` is 0,
-  consistent with `list_assignments` returning `[]`.
+- `assigned`: a boolean, true when **any** `survey_assignment` **in the caller's
+  scope** points at one of this survey's versions. Implemented as a scoped
+  `EXISTS` (`survey_assignments` -> `survey_versions` on `survey_id`, joined to
+  `nodes` by the same `path LIKE :scope || '%'` rule `list_assignments` uses).
+  The repo method **explicitly special-cases `scope_path is None` -> `assigned =
+  false` for every row** (matching `list_assignments` returning `[]`), rather than
+  relying on `path LIKE NULL` (which is fragile). The list shows "Assigned" vs
+  "Not assigned yet".
 
-Surveys stay company-wide (every admin sees the same list); only the
-`assignment_count` is scope-aware, which is the correct "assigned in N places you
-can see" semantics and matches the existing assignment scoping. The router shape
-stays `{ "surveys": [...], "count": n }`; each survey object just carries the two
-new fields.
+A boolean, not a count: the reviewers flagged the count as the most over-built
+piece (its own scope logic + a three-way test) for no extra demo value, so we ship
+the boolean. Surveys stay company-wide (every admin sees the same list); only
+`assigned` is scope-aware, which is the correct "assigned somewhere you can see"
+semantics and keeps scope-follows-pin intact. The router shape stays
+`{ "surveys": [...], "count": n }`; each survey object just carries the two new
+fields.
 
 Everything else (`POST /surveys`, `PATCH .../versions/{vid}`, `.../publish`,
 `.../versions`, `.../archive`, `GET /surveys/{id}`, `GET /survey-assignments`,
@@ -142,11 +152,13 @@ holds an internal question shape and translates to/from the backend shape.
 | Short text | `text` | no (logged) |
 
 Scorable means it can carry a pass rule. Multiple choice is included as a
-"select all that apply" question but is **logged, not auto-scored** in v1: the
-compliance engine's `in`/`not_in` operators compare a scalar answer against a
-list, which cleanly fits single-choice but not a list-valued multi-choice answer,
-so we do not offer a pass rule we cannot honestly score. This matches the
-prototype, whose scorable set was exactly `{yesno, numeric, dropdown(single)}`.
+"select all that apply" question but is **logged, not auto-scored** in v1: a
+multi-choice answer value is itself a **list**, and the compliance engine has no
+subset/superset operator, only `in`/`not_in`/comparisons. Feeding a list value to
+`in` or `==` would compare the whole list (not its members) and silently
+mis-score rather than erroring, so honestly there is no rule we can offer. We
+therefore log it without a pass rule. This matches the prototype, whose scorable
+set was exactly `{yesno, numeric, dropdown(single)}`.
 
 ### Pass-rule mapping (builder UI -> backend `{operator, value}`)
 
@@ -166,37 +178,76 @@ doc pass).
 `==` is the UI's "exactly". The boolean `==` path is the case the compliance
 truthiness guard explicitly supports (bool vs bool).
 
-### Per-product (per-SKU)
+### Per-product (per-SKU) - expand once, never re-derive
 
 A question's "Ask per product" toggle (`perSku: true`) picks one or more product
-**lines** from the catalog (`GET /skus`, grouped by `line`). At **publish** time
-(and at each save so the stored draft is faithful), each chosen line is expanded
-into its products' `id`s for that line, and that frozen list is sent as the
-question's `sku_ids`. (`status === 'discontinued'` products are excluded from the
-expansion; active/new are included.) The backend validates every `sku_id` belongs
-to the company (`_check_sku_ids`), which always holds because they come straight
-from that company's catalog. A product added to a line after publish is **not**
-retro-added, which is correct: the version is frozen.
+**lines** from the catalog (`GET /skus`, grouped by `line`). **The expansion to
+product IDs happens once, at the moment the author toggles a line**, not on every
+save: when a line is added, the builder captures that line's active products' `id`s
+and merges them into the question's `sku_ids`; when a line is removed, its products
+are dropped from `sku_ids`. Both the chosen line names (`lines`) and the captured
+`sku_ids` are stored on the question. Save and Publish send the **stored `sku_ids`
+verbatim** and never re-derive from `lines`. This is what guarantees "frozen
+forever" is true: a published question's products are exactly the set the author
+saw and approved, even if the catalog changes between editing and publishing.
+
+Only `status === 'active'` products are included; `discontinued` are excluded.
+(Production SKU status is strictly `active | discontinued`, enforced by a DB CHECK
+constraint, so there is no `new` status to consider, despite the prototype's
+sample data.) The backend validates every `sku_id` belongs to the company
+(`_check_sku_ids`), which always holds because they come straight from that
+company's catalog. A product added to a line after the IDs were captured is **not**
+auto-added, which is correct: the author chose a concrete set.
+
+**Empty-set guard:** if a `perSku` question ends up with zero `sku_ids` (every
+chosen line is fully discontinued, or no line is selected), the question can never
+be answered in the field, so the builder **blocks Save and Publish** with an inline
+message until the author either picks a line with active products or turns off "Ask
+per product".
 
 ### passScope (`each` vs `total`)
 
 For a per-product **Number** question, a segmented toggle sets `passScope`:
 - "Each shade on its own" -> `passScope:"each"` (every answered value must pass).
-- "One combined total" -> `passScope:"total"` (the engine sums the values, then
-  compares once).
+- "One combined total" -> `passScope:"total"` (the engine sums the answered values,
+  then compares once).
 
-The toggle is shown **only** for per-product Number questions (summing is
-meaningless for text/choice/boolean). Default is `each`. This maps directly to
-`evaluate_question` in compliance.py. (The prototype's label "single" becomes the
-backend's `total`.)
+The toggle is shown **only** for per-product Number questions. Crucially,
+`mapToBackendQuestion` **forces `passScope:"each"` whenever the type is not
+`number`** (and clears it on a type change away from Number), because
+`evaluate_question` only takes the summing path when `passScope == "total"`, and
+summing booleans or strings would be wrong (a `TypeError` for strings). So "total"
+can never reach a non-number question. Default is `each`.
+
+**Total with blanks:** `evaluate_question` drops `None` (unanswered) values before
+summing, so "one combined total" means "the sum of the shades that were answered",
+not "the sum across all chosen products". The builder's helper text says exactly
+this ("sums the shades that were answered; blanks are ignored") so the rule is not
+misread. (The prototype's label "single" becomes the backend's `total`.)
 
 ## The screens and their data flow
+
+**Routing & data conventions (match the existing app exactly).** Every existing
+screen is a flat route component rendered in isolation (App.tsx: `/` ->
+`<Dashboard/>`, `/catalog` -> `<Catalog/>`), each rendering its own `<Topbar>`
+(from `apps/admin/src/shell/`) and `<Page>`, and tested by mounting the bare
+component in a `MemoryRouter`. W4 follows this: **four flat sibling routes** in
+`App.tsx`, no wrapping container component:
+`/surveys` -> `SurveyList`, `/surveys/new` -> `Builder`,
+`/surveys/:id/edit` -> `Builder`, `/surveys/:id/assign` -> `AssignPanel`.
+All server data goes through **TanStack Query** (the W3 convention): `useSurveys.ts`
+wraps the calls in `useQuery`/`useMutation` (v5 object form) and calls
+`useQueryClient().invalidateQueries({ queryKey: ['surveys'] })` after any
+save/publish/assign so the list refreshes (exactly as `useCatalog.ts` does).
+Loading/empty/error UX matches what W1/W3 actually shipped: an inline "Loading..."
+line, a friendly empty state (the list's invites "New survey"), and a simple
+inline error line on a failed fetch (no richer error UI than the rest of the app).
 
 ### Surveys list
 - On open: `GET /surveys` (now enriched). The three stat tiles and the rows are
   computed by a pure `surveyStats(surveys)` helper. Status chip from
-  `survey.status`; version chip from `latest_version`; "assigned to N places" from
-  `assignment_count` (or "Not assigned yet" when 0).
+  `survey.status`; version chip from `latest_version`; "Assigned" vs "Not assigned
+  yet" from the `assigned` boolean.
 - "New survey" -> route to the Builder in new-survey mode (nothing is created
   until the first Save/Publish).
 - "Edit" / "Continue editing" -> `GET /surveys/{id}`, route to the Builder.
@@ -214,57 +265,93 @@ backend's `total`.)
   (`{id, type, prompt, required, unit, options, perSku, lines, pass, passScope}`).
   Reorder is up/down arrows over the array. Add/duplicate/delete are array ops.
 - **Save draft**: translate the internal questions to backend questions (types,
-  pass rules, lines->sku_ids). If the survey does not exist yet, `POST /surveys`
-  with `{name, questions}` (creates draft v1) and remember the returned version
-  id; otherwise `PATCH /surveys/{id}/versions/{vid}` with `{questions}`.
+  pass rules, the already-captured `sku_ids` + `lines` sent verbatim). If the
+  survey does not exist yet (`/surveys/new`), `POST /surveys` with
+  `{name, questions}` (creates draft v1), then **immediately
+  `navigate('/surveys/{id}/edit', { replace: true })`** so the URL and the
+  persisted draft stay in sync (no orphaned draft if the user refreshes or hits
+  back). Otherwise `PATCH /surveys/{id}/versions/{vid}` with `{questions}`.
 - **Publish & assign**: same translate + save, then `POST /surveys/{id}/publish`
   (freezes the latest draft), then route to the assign panel carrying the now-
   published version id (read from the publish response's `versions`, the one with
-  `published_at` set and the highest `version_number`).
+  `published_at` set and the highest `version_number`). Save and publish run as one
+  guarded action; a publish-race 409 (`PublishedVersionError`/`NoDraftError` from a
+  second tab) is shown as "already published, reload" rather than a generic error.
+- **Unsaved edits / concurrency (v1):** the builder holds edits in local React
+  state; leaving the builder without saving discards those local edits (acceptable
+  for v1, no confirm-on-leave, matching the app's current no-toast simplicity). A
+  saved draft is server-persisted. Two tabs editing the same draft is last-write-
+  wins (`update_version` has no optimistic-concurrency check); this is a documented
+  v1 limitation, not handled.
 
 ### Publish & assign
 - The publish confirmation is shown before `POST .../publish` is called (so
   "Cancel" truly cancels; nothing is frozen until "Publish vN").
 - Assign panel: `GET /nodes` gives the in-scope tree (each node has `path` and
-  `level_order`). The "all stores" toggle targets the **root** node (the shallowest
-  node, the caller's top). The region/district rows target their own node ids.
-  Selecting "all stores" disables the per-region rows (mutually exclusive), mirror
-  of the prototype.
-- **Reach preview** ("will reach N stores") is computed client-side from the
-  `/nodes` tree: the store level is `max(level_order)` among returned nodes; count
-  the nodes at that level whose `path` starts with the selected node's `path`.
+  `level_order`). The "all stores" toggle targets the **caller's top node** (the
+  shallowest node returned, i.e. the company root for an admin, or the manager's
+  pinned node for a manager - so the label reads "all stores you manage" for a
+  scoped user). The region/district rows target their own node ids. Selecting "all
+  stores" disables the per-region rows (mutually exclusive), mirroring the prototype.
+- **No client-side reach estimate.** The earlier "will reach N stores" preview
+  was dropped: computing the store level from only the nodes a caller can see is
+  wrong for a manager whose subtree is shallower than the org's deepest level (the
+  backend's true store level is the org-wide `max(level_order)` from
+  `org_level_definitions`, not the visible slice's max). Instead, the panel may show
+  a soft "covers everything under <node>" line, and the **authoritative** store
+  count comes from `GET /survey-assignments/{id}/stores` **after** assigning, shown
+  in the success confirmation. No double-source-of-truth, no manager miscount.
 - **Assign**: for each selected node, `POST /survey-assignments` with
-  `{survey_version_id, target_node_id, deadline, timezone_basis}`. `deadline` is
-  the date + time combined to an ISO timestamp (or null if left blank);
-  `timezone_basis` is `"rep-local"` or `"corporate"`. The authoritative store
-  count per assignment is available afterward via
-  `GET /survey-assignments/{id}/stores` (used for the success confirmation).
+  `{survey_version_id, target_node_id, deadline, timezone_basis}`. **Deadline
+  serialization:** the date + time the admin picks are combined and sent as an
+  **explicit UTC ISO instant** (offset applied from the admin's browser timezone),
+  so the stored `timestamptz` is unambiguous; a blank deadline sends `null`.
+  `timezone_basis` (`"rep-local"` / `"corporate"`) is, in W4, a **stored label
+  only**: the overdue calculation compares the absolute stored instant
+  (`deadline < now()`), and per-store-local deadline evaluation is a later concern.
+  The toggle is kept (Tanya's call; the backend stores the field) but the screen is
+  honest that it does not shift the instant yet.
+- **After assign succeeds**, show a brief confirmation (with the authoritative
+  store count from `/stores`) and `navigate` back to `/surveys`, where the survey
+  now reads "Published, Assigned". The flow never dead-ends on the assign panel.
 
 ## Components (each with one clear purpose)
 
-- `Surveys.tsx` (route container; switches list / builder / assign by route).
-- `useSurveys.ts` + pure helpers `surveyStats`, `mapToBackendQuestion`,
-  `mapFromBackendQuestion`, `passSummary`, `expandLinesToSkuIds` (unit-tested in
-  isolation; this is where the translation lives).
-- `SurveyList.tsx` (stat tiles + rows).
-- `Builder.tsx` (the canvas; owns the question array state).
+No route-container component (that pattern exists nowhere in the app). The three
+top-level screens are flat route components, each rendering its own `<Topbar>`
+(from `apps/admin/src/shell/`) + `<Page>`:
+
+- `SurveyList.tsx` (route `/surveys`): stat tiles + rows.
+- `Builder.tsx` (routes `/surveys/new` and `/surveys/:id/edit`): the canvas; owns
+  the question array state; reads `:id` (or its absence) to decide new vs edit.
+- `AssignPanel.tsx` (route `/surveys/:id/assign`): node picker + deadline +
+  timezone; shows the authoritative store count after assigning.
+
+Supporting (non-route) components and the hook:
+- `useSurveys.ts` (TanStack Query hooks) + pure helpers `surveyStats`,
+  `mapToBackendQuestion`, `mapFromBackendQuestion`, `passSummary`,
+  `expandLinesToSkuIds(lines, catalog)` (returns the **active** products' ids for
+  the given lines; unit-tested in isolation; this is where the translation lives).
 - `QuestionCard.tsx` (one question: badges, type menu, text, type-specific config,
-  the inline `PassConditionEditor`, per-product line picker, row actions).
+  the inline `PassConditionEditor`, per-product line picker, row actions, up/down
+  reorder).
 - `PassConditionEditor.tsx` (type-adaptive: Yes/No segmented, Number op+value (+
-  each/total when per-product), Single-choice option toggles).
-- `AssignPanel.tsx` (node picker + deadline + timezone + reach summary).
+  each/total when per-product Number), Single-choice option toggles).
 - `PublishConfirm.tsx` (the freeze confirmation, on the shared `Modal`).
 
 Reuses existing UI kit: `Modal`, `Field`, `Input`, `Select`, `Button`, `Chip`,
-`Card`, `Segmented`, `Switch`, `Icon`. No new shared primitives are expected
-(if a small one is needed it joins `apps/admin/src/ui/`).
+`Card`, `Segmented`, `Switch`, `Icon`, plus `Topbar`/`Page` from `shell/`. No new
+shared primitives are expected (if a small one is needed it joins
+`apps/admin/src/ui/`).
 
 ## Validation and error handling
 
-- The builder blocks Save and Publish until every question has a non-empty prompt
-  and every choice question has at least one option (mirroring the backend
-  Pydantic validators `prompt min_length=1` and `_choice_needs_options`), with
-  inline messages. This avoids round-tripping a guaranteed 400.
+- The builder blocks Save and Publish until: every question has a non-empty prompt;
+  every choice question has at least one option (mirroring the backend validators
+  `prompt min_length=1` and `_choice_needs_options`); and **every per-product
+  question has at least one product id** (the empty-set guard above). Inline
+  messages explain each. This avoids round-tripping a guaranteed 400 and avoids
+  shipping an unanswerable question.
 - A backend 400 (validation) is still surfaced inline if it slips through.
 - `PATCH` of a published version -> 409 `PublishedVersionError`; the screen never
   issues this (it only edits drafts), but if it occurs it shows "this version is
@@ -281,47 +368,61 @@ Reuses existing UI kit: `Modal`, `Field`, `Input`, `Select`, `Button`, `Chip`,
 ## The tests (the gate for W4)
 
 ### Backend (`api/tests/test_surveys.py`, extended; new cases)
-- A question round-trips `required` and `unit`: create a survey whose question
-  sets `required:true` and `unit:"facings"`, then `GET /surveys/{id}` returns them
-  in the stored questions. (Confirms the model change persists and reads back.)
-- `GET /surveys` returns `latest_version` and `assignment_count` per survey:
+- A question round-trips `required`, `unit`, and `lines`: create a survey whose
+  question sets `required:true`, `unit:"facings"`, `lines:["Velvet Lip"]`, then
+  `GET /surveys/{id}` returns them in the stored questions. (Confirms the model
+  change persists and reads back, and that `compliance` ignores them.)
+- `GET /surveys` returns `latest_version` and a scope-aware `assigned` boolean:
   build a survey, publish it, assign it to a node, and assert `latest_version`
-  matches and `assignment_count == 1`; a survey with no assignment shows 0; a
-  manager scoped to a sibling branch sees `assignment_count == 0` for an
-  assignment outside their branch, while the admin sees it counted.
+  matches and `assigned == true`; a survey with no assignment shows `false`; a
+  manager scoped to a sibling branch sees `assigned == false` for an assignment
+  outside their branch, while the admin sees `true`; an unpinned caller sees
+  `false` for every row.
 - The existing surveys/assignments suite stays green (no behavior change to the
   lifecycle endpoints).
 
 ### Frontend (Vitest + Testing Library, the established `vi.mock` + render-helper
 style; mocks `./lib/api`)
 - The list renders stat tiles and rows from a mocked `GET /surveys`, with the
-  right status chips, version chip, and assignment line; "New survey" routes to
-  the builder; an archived survey's Edit is disabled.
+  right status chips, version chip, and "Assigned"/"Not assigned yet" badge from
+  the `assigned` boolean; "New survey" routes to the builder; an archived survey's
+  Edit is disabled.
 - The builder: adds a question of each type; toggles required; for a Number
   question sets a pass rule (op + value) and asserts the chip reads "Pass = ... ";
   for a per-product Number question picks a line and sees the each/total toggle;
   for a single-choice question picks pass options; Save calls `apiSend` with the
-  **translated backend questions** (types mapped, `pass:{operator,value}`,
-  `sku_ids` expanded from the line), proving `mapToBackendQuestion` is wired.
+  **translated backend questions** (types mapped, `pass:{operator,value}`, the
+  captured `sku_ids` + `lines`), proving `mapToBackendQuestion` is wired.
+- **Empty per-product guard:** a per-product question whose chosen line has no
+  active products (mocked catalog) blocks Save with the inline message.
+- **New-survey navigation:** on `/surveys/new`, the first Save `POST`s and then
+  navigates to `/surveys/{id}/edit` (assert the redirect, so no orphaned draft).
 - Reorder by up/down arrows changes the order.
-- Publish shows the confirm, calls publish, then renders the assign panel; the
-  assign panel's reach preview counts stores from a mocked `/nodes`, and Assign
-  calls `POST /survey-assignments` once per selected node with the right body.
-- The pure helpers (`mapToBackendQuestion`/`mapFromBackendQuestion`/`passSummary`/
-  `expandLinesToSkuIds`/`surveyStats`) are unit-tested directly, including the
-  boolean Yes->`==true`, single-choice->`in`, and each/total cases.
+- Publish shows the confirm, calls publish, then renders the assign panel; Assign
+  calls `POST /survey-assignments` once per selected node with the right body
+  (deadline as a UTC instant, `timezone_basis` label), then navigates back to
+  `/surveys` and shows the authoritative store count from a mocked `/stores`.
+- The pure helpers are unit-tested directly, including: boolean Yes->`==true`;
+  single-choice->`in`; each/total; **`mapToBackendQuestion` forces `each` for a
+  non-number type**; **multi-choice/photo/text carry no `pass`** (the "logged
+  only" guarantee); **`expandLinesToSkuIds` includes only active products and
+  excludes discontinued**; **`mapFromBackendQuestion` round-trips** a loaded
+  published question (operator/value/lines survive an edit cycle); and the
+  total-with-blanks note (a `passSummary`/helper-text assertion that "total" reads
+  as "sum of answered shades").
 
 The full backend suite and the updated frontend suite end green; the frontend
 check count grows.
 
 ## New and changed files
-- `api/app/surveys.py` - add `required` + `unit` to `Question`. Modify.
-- `api/app/scope.py` - enrich `list_surveys` with `latest_version` +
-  `assignment_count`. Modify.
+- `api/app/surveys.py` - add `required`, `unit`, `lines` to `Question`. Modify.
+- `api/app/scope.py` - enrich `list_surveys` with `latest_version` + a scope-aware
+  `assigned` boolean (explicit `scope_path is None -> false`). Modify.
 - `api/tests/test_surveys.py` - the new backend cases. Modify.
-- `apps/admin/src/pages/Surveys/` - `Surveys.tsx`, `useSurveys.ts`,
-  `SurveyList.tsx`, `Builder.tsx`, `QuestionCard.tsx`, `PassConditionEditor.tsx`,
-  `AssignPanel.tsx`, `PublishConfirm.tsx`, their `.module.css`, and tests. New.
+- `apps/admin/src/pages/Surveys/` - `useSurveys.ts`, `SurveyList.tsx`,
+  `Builder.tsx`, `QuestionCard.tsx`, `PassConditionEditor.tsx`, `AssignPanel.tsx`,
+  `PublishConfirm.tsx`, their `.module.css`, and tests. New. (No route-container
+  component - the three screens are flat routes.)
 - `apps/admin/src/App.tsx` - add `/surveys`, `/surveys/new`, `/surveys/:id/edit`,
   `/surveys/:id/assign` routes inside the shell. Modify.
 - `apps/admin/src/shell/` (Sidebar) - remove the "Form Builder" nav item; mark
@@ -349,6 +450,14 @@ check count grows.
 - **Recurring deadlines and skip logic**: the backend supports neither; single
   deadline only, no conditional questions.
 - **Barcode and Date question types**: dropped (need a backend enum addition).
+- **Pre-assign "will reach N stores" estimate**: dropped (the client cannot
+  reliably know the org store level for a scoped manager); the authoritative store
+  count is shown after assigning, from `GET /survey-assignments/{id}/stores`.
+- **Per-store-local deadline evaluation**: `timezone_basis` is stored but is a
+  label only in W4; overdue compares the absolute stored instant. The toggle is
+  kept for forward-compat, not yet acted on per store.
+- **Optimistic-concurrency / multi-tab conflict handling**: v1 is last-write-wins
+  on a draft; a documented limitation, not handled.
 - **Completion %, responses, the per-store response drill**: that is W5; the list
   shows authoring status, not response progress.
 - **Archive / unarchive and delete-survey UI**: the list shows archived surveys
@@ -356,10 +465,10 @@ check count grows.
   follow-up, not core W4 (kept out unless trivial).
 
 ## How we will know W4 is done
-The backend gains `required`/`unit` (round-tripped by a test) and a `GET /surveys`
-that carries `latest_version` + a scope-aware `assignment_count` (asserted by a
-test, including a manager seeing 0 for an out-of-branch assignment); the full
-backend suite stays green. The frontend builds; the Surveys list, builder, and
+The backend gains `required`/`unit`/`lines` (round-tripped by a test) and a
+`GET /surveys` that carries `latest_version` + a scope-aware `assigned` boolean
+(asserted by a test, including a manager seeing `false` for an out-of-branch
+assignment); the full backend suite stays green. The frontend builds; the Surveys list, builder, and
 assign panel render on the shared design system and match the approved mockup; a
 question of each type can be added, a pass rule set, a per-product line chosen,
 and Save sends correctly **translated** backend questions; Publish freezes and the
