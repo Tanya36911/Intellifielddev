@@ -386,3 +386,37 @@ def test_question_extra_fields_round_trip(client, login):
     assert q["required"] is True
     assert q["unit"] == "facings"
     assert q["lines"] == ["Velvet Lip"]
+
+
+def _publish(client, token, name):
+    s = _find(client, token, name)
+    r = client.post(f"/surveys/{s['id']}/publish", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200, r.text
+    return s["id"]
+
+
+def test_list_surveys_has_latest_version_and_assigned(client, login):
+    dana = login("dana@lumenbeauty.com")
+    # an unassigned, freshly published survey
+    _create_draft(client, dana, "W4 Unassigned")
+    _publish(client, dana, "W4 Unassigned")
+    unassigned = _find(client, dana, "W4 Unassigned")
+    assert unassigned["latest_version"] == 1
+    assert unassigned["assigned"] is False
+
+    # a published survey assigned to West only
+    _create_draft(client, dana, "W4 West Only")
+    _publish(client, dana, "W4 West Only")
+    vid = _published_version_id(client, dana, "W4 West Only")
+    r = client.post(
+        "/survey-assignments",
+        headers={"Authorization": f"Bearer {dana}"},
+        json={"survey_version_id": vid, "target_node_id": str(_node_id("west"))},
+    )
+    assert r.status_code == 200, r.text
+
+    # Dana (admin, full scope) sees it assigned
+    assert _find(client, dana, "W4 West Only")["assigned"] is True
+    # Sarah (manager pinned at Central) does NOT see a West-only assignment
+    sarah = login("sarah@lumenbeauty.com")
+    assert _find(client, sarah, "W4 West Only")["assigned"] is False

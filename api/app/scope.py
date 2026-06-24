@@ -163,13 +163,34 @@ class ScopedRepo:
             raise ValueError(f"unknown sku_ids for this company: {sorted(missing)}")
 
     def list_surveys(self) -> list[dict]:
+        # `assigned` is scope-aware: an assignment targeting a node within the
+        # caller's subtree. Unpinned caller -> no scope -> nothing assigned.
+        if self.scope_path is None:
+            assigned_join = "left join (select null::uuid as survey_id where false) a on false"
+        else:
+            assigned_join = (
+                "left join (select distinct sv.survey_id from survey_assignments sa "
+                "join survey_versions sv on sv.id = sa.survey_version_id "
+                "join nodes n on n.id = sa.target_node_id "
+                "where sa.tenant_id = cast(:tid as uuid) and n.path like :scope || '%') "
+                "a on a.survey_id = s.id"
+            )
+        params = {"tid": str(self.tenant_id)}
+        if self.scope_path is not None:
+            params["scope"] = self.scope_path
         with engine.connect() as conn:
             rows = conn.execute(
                 text(
-                    f"select {self._SURVEY_COLS} from surveys "
-                    "where tenant_id = cast(:tid as uuid) order by name"
+                    f"select {', '.join('s.' + c.strip() for c in self._SURVEY_COLS.split(','))}, "
+                    "coalesce(v.latest_version, 1) as latest_version, "
+                    "(a.survey_id is not null) as assigned "
+                    "from surveys s "
+                    "left join (select survey_id, max(version_number) as latest_version "
+                    "from survey_versions group by survey_id) v on v.survey_id = s.id "
+                    f"{assigned_join} "
+                    "where s.tenant_id = cast(:tid as uuid) order by s.name"
                 ),
-                {"tid": str(self.tenant_id)},
+                params,
             ).mappings().all()
         return [dict(r) for r in rows]
 
