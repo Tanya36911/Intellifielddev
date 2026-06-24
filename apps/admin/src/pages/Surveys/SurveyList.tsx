@@ -4,7 +4,7 @@ import { Button, Card, Chip, Icon } from '../../ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import { surveyStats, useSurveyList, useSurvey, type Survey } from './useSurveys'
-import { useResponses, countBySurvey, responsesForSurvey, type ResponseRow } from './useResponses'
+import { useResponses, type ResponseRow } from './useResponses'
 import { useSkus } from '../Catalog/useCatalog'
 import { ResponsesListModal } from './ResponsesListModal'
 import { ResponseDetailModal } from './ResponseDetailModal'
@@ -186,6 +186,8 @@ export default function SurveyList() {
   function onCloseList() {
     setListModal(null)
     setDetailRowId(null)
+    setDetailSurveyId(null)
+    setFromList(false)
   }
 
   function onCloseDetail() {
