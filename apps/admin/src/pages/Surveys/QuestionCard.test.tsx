@@ -24,3 +24,35 @@ it('shows the pass summary chip for a scored question', () => {
   render(<QuestionCard q={q} index={0} total={1} catalog={[]} onChange={() => {}} onDelete={() => {}} onDup={() => {}} onMove={() => {}} />)
   expect(screen.getByText('Pass = Yes')).toBeInTheDocument()
 })
+
+it('removing the only pass option from a single_choice question sets pass to null', () => {
+  const onChange = vi.fn()
+  const q = {
+    ...blankQuestion('single_choice'),
+    prompt: 'Which?',
+    options: ['A', 'B'],
+    pass: { operator: 'in', value: ['A'] },
+  }
+  render(<QuestionCard q={q} index={0} total={1} catalog={[]} onChange={onChange} onDelete={() => {}} onDup={() => {}} onMove={() => {}} />)
+  // The first remove button corresponds to option 'A'
+  const removeButtons = screen.getAllByLabelText('Remove option')
+  fireEvent.click(removeButtons[0])
+  const updated = onChange.mock.calls.at(-1)![0]
+  expect(updated.pass).toBeNull()
+})
+
+it('removing a non-pass option from a single_choice question leaves pass intact', () => {
+  const onChange = vi.fn()
+  const q = {
+    ...blankQuestion('single_choice'),
+    prompt: 'Which?',
+    options: ['A', 'B'],
+    pass: { operator: 'in', value: ['A'] },
+  }
+  render(<QuestionCard q={q} index={0} total={1} catalog={[]} onChange={onChange} onDelete={() => {}} onDup={() => {}} onMove={() => {}} />)
+  // The second remove button corresponds to option 'B'
+  const removeButtons = screen.getAllByLabelText('Remove option')
+  fireEvent.click(removeButtons[1])
+  const updated = onChange.mock.calls.at(-1)![0]
+  expect(updated.pass).toEqual({ operator: 'in', value: ['A'] })
+})

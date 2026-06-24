@@ -143,7 +143,7 @@ export function mapToBackendQuestion(q: BuilderQuestion, _catalog?: Sku[]): Back
     sku_ids: q.perSku ? q.skuIds : [],
     perSku: q.perSku,
     pass: scored,
-    passScope: isNumber ? q.passScope : 'each',
+    passScope: (isNumber && q.perSku) ? q.passScope : 'each',
     required: q.required,
     unit: isNumber && q.unit.trim() ? q.unit.trim() : null,
     lines: q.perSku ? q.lines : [],

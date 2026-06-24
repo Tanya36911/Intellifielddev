@@ -49,6 +49,10 @@ describe('mapToBackendQuestion', () => {
     expect(b.sku_ids).toEqual(['v1', 'v2'])
     expect(b.lines).toEqual(['Velvet Lip'])
   })
+  it('forces passScope each for a non-perSku number question even when passScope is total', () => {
+    const q: BuilderQuestion = { ...blankQuestion('number'), perSku: false, passScope: 'total' }
+    expect(mapToBackendQuestion(q, CATALOG).passScope).toBe('each')
+  })
 })
 
 describe('mapFromBackendQuestion round-trips', () => {

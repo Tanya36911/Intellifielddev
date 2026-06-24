@@ -93,13 +93,26 @@ export function QuestionCard({
   }
 
   function removeOption(i: number) {
-    onChange({ ...q, options: q.options.filter((_, idx) => idx !== i) })
+    const removed = q.options[i]
+    const options = q.options.filter((_, idx) => idx !== i)
+    let pass = q.pass
+    if (q.type === 'single_choice' && pass && Array.isArray(pass.value)) {
+      const newValue = (pass.value as string[]).filter((v) => v !== removed)
+      pass = newValue.length > 0 ? { ...pass, value: newValue } : null
+    }
+    onChange({ ...q, options, pass })
   }
 
   function updateOption(i: number, val: string) {
+    const old = q.options[i]
     const options = [...q.options]
     options[i] = val
-    onChange({ ...q, options })
+    let pass = q.pass
+    if (q.type === 'single_choice' && pass && Array.isArray(pass.value)) {
+      const newValue = (pass.value as string[]).map((v) => (v === old ? val : v))
+      pass = { ...pass, value: newValue }
+    }
+    onChange({ ...q, options, pass })
   }
 
   return (
