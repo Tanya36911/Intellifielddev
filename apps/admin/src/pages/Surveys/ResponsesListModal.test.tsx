@@ -12,15 +12,17 @@ const SURVEY: Survey = {
 }
 
 const ROW: ResponseRow = {
-  id: 'r1', survey_version_id: 'v1', store_node_id: 'n1',
+  id: 'r1', survey_version_id: 'v1', survey_id: 's1', store_node_id: 'n1',
   store_path: '/lumen/west/sf/', user_id: 'u1', online: true,
   submitted_at: '2026-06-01T10:00:00Z', created_at: '2026-06-01T10:00:00Z',
   store_name: 'SF Flagship', survey_name: 'Velvet Lip Shelf Check',
   survey_version_number: 2, rep_name: 'Marcus Bell', overall: true,
+  scored: 2, passed: 2,
 }
 
 const OFFLINE_ROW: ResponseRow = {
   ...ROW, id: 'r2', online: false, overall: false, rep_name: 'Jane Doe',
+  scored: 2, passed: 0,
 }
 
 describe('ResponsesListModal', () => {

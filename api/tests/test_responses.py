@@ -359,3 +359,56 @@ def test_get_response_includes_display_names(client, login):
     assert got["survey_name"] == "Velvet Lip Shelf Check"
     assert isinstance(got["survey_version_number"], int)
     assert got["rep_name"], "rep_name missing from detail"
+
+
+def test_list_rows_include_survey_id_scored_passed(client, login):
+    """GET /responses list rows must carry survey_id, scored, and passed."""
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": 5},
+        {"question_id": "q2", "value": True},
+    ])
+    listed = client.get("/responses", headers={"Authorization": f"Bearer {token}"}).json()
+    assert listed["count"] >= 1
+    r = listed["responses"][0]
+    assert "survey_id" in r, "survey_id missing from list row"
+    assert "scored" in r, "scored missing from list row"
+    assert "passed" in r, "passed missing from list row"
+    assert isinstance(r["survey_id"], str)
+    assert isinstance(r["scored"], int)
+    assert isinstance(r["passed"], int)
+
+
+def test_partial_response_has_0_lt_passed_lt_scored(client, login):
+    """A response where only some scored questions pass must have 0 < passed < scored."""
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    admin_token = login("dana@lumenbeauty.com")
+    # Two questions: qA passes (facings ok), qB fails (endcap absent)
+    vid = _create_published_version(
+        client, admin_token, "Partial Two Q Survey",
+        [
+            {"id": "qA", "prompt": "facings?", "type": "number", "perSku": True,
+             "sku_ids": [str(rose)],
+             "pass": {"operator": ">=", "value": 4}, "passScope": "each"},
+            {"id": "qB", "prompt": "endcap?", "type": "boolean",
+             "pass": {"operator": "==", "value": True}, "passScope": "each"},
+        ],
+    )
+    # qA passes (5 >= 4), qB fails (False != True) -> partial at question level
+    resp = _submit(client, token, vid, _node_id("sf"), [
+        {"question_id": "qA", "sku_id": str(rose), "value": 5},
+        {"question_id": "qB", "value": False},
+    ])
+    assert resp.status_code == 200, resp.text
+    listed = client.get("/responses", headers={"Authorization": f"Bearer {token}"}).json()
+    # Find this specific response in the list
+    partial_row = next(
+        (r for r in listed["responses"] if r["id"] == resp.json()["id"]), None
+    )
+    assert partial_row is not None, "submitted response not found in list"
+    assert partial_row["scored"] > 0, "scored should be > 0"
+    assert 0 < partial_row["passed"] < partial_row["scored"], (
+        f"expected 0 < passed < scored, got passed={partial_row['passed']} scored={partial_row['scored']}"
+    )
