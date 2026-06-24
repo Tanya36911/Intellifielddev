@@ -6,31 +6,12 @@ import {
   type ResponseRow,
   type ResponseDetail,
 } from './useResponses'
-import type { Survey, SurveyVersion } from './useSurveys'
 
-// Helpers to build minimal fixture objects
-const ver = (id: string, survey_id: string): SurveyVersion => ({
-  id,
-  survey_id,
-  version_number: 1,
-  questions: [],
-  published_at: '2026-01-01',
-  created_at: '2026-01-01',
-})
-
-const survey = (id: string, versionIds: string[]): Survey => ({
-  id,
-  name: 'Test Survey',
-  type: null,
-  status: 'published',
-  created_at: '',
-  latest_version: 1,
-  assigned: true,
-})
-
-const row = (id: string, survey_version_id: string): ResponseRow => ({
+// Helper to build a minimal ResponseRow fixture
+const row = (id: string, survey_id: string, survey_version_id = 'v1-id'): ResponseRow => ({
   id,
   survey_version_id,
+  survey_id,
   store_node_id: 'n1',
   store_path: '/lumen/west/sf/',
   user_id: 'u1',
@@ -42,54 +23,46 @@ const row = (id: string, survey_version_id: string): ResponseRow => ({
   survey_version_number: 1,
   rep_name: 'Marcus Bell',
   overall: true,
+  scored: 1,
+  passed: 1,
 })
 
-const SURVEYS: Survey[] = [
-  { id: 's1', name: 'Velvet Lip', type: null, status: 'published', created_at: '', latest_version: 2, assigned: true },
-  { id: 's2', name: 'Spring Reset', type: null, status: 'draft', created_at: '', latest_version: 1, assigned: false },
-]
-
-// For responsesForSurvey we need versions attached. We use a SurveyDetail-like structure
-// but the helper receives a plain Survey + versions array.
 describe('responsesForSurvey', () => {
-  const v1 = 'v1-id'
-  const v2 = 'v2-id'
-  const vOther = 'v-other'
   const rows: ResponseRow[] = [
-    row('r1', v1),
-    row('r2', v2),
-    row('r3', vOther),
+    row('r1', 's1'),
+    row('r2', 's1'),
+    row('r3', 's2'),
   ]
 
-  it('filters rows to only those matching the given version ids', () => {
-    const result = responsesForSurvey(rows, [v1, v2])
+  it('filters rows to only those matching the given survey id', () => {
+    const result = responsesForSurvey(rows, 's1')
     expect(result.map((r) => r.id)).toEqual(['r1', 'r2'])
   })
 
-  it('returns empty array when no version ids match', () => {
-    expect(responsesForSurvey(rows, ['no-match'])).toEqual([])
+  it('returns empty array when no rows match the survey id', () => {
+    expect(responsesForSurvey(rows, 'no-match')).toEqual([])
   })
 
   it('returns empty array when rows is empty', () => {
-    expect(responsesForSurvey([], [v1])).toEqual([])
+    expect(responsesForSurvey([], 's1')).toEqual([])
   })
 })
 
 describe('countBySurvey', () => {
   const rows: ResponseRow[] = [
-    row('r1', 'v1-id'),
-    row('r2', 'v1-id'),
-    row('r3', 'v2-id'),
+    row('r1', 's1'),
+    row('r2', 's1'),
+    row('r3', 's2'),
   ]
 
   it('returns a map of survey id to response count', () => {
-    const map = countBySurvey(rows, { s1: ['v1-id', 'v2-id'], s2: [] })
-    expect(map['s1']).toBe(3)
-    expect(map['s2']).toBe(0)
+    const map = countBySurvey(rows, ['s1', 's2'])
+    expect(map['s1']).toBe(2)
+    expect(map['s2']).toBe(1)
   })
 
   it('returns 0 for surveys with no matching responses', () => {
-    const map = countBySurvey(rows, { sX: ['v-none'] })
+    const map = countBySurvey(rows, ['sX'])
     expect(map['sX']).toBe(0)
   })
 })
@@ -98,6 +71,7 @@ describe('responseStatus', () => {
   const makeDetail = (questions: Record<string, boolean | null>): ResponseDetail => ({
     id: 'r1',
     survey_version_id: 'v1',
+    survey_id: 's1',
     store_node_id: 'n1',
     store_path: '/lumen/',
     user_id: 'u1',
@@ -109,6 +83,8 @@ describe('responseStatus', () => {
     survey_version_number: 1,
     rep_name: 'Rep',
     overall: null,
+    scored: 0,
+    passed: 0,
     items: [],
     questions,
   })
