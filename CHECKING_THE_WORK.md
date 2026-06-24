@@ -14,15 +14,16 @@ Run all commands from the project folder (`cd ~/Documents/intelli-app`).
 
 ### Check 1: The test robot (catches broken behavior)
 A "test" is a tiny robot that uses the app the way a person would and shouts if
-something misbehaves. We now have 80 of them for the Admin app (48 from W1,
+something misbehaves. We now have 104 of them for the Admin app (48 from W1,
 plus 32 new checks added in W3 covering the Catalog screen, its data helpers,
-and the new UI kit pieces).
+and the new UI kit pieces, plus 24 new checks added in W4 covering the Surveys
+screens, the data hooks, and the pass-condition helpers).
 
 Run:
 ```
 pnpm test:admin
 ```
-- GOOD looks like: `Tests  80 passed (80)` near the bottom, all green ticks.
+- GOOD looks like: `Tests  104 passed (104)` near the bottom, all green ticks.
 - BAD looks like: any red `FAIL`, or a number in `failed`. The red text names
   the file and what it expected. You do not need to fix it; copy it to me.
 
@@ -267,10 +268,9 @@ What BAD looks like: the page is blank, a number reads as "NaN" or stays empty, 
 menu item crashes instead of showing the placeholder, or Export does nothing.
 Tell me what you saw.
 
-To confirm the automated gate: run `pnpm test:admin`. GOOD looks like `80 passed`
+To confirm the automated gate: run `pnpm test:admin`. GOOD looks like `104 passed`
 for the frontend. For the backend, run `pnpm test:api` (backend must be running);
-W3 adds no backend tests (it is a seed-only change), so the backend suite is to be
-re-confirmed with the database running. If anything goes red, copy the text to me.
+GOOD looks like `192 passed`. If anything goes red, copy the text to me.
 
 What it proves: the Admin app now has a real, live dashboard inside a proper app
 shell, with drill-down and export, all reading real numbers from the backend.
@@ -327,6 +327,70 @@ saw.
 What it proves: the Admin app now has a real, live product catalog with working
 search, filtering, and admin add/edit, all reading real product data from the
 backend, while managers and reps see it safely read-only.
+
+### Check 12: Walk through the Surveys area (W4, in the browser, no coding)
+This is the third real Admin screen: the survey builder and assignments. You judge
+it by looking at it and trying the controls.
+
+1. Make sure the backend is on: `docker compose up -d`
+2. Make sure the demo data is loaded: `docker compose exec api python -m app.seed`
+   (safe to run again; it only adds what is missing).
+3. Start the screens: `pnpm dev:admin`
+4. Open http://localhost:5173 and log in as `dana@lumenbeauty.com` / `demo1234`.
+5. Click **Surveys** in the left sidebar.
+
+What GOOD looks like on the list screen:
+- The page heading reads "Surveys". Three **stat tiles** show the count of all
+  surveys, published surveys, and drafts. These are real numbers from the backend.
+- Each survey row shows its name, a **status chip** (Published, Draft, or
+  Archived), a **version chip** (e.g. "v1"), and an **Assigned** or
+  **Not assigned** indicator.
+
+Now create a new survey:
+6. Click **New survey**. Type a name (for example "Velvet Lip Facing Check") and
+   confirm. You land in the builder.
+
+What GOOD looks like in the builder:
+- The survey name is shown at the top. Because the name is set at creation, it is
+  read-only here (the backend has no rename endpoint, so this is intentional).
+- An **Add question** button is visible. Click it and choose **Yes/No**. Type a
+  question text (for example "Is the display unit clean?"). Mark it required using
+  the toggle.
+- Click **Add question** again and choose **Number**. Type a question text (for
+  example "Velvet Lip facings on shelf"). Turn on **Per product** and pick the
+  Velvet Lip product line from the dropdown. Then turn on **Pass rule**, choose
+  the operator **>=**, and set the value to **4**. This means "passes if each
+  product has 4 or more facings".
+- Use the **up/down arrows** on a question card to reorder the questions.
+
+7. Click **Publish**. A confirmation pop-up warns that publishing freezes this
+   version forever. Click **Confirm**.
+
+What GOOD looks like after publishing:
+- The survey status changes to **Published** and the version chip shows "v1".
+- A **back to list** or **Assign** option appears.
+
+8. Click **Assign**. Choose a node from the dropdown (for example the Central
+   region), set a deadline date, and choose a timezone label. Click **Assign**.
+
+What GOOD looks like after assigning:
+- Back on the survey list, the survey row now shows the **Assigned** indicator.
+- The status chip still reads **Published**.
+
+What BAD looks like: the Surveys menu item still shows "coming soon" instead of
+the real screen, the stat tiles say 0 or NaN, adding a question does nothing, the
+Pass rule section does not appear for a Number question, the Publish button is
+missing, or the survey does not show as Assigned after the assign step. Tell me
+what you saw.
+
+To confirm the automated gate: run `pnpm test:admin`. GOOD looks like `104 passed`.
+For the backend, run `pnpm test:api` (backend must be running); GOOD looks like
+`192 passed`. If anything goes red, copy the text to me.
+
+What it proves: the Admin app now has a live survey builder where an admin can
+create a survey by hand, set pass rules for scoreable questions, publish it (which
+freezes that version), and assign it to a part of the org with a deadline, all
+using the existing backend with no new endpoints or database changes.
 
 ---
 

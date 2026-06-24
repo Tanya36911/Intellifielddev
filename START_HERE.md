@@ -140,14 +140,36 @@ needed. The UI kit gained four new shared building blocks (Modal, Field, Input,
 Select) that every future screen with a form or a pop-up will reuse. 80 frontend
 automated checks, all green.
 
+**W4 (Survey builder + assignments) DONE:** the Admin app now has a third real
+screen, the **Surveys** area, reachable at `/surveys` in the sidebar (the old
+"Form Builder" nav item is removed; the builder lives inside Surveys). An admin
+can create a survey by hand (six question types: Yes/No, Number, Single choice,
+Multiple choice, Photo, Short text), mark questions required, set a pass rule for
+scoreable types (Yes/No, Number, Single choice) using operators >=, <=, >, <, ==,
+!=, in, not_in, ask a question per product by picking product lines (which freeze
+to specific product ids on publish), and reorder questions with up/down arrows.
+Publishing freezes that version forever with a confirmation. After publishing the
+admin assigns the survey to one or more org nodes with a deadline and a timezone
+label. The surveys list shows each survey with a status chip (Published / Draft /
+Archived), a version chip, and an Assigned indicator, plus three stat tiles. The
+backend needed no migration and no new endpoint: two additive-only model changes
+(the question shape gained three optional fields; GET /surveys now returns
+latest_version and a scope-aware assigned boolean). 104 frontend automated checks,
+all green; 192 backend tests (190 prior plus 2 new), all green. Deliberately
+deferred (honest limitations): survey rename (no backend rename endpoint, so the
+name is read-only in edit mode), timezone deadline shifting per store, drag-and-drop
+reorder, version-diff panel, phone preview, pre-assign store-count estimate,
+survey templates, and the AI "describe it and draft a survey" feature (a later
+fast-follow).
+
 **What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we are
 building the **Admin web screens** over the backend that already exists, so
 stakeholders can finally see the product on a screen. W1 (the app shell + the
-Analytics dashboard) and W3 (the Catalog) are both **done** (above). The next
-steps are the rest of the screens, in demo order: survey builder, responses,
-payroll, and the org tree. The rest of Phase 5 (the Field mobile app + offline
-sync) is **resequenced to after the web screens**, because it is the long, hard,
-last push.
+Analytics dashboard), W3 (the Catalog), and W4 (the Survey builder + assignments)
+are all **done** (above). The next steps are the rest of the screens, in demo
+order: responses, payroll, and the org tree. The rest of Phase 5 (the Field mobile
+app + offline sync) is **resequenced to after the web screens**, because it is the
+long, hard, last push.
 
 ---
 
@@ -302,22 +324,20 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > wired to a new branch-scoped GET /analytics/dashboard endpoint, with the demo
 > seed enriched. W3 is also DONE: the Catalog screen at /catalog, the company
 > product list in List and Gallery views with search, status filter, stat tiles,
-> and admin-only add/edit. Baseline is green: 190 backend checks + 80 frontend
-> checks, and the app builds. Everything is committed to main but NOT pushed yet
-> (pushing auto-deploys to the dev server, so ask me before pushing).
+> and admin-only add/edit. W4 is also DONE: the Surveys area at /surveys, with a
+> by-hand builder (six question types, pass rules, per-product questions), publish
+> (freezes the version forever), and assign (point the published version at org
+> nodes with a deadline). Two additive backend changes only (no migration, no new
+> endpoint). Baseline is green: 192 backend checks + 104 frontend checks, and the
+> app builds. Everything is committed to main but NOT pushed yet (pushing
+> auto-deploys to the dev server, so ask me before pushing).
 >
-> What's next: W4, the Survey builder + assignments (the differentiator), per
-> ROADMAP.md, unless I say otherwise. Build a checklist (questions, optionally
-> per-product, with pass rules), publish it (which freezes that version forever),
-> and assign it to a spot on the org tree with a deadline. It is fully backed by
-> the existing backend (/surveys, /survey-assignments, /skus), so no backend brick
-> is needed. Port from the prototype screens
-> ../hi-fi-intelli/project/apps/admin/screens/formbuilder.jsx (+ formbuilder-parts.jsx)
-> and surveys.jsx. The "describe it and AI drafts the survey" feature is an optional
-> later fast-follow (it uses the Claude API), not the v1. After W4 the plan order is
-> W5 responses, W6 payroll, then W7 hierarchy (view); the setup wizard and on-screen
-> hierarchy editing are later and need small Users (GET/POST /users) and node-write
-> backend bricks first.
+> What's next: W5, Responses + response detail, per ROADMAP.md, unless I say
+> otherwise. Show what reps submitted with live pass/fail and the per-product
+> reason something failed. Backed by the existing /responses and /responses/{id}
+> endpoints. After W5 the plan order is W6 payroll, then W7 hierarchy (view);
+> the setup wizard and on-screen hierarchy editing are later and need small Users
+> (GET/POST /users) and node-write backend bricks first.
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser
@@ -358,16 +378,24 @@ project memory, so a new chat in this folder already knows them.)
   Blush, Cushion Compact, Brow Define), List and Gallery views, search, status
   filter, stat tiles, and admin-only add/edit via a pop-up form. Managers and
   reps see it read-only. No backend API change (seed-only). 80 frontend checks,
-  green. Backend tests to be re-confirmed with the database running.
+  green.
+- W4 (the Admin Surveys area): DONE. The survey builder is live at /surveys: a
+  by-hand builder for six question types (Yes/No, Number, Single choice, Multiple
+  choice, Photo, Short text), pass rules for scoreable types (operators >=, <=,
+  >, <, ==, !=, in, not_in), per-product questions with product-line picking,
+  publish (freezes the version forever), and assign to org nodes with a deadline.
+  The list shows status chip, version chip, and Assigned indicator with three stat
+  tiles. Two additive backend changes only (no migration, no new endpoint). 104
+  frontend checks, green; 192 backend checks, green.
 - Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done), Phase 5's
-  first piece (5-BE-a idempotency keys), W1 (the Admin dashboard + shell), and
-  W3 (the Admin Catalog). 80 frontend checks, green.
+  first piece (5-BE-a idempotency keys), W1 (the Admin dashboard + shell), W3
+  (the Admin Catalog), and W4 (the Admin Surveys area). 104 frontend checks,
+  green; 192 backend checks, green.
 - **NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)): build the rest
   of the Admin web screens over the existing backend, so stakeholders see results.**
-  W1 (shell + dashboard) and W3 (Catalog) are done; next in order are survey
-  builder (W4), responses (W5), payroll (W6), and the org tree (W7). The Field
-  mobile app + offline sync (the rest of Phase 5) is resequenced to after the
-  web screens.
+  W1 (shell + dashboard), W3 (Catalog), and W4 (Surveys) are done; next in order
+  are responses (W5), payroll (W6), and the org tree (W7). The Field mobile app +
+  offline sync (the rest of Phase 5) is resequenced to after the web screens.
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

@@ -40,8 +40,8 @@ fast-follow, never the headline.
   backend brick first (users, tenant settings, node-edit).
   - [x] **W1** app shell + Analytics dashboard (the old W2 analytics is folded into
     W1: the shell ships with the real dashboard as its first screen, not a stub Home);
-    [x] **W3** catalog; [ ] **W4** survey builder + assignments; [ ] **W5** responses
-    + detail; [ ] **W6** payroll; [ ] **W7** org hierarchy (view).
+    [x] **W3** catalog; [x] **W4** survey builder + assignments; [ ] **W5** responses
+    + detail (next); [ ] **W6** payroll; [ ] **W7** org hierarchy (view).
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
   first. Split into a backend sync-contract track and a mobile track.
@@ -121,8 +121,8 @@ fast-follow, never the headline.
   row per submission, carrying a snapshot of the store's place in the org tree at submit time so
   history is never re-bucketed if the store moves later) and response_items (the atomic rows, one
   per product per question per submission, indexed for analytics). A new pure module
-  api/app/compliance.py evaluates each answer against its question's pass rule (operators: gte, lte,
-  eq, min_choices, max_choices; scopes: each, total; blank answers are not counted, not failed) and
+  api/app/compliance.py evaluates each answer against its question's pass rule (operators: >=, <=,
+  >, <, ==, !=, in, not_in; scopes: each, total; blank answers are not counted, not failed) and
   returns pass/fail at read time, never storing the verdict, so changing a rule changes every score.
   New api/app/responses.py endpoints: POST /responses (any signed-in user, only for a store in
   their own branch, survey version must be published, answers are checked against the survey,
@@ -259,6 +259,29 @@ fast-follow, never the headline.
   the backend suite is to be re-confirmed with the database running. Frontend: 80 automated checks,
   all green. Deliberately deferred (honest placeholders, not missing): real photo upload (needs object
   storage, 5-BE-c), CSV import, PIM/API sync, "used in N surveys" badge, catalog CSV export, "New" status.
+- 2026-06-24: W4 COMPLETE - the Admin Surveys area (survey builder + publish + assign). The Surveys
+  screen at /surveys replaces the old "coming soon" placeholder. It has three panels: (1) a Surveys
+  list showing each survey with a status chip (Published / Draft / Archived), a version chip, an
+  Assigned indicator, and three stat tiles (all surveys, published, drafts); (2) a by-hand Builder
+  where an admin adds questions of six types (Yes/No, Number, Single choice, Multiple choice, Photo,
+  Short text), marks them required, sets a structured pass rule for scoreable types (Yes/No, Number,
+  Single choice) using operators >=, <=, >, <, ==, !=, in, not_in (matching the existing
+  api/app/compliance.py), asks a question per product by picking product lines which freeze to
+  specific product ids on publish, and reorders questions with up/down arrows; (3) Publish (freezes
+  the version forever with a confirmation) then Assign (point the published version at one or more
+  org nodes with a deadline and a timezone label). The survey name is read-only in edit mode (no
+  backend rename endpoint). The timezone label is stored for display only and does not yet shift the
+  deadline per store. The old "Form Builder" nav item was removed; the builder lives inside Surveys.
+  The AI "describe it and draft" feature was deliberately not built (a later fast-follow). Backend
+  changes were additive only (no migration, no new endpoint): the survey question model gained three
+  optional fields (required, unit, lines); GET /surveys now returns latest_version and a scope-aware
+  assigned boolean per survey. All other data used the existing /surveys, /survey-assignments, /skus,
+  and /nodes endpoints. New files in apps/admin/src/pages/Surveys/: useSurveys.ts, SurveyList.tsx,
+  Builder.tsx, QuestionCard.tsx, PassConditionEditor.tsx, PublishConfirm.tsx, AssignPanel.tsx, plus
+  their .module.css files and tests. Deliberately deferred (with honest notes): drag-and-drop reorder,
+  version-diff panel, phone preview, pre-assign store-count estimate, survey templates. Gate GREEN:
+  192 backend tests (190 prior + 2 new) + 104 frontend checks, admin app builds clean. W4 COMPLETE;
+  W5 (Responses + response detail) next.
 - 2026-06-19: Compliance-by-node region drill + healthy demo seed (a W1 dashboard refinement). The
   "Compliance by node" card was reshaped from a per-survey-assignment list (which showed duplicate
   survey rows and empty 0%/dash bars, and did not match the prototype) into a recursive ORG-NODE

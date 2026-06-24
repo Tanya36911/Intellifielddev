@@ -80,13 +80,24 @@ real photo upload (needs object storage, 5-BE-c), CSV import, PIM/API sync, the
 "used in N surveys" badge, catalog CSV export, and the "New" status. After this: a
 self-managed product catalog on screen, the foundation surveys point at.
 
-**W4: The Survey builder + assignments (the differentiator).** Build a checklist
-(questions, per-product, pass rules), publish it (which freezes that version
-forever), and assign it to a part of the org with a deadline. Backend: `/surveys`,
-`/survey-assignments`, `/skus` (all exist). After this: self-serve configurability
-on screen, the headline selling point. Note: the prototype's "describe it and AI
-drafts the survey" is an optional later add (it uses the Claude API and is a
-fast-follow); the by-hand builder is the v1 and stands on its own.
+**W4: The Survey builder + assignments (DONE).** Delivered: a Surveys area at
+`/surveys` (the old "Form Builder" nav item removed; the builder lives inside
+Surveys). Three panels: a surveys list (status chip Published/Draft/Archived,
+version chip, Assigned indicator, three stat tiles); a by-hand builder (six
+question types: Yes/No, Number, Single choice, Multiple choice, Photo, Short text;
+mark required; pass rules for scoreable types using operators >=, <=, >, <, ==,
+!=, in, not_in; per-product questions that freeze to specific product ids on
+publish; up/down reorder); and publish plus assign (published version pointed at
+one or more org nodes with a deadline and a timezone label). Backend: two additive
+changes only (no migration, no new endpoint): the question model gained three
+optional fields, and GET /surveys returns latest_version and a scope-aware
+assigned boolean. All other data used the existing /surveys, /survey-assignments,
+/skus, and /nodes endpoints. Deliberately deferred with honest notes: survey
+rename (no backend endpoint), timezone deadline shifting per store, drag-and-drop
+reorder, version-diff panel, phone preview, pre-assign store-count estimate,
+survey templates, and the AI draft feature (a later fast-follow). Gate: 192
+backend tests + 104 frontend checks, all green. After this: self-serve
+configurability is on screen, the headline selling point.
 
 **W5: Responses + the response detail.** See what reps submitted, with live
 pass/fail and the per-product reason something failed. Backend: `/responses`,

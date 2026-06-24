@@ -7,9 +7,10 @@ backend waiter; it never touches the database directly.
 
 So far it has a working **login screen**, the **app shell** (the persistent left
 sidebar and a per-page top bar that frame every screen), a small shared **UI kit**
-(reusable building blocks like buttons and cards), and two real screens: the
-**Analytics dashboard** (the landing screen at `/`) and the **Catalog** (the
-company's product list at `/catalog`). More Admin screens get added on top in later steps.
+(reusable building blocks like buttons and cards), and three real screens: the
+**Analytics dashboard** (the landing screen at `/`), the **Catalog** (the
+company's product list at `/catalog`), and the **Surveys** area (build, publish,
+and assign checklists at `/surveys`). More Admin screens get added on top in later steps.
 
 To see it: `pnpm dev:admin`, then open the address it prints (usually
 http://localhost:5173). To run its automated checks: `pnpm test:admin`.
@@ -191,6 +192,41 @@ All of the kit is checked together by `ui/ui.test.tsx`.
     and UPC are all filled in. On a successful save the form closes and the
     list refreshes. Real photo upload is noted as "coming soon" (it needs
     cloud photo storage, a later piece of work).
+- `pages/Surveys/`: the Surveys area, the third real screen (added in W4),
+  reachable at `/surveys`. Lets admins build, publish, and assign checklists.
+  Three panels live in this folder:
+  - `SurveyList.tsx` + `SurveyList.module.css`: the surveys list. Shows every
+    survey for the company with a status chip (Published / Draft / Archived), a
+    version chip, and an Assigned / Not assigned indicator. Three stat tiles at
+    the top count all surveys, published surveys, and drafts.
+  - `Builder.tsx` + `Builder.module.css`: the by-hand survey builder. Lets an
+    admin add questions of six types (Yes/No, Number, Single choice, Multiple
+    choice, Photo, Short text), mark a question required, set a pass rule for
+    scoreable types (Yes/No, Number, Single choice), and ask a question "per
+    product" by picking product lines (which freeze to specific product ids when
+    the survey is published). Questions can be reordered with up/down arrows.
+    A survey name cannot be changed after it is first created (the backend has no
+    rename endpoint), so the name field is read-only in edit mode.
+  - `QuestionCard.tsx` + `QuestionCard.module.css`: one question row in the
+    builder: the question text, type, required toggle, up/down arrows, and the
+    per-product and pass-rule sections.
+  - `PassConditionEditor.tsx` + `PassConditionEditor.module.css`: the small
+    form inside a question card that lets an admin set the pass rule: choose an
+    operator (>=, <=, >, <, ==, !=, in, not_in) and a threshold value, and pick
+    whether the rule applies to each product or to the total. Only Yes/No,
+    Number, and Single choice questions can carry a pass rule.
+  - `PublishConfirm.tsx` + `PublishConfirm.module.css`: the publish confirmation
+    pop-up. Warns that publishing freezes the version forever and cannot be
+    undone, then sends the publish request when the admin confirms.
+  - `AssignPanel.tsx` + `AssignPanel.module.css`: the assign panel. Points a
+    published survey version at one or more org nodes, with a deadline field
+    and a timezone label (rep-local or corporate). The timezone label is stored
+    for display only and does not yet shift the deadline per store.
+  - `useSurveys.ts`: the data layer for the whole Surveys area. Fetches surveys,
+    product lines, and nodes from the backend via the existing `/surveys`,
+    `/skus`, and `/nodes` endpoints. Also holds the pure helper functions that
+    translate the builder's question shape to and from the backend's format.
+    Checked by `useSurveys.test.ts`.
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
   for the menu items whose screens we have not built yet.
 A `.module.css` file is styling that applies ONLY to its own screen, so two

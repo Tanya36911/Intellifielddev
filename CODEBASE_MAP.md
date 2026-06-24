@@ -116,6 +116,30 @@ future screen that needs a pop-up or a form). The backend's demo data (the seed)
 was enriched so Lumen now has 33 products across 6 product lines, including one
 discontinued product, so the screen has real content to show.
 
+As of W4 (the third real Admin screen), the Admin app also has the **Surveys**
+area (`apps/admin/src/pages/Surveys/`), reachable at `/surveys`. It replaces the
+old "coming soon" placeholder and lets admins build, publish, and assign checklists.
+Three panels: a **Surveys list** (every survey with a status chip Published/Draft/
+Archived, a version chip, an Assigned indicator, and three stat tiles); a by-hand
+**Builder** (add questions of six types: Yes/No, Number, Single choice, Multiple
+choice, Photo, Short text; mark a question required; set a structured pass rule for
+scoreable types; ask a question per product by picking product lines, which freeze
+to specific product ids on publish; reorder with up/down arrows); and **Publish**
+(freeze that version forever, with a confirmation) then **Assign** (point the
+published version at one or more org nodes with a deadline and a timezone label).
+Only Yes/No, Number, and Single choice questions carry a pass rule (the operators
+>=, <=, >, <, ==, !=, in, not_in map directly to the backend's compliance.py); the
+other types are logged but not scored. Backend changes were additive only (no
+migration, no new endpoint): the survey question model gained three optional fields
+(`required`, `unit`, `lines`), and `GET /surveys` now returns `latest_version` and
+a scope-aware `assigned` boolean per survey. Everything else used the existing
+`/surveys`, `/survey-assignments`, `/skus`, and `/nodes` endpoints. Deliberate
+limitations noted: a survey name is read-only in edit mode (no rename endpoint);
+the timezone label is stored for display only and does not yet shift the deadline
+per store; drag-and-drop reorder, the version-diff panel, the phone preview, the
+pre-assign store-count estimate, and survey templates are deferred. 104 frontend
+automated checks, all green. Backend: 192 tests (190 prior plus 2 new), all green.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+
@@ -134,7 +158,7 @@ discontinued product, so the screen has real content to show.
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W3 it has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, and the Catalog screen wired to `/skus`, on top of the login screen. Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W4 it has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, and the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, on top of the login screen. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |
