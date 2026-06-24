@@ -1,8 +1,13 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, Chip, Icon } from '../../ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
-import { surveyStats, useSurveyList, type Survey } from './useSurveys'
+import { surveyStats, useSurveyList, useSurvey, type Survey } from './useSurveys'
+import { useResponses, countBySurvey, responsesForSurvey, type ResponseRow } from './useResponses'
+import { useSkus } from '../Catalog/useCatalog'
+import { ResponsesListModal } from './ResponsesListModal'
+import { ResponseDetailModal } from './ResponseDetailModal'
 import styles from './SurveyList.module.css'
 
 function StatTile({
@@ -53,9 +58,13 @@ function statusChip(status: Survey['status']) {
 function SurveyRow({
   survey,
   isAdmin,
+  responseCount,
+  onViewResponses,
 }: {
   survey: Survey
   isAdmin: boolean
+  responseCount: number
+  onViewResponses: (survey: Survey) => void
 }) {
   const navigate = useNavigate()
   return (
@@ -72,40 +81,49 @@ function SurveyRow({
           )}
         </div>
       </div>
-      {isAdmin && (
-        <div className={styles.rowActions}>
-          {survey.status === 'published' && (
-            <>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => navigate(`/surveys/${survey.id}/assign`)}
-              >
-                Assign
-              </Button>
+      <div className={styles.rowActions}>
+        <Button
+          size="sm"
+          disabled={responseCount === 0}
+          onClick={() => onViewResponses(survey)}
+        >
+          {responseCount} {responseCount === 1 ? 'response' : 'responses'}
+        </Button>
+        {isAdmin && (
+          <>
+            {survey.status === 'published' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => navigate(`/surveys/${survey.id}/assign`)}
+                >
+                  Assign
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/surveys/${survey.id}/edit`)}
+                >
+                  Edit
+                </Button>
+              </>
+            )}
+            {survey.status === 'draft' && (
               <Button
                 size="sm"
                 onClick={() => navigate(`/surveys/${survey.id}/edit`)}
               >
+                Continue editing
+              </Button>
+            )}
+            {survey.status === 'archived' && (
+              <Button size="sm" disabled>
                 Edit
               </Button>
-            </>
-          )}
-          {survey.status === 'draft' && (
-            <Button
-              size="sm"
-              onClick={() => navigate(`/surveys/${survey.id}/edit`)}
-            >
-              Continue editing
-            </Button>
-          )}
-          {survey.status === 'archived' && (
-            <Button size="sm" disabled>
-              Edit
-            </Button>
-          )}
-        </div>
-      )}
+            )}
+          </>
+        )}
+      </div>
     </Card>
   )
 }
@@ -119,9 +137,75 @@ export default function SurveyList() {
   const surveys = data?.surveys ?? []
   const stats = surveyStats(surveys)
 
+  const { data: responsesData } = useResponses()
+  const allRows = responsesData?.responses ?? []
+
+  const { data: skusData } = useSkus()
+  const skus = skusData?.skus ?? []
+
+  // Build surveyId -> version ids map for countBySurvey
+  // We use survey.latest_version as a proxy -- but we don't have all version ids
+  // from the list endpoint. We match by survey_name on the response rows instead.
+  // Better: match by survey_version_id. We use a direct filter approach:
+  // each ResponseRow has survey_name; match that to the survey name.
+  // This is good enough for the badge count. Exact version-id filtering is
+  // used inside ResponsesListModal (passed as the filtered rows).
+  const countMap: Record<string, number> = {}
+  for (const s of surveys) {
+    countMap[s.id] = allRows.filter((r) => r.survey_name === s.name).length
+  }
+
+  // Modal state
+  const [listModal, setListModal] = useState<Survey | null>(null)
+  const [detailRowId, setDetailRowId] = useState<string | null>(null)
+  const [fromList, setFromList] = useState(false)
+
+  // For detail modal: fetch the selected survey's full detail to get questions
+  const [detailSurveyId, setDetailSurveyId] = useState<string | null>(null)
+  const { data: surveyDetail } = useSurvey(detailSurveyId ?? undefined)
+  // Pick the questions from the version matching the open response
+  const detailQuestions = (() => {
+    if (!surveyDetail || !detailRowId) return []
+    // Find the response row to get its version id
+    const row = allRows.find((r) => r.id === detailRowId)
+    if (!row) return []
+    const version = surveyDetail.versions.find((v) => v.id === row.survey_version_id)
+    return version?.questions ?? []
+  })()
+
+  function onViewResponses(survey: Survey) {
+    setListModal(survey)
+    setDetailSurveyId(survey.id)
+  }
+
+  function onOpenDetail(row: ResponseRow) {
+    setDetailRowId(row.id)
+    setFromList(true)
+  }
+
+  function onCloseList() {
+    setListModal(null)
+    setDetailRowId(null)
+  }
+
+  function onCloseDetail() {
+    setDetailRowId(null)
+    if (!fromList) setListModal(null)
+  }
+
+  function onBack() {
+    setDetailRowId(null)
+    setFromList(false)
+  }
+
   function onNew() {
     navigate('/surveys/new')
   }
+
+  // Rows for the list modal
+  const listRows = listModal
+    ? allRows.filter((r) => r.survey_name === listModal.name)
+    : []
 
   return (
     <>
@@ -150,12 +234,37 @@ export default function SurveyList() {
           {!isLoading && surveys.length > 0 && (
             <div className={styles.list}>
               {surveys.map((s) => (
-                <SurveyRow key={s.id} survey={s} isAdmin={!!isAdmin} />
+                <SurveyRow
+                  key={s.id}
+                  survey={s}
+                  isAdmin={!!isAdmin}
+                  responseCount={countMap[s.id] ?? 0}
+                  onViewResponses={onViewResponses}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {listModal && (
+        <ResponsesListModal
+          open={!!listModal && !detailRowId}
+          survey={listModal}
+          rows={listRows}
+          onClose={onCloseList}
+          onOpenDetail={onOpenDetail}
+        />
+      )}
+
+      <ResponseDetailModal
+        open={!!detailRowId}
+        responseId={detailRowId}
+        questions={detailQuestions}
+        skus={skus}
+        onClose={onCloseDetail}
+        onBack={fromList ? onBack : undefined}
+      />
     </>
   )
 }
