@@ -41,6 +41,9 @@ class Question(BaseModel):
     perSku: bool = False
     pass_: PassRule | None = Field(default=None, alias="pass")
     passScope: Literal["each", "total"] = "each"
+    required: bool = False
+    unit: str | None = None
+    lines: list[str] = []
 
     model_config = {"populate_by_name": True}
 

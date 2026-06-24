@@ -368,3 +368,21 @@ def test_delete_assignment(client, login):
         f"/survey-assignments/{created['id']}", headers={"Authorization": f"Bearer {token}"}
     )
     assert again.status_code == 404
+
+
+def test_question_extra_fields_round_trip(client, login):
+    token = login("dana@lumenbeauty.com")
+    resp = client.post(
+        "/surveys",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "Extra Fields", "type": None,
+              "questions": [{"id": "q1", "prompt": "How many facings?", "type": "number",
+                             "required": True, "unit": "facings", "lines": ["Velvet Lip"]}]},
+    )
+    assert resp.status_code == 200, resp.text
+    sid = resp.json()["id"]
+    full = client.get(f"/surveys/{sid}", headers={"Authorization": f"Bearer {token}"}).json()
+    q = full["versions"][0]["questions"][0]
+    assert q["required"] is True
+    assert q["unit"] == "facings"
+    assert q["lines"] == ["Velvet Lip"]
