@@ -76,18 +76,6 @@ function FacingsGrid({
   const passValue = q.pass?.value as number | undefined
   const op = q.pass?.operator
 
-  function cellPass(value: unknown): boolean {
-    if (op == null || passValue == null || typeof value !== 'number') return false
-    switch (op) {
-      case '>=': return value >= passValue
-      case '<=': return value <= passValue
-      case '>': return value > passValue
-      case '<': return value < passValue
-      case '==': return value === passValue
-      default: return false
-    }
-  }
-
   const summaryText = (() => {
     if (!op || passValue == null) return null
     const opLabel: Record<string, string> = { '>=': '>=', '<=': '<=', '>': '>', '<': '<', '==': '=' }
@@ -96,7 +84,7 @@ function FacingsGrid({
       const total = qItems.reduce((a, i) => a + (typeof i.value === 'number' ? i.value : 0), 0)
       return `Total ${total}${unit}, rule ${opLabel[op] ?? op} ${passValue}`
     }
-    const passing = qItems.filter((i) => cellPass(i.value)).length
+    const passing = qItems.filter((i) => i.pass === true).length
     return `${passing} of ${qItems.length} shades meet ${opLabel[op] ?? op} ${passValue}${unit}`
   })()
 
@@ -113,7 +101,7 @@ function FacingsGrid({
       <div className={styles.facingsGrid}>
         {qItems.map((item) => {
           const sku = item.sku_id ? skuMap.get(item.sku_id) : undefined
-          const pass = cellPass(item.value)
+          const pass = item.pass === true
           return (
             <div
               key={item.sku_id}
