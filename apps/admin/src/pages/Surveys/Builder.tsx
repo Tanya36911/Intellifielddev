@@ -63,19 +63,20 @@ export default function Builder() {
   // Local editable state (synced from server data on first load)
   const [name, setName] = useState<string>('')
   const [questions, setQuestions] = useState<BuilderQuestion[]>([])
-  const [loaded, setLoaded] = useState(false)
+  // Track which survey id has been loaded to detect :id changes (fix 2)
+  const [loadedId, setLoadedId] = useState<string | undefined>(undefined)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  // Sync remote survey data into local state on first load (edit mode only)
-  if (surveyDetail && !loaded) {
+  // Sync remote survey data into local state whenever the route id changes (fix 2)
+  if (surveyDetail && loadedId !== id) {
     // Find the draft version (published_at === null), or fall back to first
     const draft = surveyDetail.versions.find((v) => v.published_at === null)
     const version = draft ?? surveyDetail.versions[0]
     setName(surveyDetail.name)
     setQuestions(version ? version.questions.map(mapFromBackendQuestion) : [])
-    setLoaded(true)
+    setLoadedId(id)
   }
 
   const createSurvey = useCreateSurvey()
@@ -151,17 +152,23 @@ export default function Builder() {
       const published = await publish.mutateAsync(surveyId)
       // Find the newly published version (highest version_number with published_at)
       const publishedVersions = published.versions.filter((v) => v.published_at !== null)
+      // Fix 3: guard against no published version
+      if (publishedVersions.length === 0) {
+        setError('Publish did not return a published version; please reload.')
+        return
+      }
       const best = publishedVersions.reduce(
         (a, b) => (b.version_number > a.version_number ? b : a),
         publishedVersions[0],
       )
       navigate('/surveys/' + surveyId + '/assign', {
-        state: { versionId: best?.id, name },
+        state: { versionId: best.id, name },
       })
     } catch (e: any) {
       if (e?.status === 409) {
-        setError('Already published; reloading')
-        refetch()
+        // Fix 4: await the refetch so state is settled before returning
+        setError('This survey is already published; reloading.')
+        await refetch()
       } else {
         setError('Publish failed. Please try again.')
       }
@@ -203,7 +210,7 @@ export default function Builder() {
     })
   }
 
-  const surveyName = name || surveyDetail?.name || 'New survey'
+  // Fix 6: removed dead `surveyName` variable; only `displaySubtitle` is used
   const displaySubtitle = name.trim() ? name : id ? (surveyDetail?.name ?? 'Loading...') : 'New survey'
 
   // Status chip for the version card
@@ -230,14 +237,21 @@ export default function Builder() {
                 </div>
               )}
 
-              {/* Survey name input */}
-              <input
-                className={styles.nameInput}
-                placeholder="Enter survey name..."
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                aria-label="Survey name"
-              />
+              {/* Fix 1: editable name only in new mode; edit mode shows a static heading
+                  because the backend has no rename endpoint (updateVersion only saves questions) */}
+              {id ? (
+                <div className={styles.nameHeading} aria-label="Survey name">
+                  {name || surveyDetail?.name || 'Loading...'}
+                </div>
+              ) : (
+                <input
+                  className={styles.nameInput}
+                  placeholder="Enter survey name..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-label="Survey name"
+                />
+              )}
 
               {/* Question count line */}
               <div className={styles.meta}>

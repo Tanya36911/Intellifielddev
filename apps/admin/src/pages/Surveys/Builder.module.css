@@ -65,6 +65,21 @@
   font-weight: 400;
 }
 
+/* Read-only name heading shown in edit mode (fix 1: no rename endpoint exists) */
+.nameHeading {
+  width: 100%;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  height: 40px;
+  padding: 0 4px;
+  border-bottom: 2px solid var(--border-faint);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  user-select: text;
+}
+
 .meta {
   display: flex;
   align-items: center;
@@ -82,11 +97,11 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: var(--red-subtle, #fef2f2);
-  border: 1px solid color-mix(in srgb, var(--red, #ef4444) 30%, transparent);
+  background: var(--red-bg);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
   border-radius: var(--r-md);
   font-size: 13px;
-  color: var(--red, #ef4444);
+  color: var(--red-fg);
 }
 
 .errorBanner svg {
