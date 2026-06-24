@@ -6,6 +6,7 @@ import { apiGet } from '../../lib/api'
 export type ResponseRow = {
   id: string
   survey_version_id: string
+  survey_id: string
   store_node_id: string
   store_path: string
   user_id: string
@@ -17,6 +18,8 @@ export type ResponseRow = {
   survey_version_number: number
   rep_name: string
   overall: boolean | null
+  scored: number
+  passed: number
 }
 
 export type ResponseItem = {
@@ -58,28 +61,27 @@ export function useResponseDetail(id: string | null, enabled: boolean) {
 // ---- Pure helpers ----
 
 /**
- * Filter a list of response rows to only those belonging to a set of
- * survey version ids (typically all versions of one survey).
+ * Filter a list of response rows to only those belonging to a given survey id.
+ * Uses the survey_id field returned directly by the backend on each row.
  */
 export function responsesForSurvey(
   rows: ResponseRow[],
-  versionIds: string[],
+  surveyId: string,
 ): ResponseRow[] {
-  const set = new Set(versionIds)
-  return rows.filter((r) => set.has(r.survey_version_id))
+  return rows.filter((r) => r.survey_id === surveyId)
 }
 
 /**
- * Build a map of surveyId -> response count for each survey, given a map of
- * surveyId -> its version ids.
+ * Build a map of surveyId -> response count for each survey.
+ * Uses the survey_id field on each row, so no version-id lookup is needed.
  */
 export function countBySurvey(
   rows: ResponseRow[],
-  surveyVersionMap: Record<string, string[]>,
+  surveyIds: string[],
 ): Record<string, number> {
   const result: Record<string, number> = {}
-  for (const [surveyId, vids] of Object.entries(surveyVersionMap)) {
-    result[surveyId] = responsesForSurvey(rows, vids).length
+  for (const surveyId of surveyIds) {
+    result[surveyId] = responsesForSurvey(rows, surveyId).length
   }
   return result
 }

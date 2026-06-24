@@ -143,16 +143,10 @@ export default function SurveyList() {
   const { data: skusData } = useSkus()
   const skus = skusData?.skus ?? []
 
-  // Build surveyId -> version ids from response rows (using survey_name to identify
-  // which survey each row belongs to, since the list endpoint does not return all
-  // version ids). This lets us use the typed helpers correctly.
-  const surveyVersionMap: Record<string, string[]> = {}
-  for (const s of surveys) {
-    const matchingRows = allRows.filter((r) => r.survey_name === s.name)
-    const vids = [...new Set(matchingRows.map((r) => r.survey_version_id))]
-    surveyVersionMap[s.id] = vids
-  }
-  const countMap = countBySurvey(allRows, surveyVersionMap)
+  // Build the count map: each survey's response count, keyed by survey id.
+  // Rows now carry survey_id directly so no version-id lookup is needed.
+  const surveyIds = surveys.map((s) => s.id)
+  const countMap = countBySurvey(allRows, surveyIds)
 
   // Modal state
   const [listModal, setListModal] = useState<Survey | null>(null)
@@ -203,9 +197,9 @@ export default function SurveyList() {
     navigate('/surveys/new')
   }
 
-  // Rows for the list modal -- use the helper with the pre-built version id set
+  // Rows for the list modal -- filter by the survey's id directly
   const listRows = listModal
-    ? responsesForSurvey(allRows, surveyVersionMap[listModal.id] ?? [])
+    ? responsesForSurvey(allRows, listModal.id)
     : []
 
   return (

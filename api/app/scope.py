@@ -456,6 +456,7 @@ class ScopedRepo:
         "r.user_id, r.online, r.submitted_at, r.created_at, "
         "n.name as store_name, "
         "s.name as survey_name, "
+        "sv.survey_id as survey_id, "
         "sv.version_number as survey_version_number, "
         "u.name as rep_name"
     )
@@ -602,7 +603,16 @@ class ScopedRepo:
             ).mappings().all()
             result = []
             for r in rows:
-                result.append({**dict(r), "overall": self._score(conn, r)["overall"]})
+                scored_result = self._score(conn, r)
+                verdicts = list(scored_result.get("questions", {}).values())
+                scored_count = sum(1 for v in verdicts if v is not None)
+                passed_count = sum(1 for v in verdicts if v is True)
+                result.append({
+                    **dict(r),
+                    "overall": scored_result["overall"],
+                    "scored": scored_count,
+                    "passed": passed_count,
+                })
         return result
 
     def get_response(self, response_id) -> dict | None:
