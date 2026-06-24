@@ -7,7 +7,7 @@ import App from './App'
 import { ApiError } from './lib/api'
 import { makeStore } from './store'
 import { SESSION_KEY } from './store/auth'
-import { dana, fakeToken, HOUR } from './test/fixtures'
+import { dana, fakeToken, HOUR, adminSession } from './test/fixtures'
 
 vi.mock('./lib/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./lib/api')>()),
@@ -121,4 +121,15 @@ describe('the whole journey', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password')
   })
+})
+
+it('shows the Surveys screen at /surveys and has no Form Builder nav item', async () => {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(adminSession()))
+  mockedApiGet.mockImplementation(async (path: string) => {
+    if (path === '/surveys') return { surveys: [] } as any
+    return dashboardRoute(path) as any
+  })
+  renderApp('/surveys')
+  expect(await screen.findByRole('heading', { name: /surveys/i })).toBeInTheDocument()
+  expect(screen.queryByText(/form builder/i)).not.toBeInTheDocument()
 })
