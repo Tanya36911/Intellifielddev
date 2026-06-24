@@ -6,7 +6,9 @@ import {
   expandLinesToSkuIds,
   surveyStats,
   blankQuestion,
+  pickPublishedVersionId,
   type BuilderQuestion,
+  type SurveyVersion,
 } from './useSurveys'
 import type { Sku } from '../Catalog/useCatalog'
 
@@ -88,5 +90,27 @@ describe('surveyStats', () => {
       { status: 'published' }, { status: 'published' }, { status: 'draft' }, { status: 'archived' },
     ] as any)
     expect(s).toEqual({ total: 4, published: 2, draft: 1 })
+  })
+})
+
+describe('pickPublishedVersionId', () => {
+  const ver = (id: string, version_number: number, published_at: string | null): SurveyVersion =>
+    ({ id, survey_id: 's1', version_number, questions: [], published_at, created_at: '' })
+
+  it('returns the highest published version_number id', () => {
+    const versions = [
+      ver('draft1', 3, null),
+      ver('pub1', 1, '2026-01-01'),
+      ver('pub2', 2, '2026-06-01'),
+    ]
+    expect(pickPublishedVersionId(versions)).toBe('pub2')
+  })
+
+  it('returns null when no published version exists', () => {
+    expect(pickPublishedVersionId([ver('draft1', 1, null)])).toBeNull()
+  })
+
+  it('returns null for an empty array', () => {
+    expect(pickPublishedVersionId([])).toBeNull()
   })
 })

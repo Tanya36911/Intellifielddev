@@ -21,5 +21,5 @@ it('assigns to the selected node then navigates back', async () => {
   renderApp(<AssignPanel />, { route: '/surveys/s1/assign', session: adminSession() })
   // default selection is "all stores" (root); just assign
   fireEvent.click(await screen.findByRole('button', { name: /^assign$/i }))
-  await waitFor(() => expect(send).toHaveBeenCalledWith('POST', '/survey-assignments', expect.objectContaining({ target_node_id: 'root', timezone_basis: 'rep-local' })))
+  await waitFor(() => expect(send).toHaveBeenCalledWith('POST', '/survey-assignments', expect.objectContaining({ survey_version_id: 'ver1', target_node_id: 'root', timezone_basis: 'rep-local' })))
 })

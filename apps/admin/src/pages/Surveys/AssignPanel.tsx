@@ -1,18 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { Topbar } from '../../shell/Topbar'
 import { Button, Card, Segmented, Switch } from '../../ui'
-import { useNodes, useCreateAssignment, useSurvey, type Node } from './useSurveys'
+import { useNodes, useCreateAssignment, useSurvey, pickPublishedVersionId, type Node } from './useSurveys'
 import styles from './AssignPanel.module.css'
-
-// Find the published version id by picking the version with the highest
-// version_number that has a non-null published_at.
-function pickPublishedVersionId(versions: { id: string; version_number: number; published_at: string | null }[]): string | null {
-  const published = versions
-    .filter((v) => v.published_at !== null)
-    .sort((a, b) => b.version_number - a.version_number)
-  return published.length > 0 ? published[0].id : null
-}
 
 const TZ_OPTIONS = ['Rep-local', 'Corporate (ET)']
 const TZ_VALUE: Record<string, string> = {
@@ -52,10 +43,19 @@ export default function AssignPanel() {
   const { data: nodesData, isLoading: nodesLoading } = useNodes()
   const createAssignment = useCreateAssignment()
 
-  // Find the "all stores" node: the one with the lowest level_order
+  // Find the "all stores" root node. Primary: prefer parent_id == null.
+  // Tie-break: lowest level_order, then shortest path, then lowest id.
   const nodes: Node[] = nodesData?.nodes ?? []
+  function compareNodes(a: Node, b: Node): number {
+    const aIsRoot = a.parent_id === null ? 0 : 1
+    const bIsRoot = b.parent_id === null ? 0 : 1
+    if (aIsRoot !== bIsRoot) return aIsRoot - bIsRoot
+    if (a.level_order !== b.level_order) return a.level_order - b.level_order
+    if (a.path.length !== b.path.length) return a.path.length - b.path.length
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  }
   const rootNode: Node | undefined = nodes.length > 0
-    ? nodes.reduce((a, b) => (a.level_order <= b.level_order ? a : b))
+    ? nodes.slice().sort(compareNodes)[0]
     : undefined
   const otherNodes: Node[] = rootNode
     ? nodes.filter((n) => n.id !== rootNode.id)
@@ -74,12 +74,23 @@ export default function AssignPanel() {
 
   const [error, setError] = useState<string | null>(null)
 
+  // Track which node ids have already been successfully assigned in this session.
+  // This prevents duplicate POSTs if the user retries after a partial failure.
+  const succeededRef = useRef<Set<string>>(new Set())
+
   const selectedNodeIds: string[] = allStores && rootNode
     ? [rootNode.id]
     : Array.from(selectedOthers)
 
-  const deadline: string | null =
-    date && time ? new Date(`${date}T${time}`).toISOString() : null
+  // Partial deadline validation: both filled -> compute UTC instant; both blank -> null (no deadline).
+  // If exactly one is filled, deadline is 'partial' to signal a validation error.
+  const deadlineState: string | null | 'partial' =
+    date && time
+      ? new Date(`${date}T${time}`).toISOString()
+      : !date && !time
+        ? null
+        : 'partial'
+  const deadline: string | null = deadlineState === 'partial' ? null : deadlineState
 
   const timezone_basis = TZ_VALUE[tzLabel] ?? 'rep-local'
 
@@ -92,15 +103,22 @@ export default function AssignPanel() {
       setError('Select at least one location to assign to.')
       return
     }
+    if (deadlineState === 'partial') {
+      setError('Enter both a date and a time for the deadline, or leave both blank.')
+      return
+    }
     setError(null)
     try {
       for (const nodeId of selectedNodeIds) {
+        // Skip nodes already successfully assigned (prevents duplicates on retry)
+        if (succeededRef.current.has(nodeId)) continue
         await createAssignment.mutateAsync({
           survey_version_id: versionId,
           target_node_id: nodeId,
           deadline,
           timezone_basis,
         })
+        succeededRef.current.add(nodeId)
       }
       navigate('/surveys')
     } catch (err: any) {
@@ -122,9 +140,9 @@ export default function AssignPanel() {
 
   const isPending = createAssignment.isPending
   const isDataLoading = nodesLoading || (!stateVersionId && surveyLoading)
-  // The button is enabled when "all stores" is selected or specific nodes are
-  // chosen, data has loaded, and a published version is known.
-  const hasSelection = allStores || selectedOthers.size > 0
+  // hasSelection is based on actual ids, not the allStores boolean, so an empty
+  // nodes response (no root node) does not mistakenly enable the button.
+  const hasSelection = selectedNodeIds.length > 0
   const canAssign = !isPending && hasSelection && !isDataLoading && !!versionId
 
   return (
@@ -135,7 +153,7 @@ export default function AssignPanel() {
       />
       <div className={styles.scroll}>
         <div className={styles.page}>
-          {!versionId && !nodesLoading && (
+          {!versionId && !isDataLoading && (
             <div className={styles.warn}>
               No published version found. Publish the survey before assigning.
             </div>

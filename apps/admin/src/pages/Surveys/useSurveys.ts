@@ -108,6 +108,15 @@ export function useCreateAssignment() {
 }
 
 // ----- pure helpers -----
+
+// Pick the published version id with the highest version_number.
+// Returns null when no published version exists.
+export function pickPublishedVersionId(versions: SurveyVersion[]): string | null {
+  const published = versions.filter((v) => v.published_at !== null)
+  if (published.length === 0) return null
+  return published.reduce((a, b) => (b.version_number > a.version_number ? b : a)).id
+}
+
 export function blankQuestion(type: QType): BuilderQuestion {
   return {
     id: 'q' + Math.random().toString(36).slice(2, 9),

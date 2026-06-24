@@ -9,6 +9,7 @@ import {
   blankQuestion,
   mapFromBackendQuestion,
   mapToBackendQuestion,
+  pickPublishedVersionId,
   useSurvey,
   useCreateSurvey,
   useUpdateVersion,
@@ -150,19 +151,14 @@ export default function Builder() {
     const surveyId = id ?? ''
     try {
       const published = await publish.mutateAsync(surveyId)
-      // Find the newly published version (highest version_number with published_at)
-      const publishedVersions = published.versions.filter((v) => v.published_at !== null)
-      // Fix 3: guard against no published version
-      if (publishedVersions.length === 0) {
+      // Find the newly published version using the shared helper
+      const bestId = pickPublishedVersionId(published.versions)
+      if (!bestId) {
         setError('Publish did not return a published version; please reload.')
         return
       }
-      const best = publishedVersions.reduce(
-        (a, b) => (b.version_number > a.version_number ? b : a),
-        publishedVersions[0],
-      )
       navigate('/surveys/' + surveyId + '/assign', {
-        state: { versionId: best.id, name },
+        state: { versionId: bestId, name },
       })
     } catch (e: any) {
       if (e?.status === 409) {
