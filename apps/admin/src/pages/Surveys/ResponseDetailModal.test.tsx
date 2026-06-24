@@ -33,11 +33,12 @@ const SKUS: Sku[] = [
 ]
 
 const DETAIL = {
-  id: 'r1', survey_version_id: 'v1', store_node_id: 'n1',
+  id: 'r1', survey_version_id: 'v1', survey_id: 's1', store_node_id: 'n1',
   store_path: '/lumen/west/sf/', user_id: 'u1', online: true,
   submitted_at: '2026-06-01T10:00:00Z', created_at: '2026-06-01T10:00:00Z',
   store_name: 'SF Flagship', survey_name: 'Velvet Lip Shelf Check',
   survey_version_number: 2, rep_name: 'Marcus Bell', overall: true,
+  scored: 2, passed: 1,
   items: [
     { question_id: 'q1', sku_id: 'sku-rose', value: 5, pass: true },
     { question_id: 'q1', sku_id: 'sku-mauve', value: 3, pass: false },
@@ -84,6 +85,22 @@ describe('ResponseDetailModal', () => {
     // Values
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('applies pass styling to a passing item and fail styling to a failing item', async () => {
+    renderApp(
+      <ResponseDetailModal open responseId="r1" questions={QUESTIONS} skus={SKUS} onClose={vi.fn()} />,
+      { session: adminSession() },
+    )
+    await screen.findByText('Marcus Bell')
+    // Rosewood (pass: true) cell should carry the pass CSS class; check via closest
+    const rosewood = screen.getByText('Rosewood')
+    const passCell = rosewood.closest('[class*="facingCell"]')
+    expect(passCell?.className).toMatch(/facingCellPass/)
+    // Mauve (pass: false) cell should carry the fail CSS class
+    const mauve = screen.getByText('Mauve')
+    const failCell = mauve.closest('[class*="facingCell"]')
+    expect(failCell?.className).toMatch(/facingCellFail/)
   })
 
   it('renders photo placeholder for photo questions', async () => {
