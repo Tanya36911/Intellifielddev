@@ -451,8 +451,14 @@ class ScopedRepo:
 
     # Same columns r.-qualified, because the list/get queries join nodes (which
     # also has an `id` column) for the path filter.
-    _RESPONSE_COLS_R = ("r.id, r.survey_version_id, r.store_node_id, r.store_path, "
-                        "r.user_id, r.online, r.submitted_at, r.created_at")
+    _RESPONSE_COLS_R = (
+        "r.id, r.survey_version_id, r.store_node_id, r.store_path, "
+        "r.user_id, r.online, r.submitted_at, r.created_at, "
+        "n.name as store_name, "
+        "s.name as survey_name, "
+        "sv.version_number as survey_version_number, "
+        "u.name as rep_name"
+    )
 
     def create_response(self, survey_version_id, store_node_id, answers, user_id,
                         idempotency_key=None) -> dict | None:
@@ -586,6 +592,9 @@ class ScopedRepo:
                 text(
                     f"select {self._RESPONSE_COLS_R} from responses r "
                     "join nodes n on n.id = r.store_node_id "
+                    "join survey_versions sv on sv.id = r.survey_version_id "
+                    "join surveys s on s.id = sv.survey_id "
+                    "join users u on u.id = r.user_id "
                     "where r.tenant_id = cast(:tid as uuid) and n.path like :scope || '%' "
                     "order by r.submitted_at desc"
                 ),
@@ -604,6 +613,9 @@ class ScopedRepo:
                 text(
                     f"select {self._RESPONSE_COLS_R} from responses r "
                     "join nodes n on n.id = r.store_node_id "
+                    "join survey_versions sv on sv.id = r.survey_version_id "
+                    "join surveys s on s.id = sv.survey_id "
+                    "join users u on u.id = r.user_id "
                     "where r.id = cast(:rid as uuid) and r.tenant_id = cast(:tid as uuid) "
                     "and n.path like :scope || '%'"
                 ),

@@ -324,3 +324,38 @@ def test_submit_foreign_tenant_version_400(client, login):
     resp = _submit(client, token, acme_vid, _node_id("sf"), [])
     assert resp.status_code == 400, resp.text
     assert "published" in resp.json()["detail"].lower()
+
+
+def test_list_responses_includes_display_names(client, login):
+    """GET /responses now returns store_name, survey_name, survey_version_number, rep_name."""
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": 5},
+    ])
+    listed = client.get("/responses", headers={"Authorization": f"Bearer {token}"}).json()
+    assert listed["count"] >= 1
+    r = listed["responses"][0]
+    assert "store_name" in r, "store_name missing from list"
+    assert "survey_name" in r, "survey_name missing from list"
+    assert "survey_version_number" in r, "survey_version_number missing from list"
+    assert "rep_name" in r, "rep_name missing from list"
+    assert r["store_name"]  # non-empty
+    assert r["survey_name"] == "Velvet Lip Shelf Check"
+    assert isinstance(r["survey_version_number"], int)
+    assert r["rep_name"]  # non-empty
+
+
+def test_get_response_includes_display_names(client, login):
+    """GET /responses/{id} also returns store_name, survey_name, survey_version_number, rep_name."""
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    created = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": 5},
+    ]).json()
+    got = client.get(f"/responses/{created['id']}",
+                     headers={"Authorization": f"Bearer {token}"}).json()
+    assert got["store_name"], "store_name missing from detail"
+    assert got["survey_name"] == "Velvet Lip Shelf Check"
+    assert isinstance(got["survey_version_number"], int)
+    assert got["rep_name"], "rep_name missing from detail"
