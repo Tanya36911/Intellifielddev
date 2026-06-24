@@ -294,7 +294,7 @@
 
 .lineWarning {
   font-size: 12px;
-  color: var(--error, #c53030);
+  color: var(--red-fg);
   margin: 0;
   font-weight: 500;
 }

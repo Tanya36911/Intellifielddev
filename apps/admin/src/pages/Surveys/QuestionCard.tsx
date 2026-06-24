@@ -83,7 +83,7 @@ export function QuestionCard({
     const options =
       type === 'single_choice' || type === 'multi_choice' ? ['Option 1'] : []
     // Pass only valid for scorable types
-    const pass = SCORABLE.has(type) ? null : null
+    const pass = null
     onChange({ ...q, type, options, pass, passScope: 'each', unit: '' })
     setTypeMenuOpen(false)
   }
@@ -323,7 +323,7 @@ export function QuestionCard({
               1 question expands to {q.skuIds.length} per-product answers
             </p>
           )}
-          {q.lines.length > 0 && q.skuIds.length === 0 && (
+          {q.skuIds.length === 0 && (
             <p className={styles.lineWarning}>
               The selected lines have no active products. Add active products or choose different lines.
             </p>
