@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>W5 Responses mockup</title>
+<style>
+:root{
+  --accent:#1B4F8A; --accent-hover:#174274; --accent-subtle:#e8edf3; --accent-ring:rgba(27,79,138,.16);
+  --bg:#fafafa; --bg-elev:#f4f4f5; --surface:#fff; --surface-2:#fafafa; --surface-hover:#f4f4f5;
+  --border:#e9e9ec; --border-strong:#dcdce0; --border-faint:#f1f1f3;
+  --text:#18181b; --text-2:#52525b; --text-3:#8a8a93; --text-4:#b4b4bb;
+  --green:#16a34a; --green-bg:#ecfdf3; --green-fg:#157f3c; --amber:#d97706; --amber-bg:#fffaeb; --amber-fg:#b45309;
+  --red:#dc2626; --red-bg:#fef3f2; --red-fg:#b42318;
+  --shadow-xs:0 1px 2px rgba(24,24,27,.04); --shadow-sm:0 1px 2px rgba(24,24,27,.05),0 1px 3px rgba(24,24,27,.04);
+  --shadow-pop:0 12px 40px rgba(24,24,27,.14),0 2px 8px rgba(24,24,27,.06);
+  --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-full:999px;
+  --sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box} html,body{margin:0;height:100%}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:var(--mono)} .mut{color:var(--text-3)}
+.hint{font-size:12.5px;color:var(--text-3);line-height:1.5}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+
+.app{display:flex;min-height:100vh}
+.sidebar{width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.companycard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px}
+.companycard .sq{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#c9a0e0,#9b6bd1)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;font-size:13.5px;font-weight:600}
+.nav a.active{background:var(--accent-subtle);color:var(--accent)}
+.nav a.soon{color:var(--text-4)}
+.nav a .soonchip{margin-left:auto;font-size:9.5px;font-weight:700;color:var(--text-4);border:1px solid var(--border);border-radius:var(--r-full);padding:1px 7px;text-transform:uppercase}
+.nav a .aibadge{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--accent);background:var(--accent-subtle);border-radius:var(--r-full);padding:1px 7px}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-4);padding:14px 10px 6px}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:56px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 22px}
+.topbar .ttl{font-size:15.5px;font-weight:700}
+.topbar .sp{flex:1}
+.page{padding:22px;max-width:1080px;width:100%;margin:0 auto}
+
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;height:36px;padding:0 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-hover)} .btn svg{width:15px;height:15px}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px;border-radius:var(--r-xs)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:var(--shadow-xs)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xs)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:var(--r-full);font-size:11.5px;font-weight:600;background:var(--bg-elev);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.chip.green{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip.amber{background:var(--amber-bg);color:var(--amber-fg);border-color:transparent}
+.chip.red{background:var(--red-bg);color:var(--red-fg);border-color:transparent}
+.chip.violet{background:#f5f3ff;color:#7c3aed;border-color:transparent}
+.chip.accent{background:var(--accent-subtle);color:var(--accent);border-color:transparent}
+.chip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+.input{height:34px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none}
+select.input{appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a8a93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.svg{width:13px;height:13px;display:inline-block;vertical-align:-2px}
+
+/* surveys stat tiles */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.stat{display:flex;align-items:center;gap:13px;padding:16px}
+.stat .ic{width:38px;height:38px;border-radius:10px;background:var(--accent-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+.stat .big{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.stat .lbl{font-size:12px;color:var(--text-3);margin-top:3px}
+
+/* survey rows */
+.srow{display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:12px}
+.srow .name{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.srow .meta{display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap}
+.srow .notassigned{font-size:12px;color:var(--text-4)}
+.respbtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:var(--r-xs);border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font-size:12.5px;font-weight:600;cursor:pointer}
+.respbtn:hover{background:var(--surface-hover);border-color:var(--accent);color:var(--accent)}
+.respbtn .n{font-family:var(--mono);font-weight:700;color:var(--text)}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(9,9,12,.42);z-index:8000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);max-width:100%;max-height:90vh;box-shadow:var(--shadow-pop);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.modalhead{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.modalbody{overflow-y:auto;padding:18px 22px}
+.avatar{width:32px;height:32px;border-radius:99px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0}
+.rlist{display:flex;flex-direction:column;gap:8px}
+.ritem{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;text-align:left;width:100%}
+.ritem:hover{border-color:var(--accent)}
+.pct{font-family:var(--mono);font-weight:700;font-size:15px}
+
+.verdict{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--r-lg);margin-bottom:16px}
+.verdict .big{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.metastrip{display:flex;gap:22px;margin:6px 0 18px;flex-wrap:wrap}
+.metastrip .k{font-size:10.5px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.metastrip .v{font-size:13px;font-weight:600;margin-top:2px}
+.qrow{padding:14px 0;border-bottom:1px solid var(--border-faint)}
+.qhead{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.qtext{font-size:14px;font-weight:600;margin-bottom:10px}
+.skugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.skucell{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--r-sm)}
+.skucell .sw{width:14px;height:14px;border-radius:4px;flex-shrink:0;box-shadow:0 0 0 1px var(--border)}
+.skucell .n{font-size:12.5px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skucell .f{font-family:var(--mono);font-size:13px;font-weight:700}
+.photo{width:220px;height:120px;border:1px dashed var(--border-strong);border-radius:var(--r-md);background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-3)}
+.callout{margin:18px auto 0;max-width:1080px;padding:0 22px}
+.callout .box{background:#fffdf5;border:1px solid #f0e2b8;border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;color:#6b5a1f}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">I</div><div><div style="font-weight:800;font-size:15px">Intelli</div><div class="hint" style="font-size:10.5px">Field Execution</div></div></div>
+    <div class="companycard"><div class="sq"></div><div><div style="font-weight:700;font-size:13px">Lumen Beauty</div><div class="hint" style="font-size:10.5px">Tenant</div></div></div>
+    <nav class="nav">
+      <a href="#">Analytics</a>
+      <a href="#">Form Builder <span class="aibadge">AI</span></a>
+      <a href="#" class="active">Surveys</a>
+      <a href="#">Catalog</a>
+      <div class="navgroup">Organization</div>
+      <a href="#" class="soon">Hierarchy <span class="soonchip">soon</span></a>
+      <a href="#" class="soon">Users &amp; Roles <span class="soonchip">soon</span></a>
+      <a href="#" class="soon">Settings <span class="soonchip">soon</span></a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="ttl">Surveys</div>
+      <div class="sp"></div>
+      <button class="btn sm primary"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> New survey</button>
+    </div>
+
+    <div class="page">
+      <div class="stats">
+        <div class="card stat"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg></div><div><div class="big">2</div><div class="lbl">Surveys</div></div></div>
+        <div class="card stat"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div><div><div class="big">1</div><div class="lbl">Published surveys</div></div></div>
+        <div class="card stat"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1 1 0 0 1 3 3l-9 9-4 1 1-4z"/></svg></div><div><div class="big">1</div><div class="lbl">Drafts</div></div></div>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:10px">The Surveys screen (built in W4). W5 adds the "responses" entry on each row.</div>
+
+      <!-- survey row: published, with responses entry -->
+      <div class="card srow">
+        <div style="flex:1;min-width:0">
+          <div class="name">Velvet Lip Shelf Check</div>
+          <div class="meta">
+            <span class="chip green">Published</span>
+            <span class="chip">v2</span>
+            <span class="chip accent">Assigned</span>
+          </div>
+        </div>
+        <button class="respbtn" onclick="openList()">
+          <svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/></svg>
+          <span class="n">5</span> responses
+        </button>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm primary">Assign</button>
+          <button class="btn sm">Edit</button>
+        </div>
+      </div>
+
+      <!-- survey row: draft, zero responses -->
+      <div class="card srow">
+        <div style="flex:1;min-width:0">
+          <div class="name">Glow Blush Reset Check</div>
+          <div class="meta">
+            <span class="chip amber">Draft</span>
+            <span class="chip">v1</span>
+            <span class="notassigned">No assignment</span>
+          </div>
+        </div>
+        <button class="respbtn" disabled style="opacity:.5;cursor:default">
+          <svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/></svg>
+          <span class="n">0</span> responses
+        </button>
+        <div style="display:flex;gap:6px"><button class="btn sm">Continue editing</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout"><div class="box"><b>Mockup for approval (corrected).</b> Responses are NOT a sidebar item, matching the prototype. They open from a survey's row here (and from the Analytics drill). Click the <b>"5 responses"</b> button to see the per-survey list, then a row to open the detail. Real data from <span class="mono">/responses</span> and <span class="mono">/responses/{id}</span>; pass/fail live; a small backend add gives the rep + store names; shelf photos deferred (5-BE-c).</div></div>
+
+<!-- responses LIST modal (per survey) -->
+<div class="overlay" id="listOverlay" onclick="if(event.target===this)closeList()">
+  <div class="modal" style="width:560px">
+    <div class="modalhead">
+      <div><h3 style="font-size:16px">Submitted responses</h3><p class="hint" style="margin-top:3px">Velvet Lip Shelf Check: the raw records behind the compliance number</p></div>
+      <button class="btn sm ghost" onclick="closeList()"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div class="modalbody">
+      <div class="rlist" id="rlist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- response DETAIL modal -->
+<div class="overlay" id="detOverlay" onclick="if(event.target===this)closeDet()">
+  <div class="modal" style="width:720px">
+    <div class="modalhead">
+      <div><h3 style="font-size:16px">Walgreens #2210</h3><p class="hint" style="margin-top:3px">Velvet Lip Shelf Check, v2, submitted Apr 7, 2026</p></div>
+      <button class="btn sm ghost" onclick="closeDet()"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div class="modalbody">
+      <button class="btn sm ghost" onclick="backToList()" style="margin-bottom:14px;color:var(--text-2)"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg> All responses</button>
+
+      <div class="verdict" style="background:var(--amber-bg)">
+        <div class="avatar" style="background:#0ea5e9;width:34px;height:34px">MB</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13.5px;font-weight:600">Marcus Bell</div>
+          <div class="hint" style="font-size:12px">Walgreens, #2210, Oakland CA</div>
+        </div>
+        <div style="text-align:right">
+          <div style="display:flex;align-items:center;gap:7px;justify-content:flex-end;color:var(--amber-fg)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            <span class="big">50%</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:var(--amber-fg)">Partial, 1/2 scored questions</div>
+        </div>
+      </div>
+
+      <div class="metastrip">
+        <div><div class="k">Node</div><div class="v">Bay Area &rsaquo; Oakland</div></div>
+        <div><div class="k">Sync</div><div class="v">Offline, queued</div></div>
+        <div><div class="k">Survey version</div><div class="v">v2 (frozen)</div></div>
+      </div>
+
+      <div class="eyebrow" style="margin:20px 0 2px">Answers</div>
+      <div>
+        <div class="qrow">
+          <div class="qhead">
+            <span class="chip">Number</span>
+            <span class="chip violet"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>Per-SKU</span>
+            <span class="chip accent"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>passes if &ge; 4 each</span>
+            <span style="margin-left:auto" class="chip red"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Fail</span>
+          </div>
+          <div class="qtext">How many facings of each Velvet Lip shade are on the shelf?</div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--amber-fg);margin-bottom:9px">2 of 3 shades meet &ge; 4 facings</div>
+          <div class="skugrid">
+            <div class="skucell" style="background:var(--red-bg)"><span class="sw" style="background:#9B5B5B"></span><span class="n">Rosewood</span><span class="f" style="color:var(--red-fg)">2</span><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="var(--red-fg)" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+            <div class="skucell" style="background:var(--green-bg)"><span class="sw" style="background:#8B5E83"></span><span class="n">Mauve</span><span class="f" style="color:var(--green-fg)">5</span><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="var(--green-fg)" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <div class="skucell" style="background:var(--green-bg)"><span class="sw" style="background:#E5734D"></span><span class="n">Coral</span><span class="f" style="color:var(--green-fg)">6</span><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="var(--green-fg)" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+        </div>
+        <div class="qrow">
+          <div class="qhead">
+            <span class="chip">Yes / No</span>
+            <span class="chip accent"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>passes if Yes</span>
+            <span style="margin-left:auto" class="chip green"><svg class="svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>Pass</span>
+          </div>
+          <div class="qtext">Is the Velvet Lip endcap display present?</div>
+          <span class="chip green" style="height:24px">Yes</span>
+        </div>
+        <div class="qrow">
+          <div class="qhead"><span class="chip">Photo</span><span style="margin-left:auto" class="chip" style="color:var(--text-3)">Not scored</span></div>
+          <div class="qtext">Shelf photo of the Velvet Lip section</div>
+          <div class="photo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            <span style="font-size:12px;font-weight:600">Photo coming soon</span>
+            <span class="hint" style="font-size:11px">stored when shelf-photo upload ships (5-BE-c)</span>
+          </div>
+        </div>
+        <div class="qrow" style="border-bottom:none">
+          <div class="qhead"><span class="chip">Text</span><span style="margin-left:auto" class="chip" style="color:var(--text-3)">Not scored</span></div>
+          <div class="qtext">Any notes for the team?</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5;padding:9px 12px;background:var(--surface-2);border-radius:var(--r-md);border-left:2px solid var(--border-strong)">"Rosewood restock requested, only 2 left on shelf."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RESP=[
+  {store:'CVS #1040', city:'San Francisco CA', rep:'Marcus Bell', init:'MB', repc:'#0ea5e9', date:'Apr 9, 2026', online:true, pct:83, status:'partial'},
+  {store:'Walgreens #2210', city:'Oakland CA', rep:'Marcus Bell', init:'MB', repc:'#0ea5e9', date:'Apr 7, 2026', online:false, pct:50, status:'fail'},
+  {store:'Target #1180', city:'San Jose CA', rep:'Marcus Bell', init:'MB', repc:'#0ea5e9', date:'Apr 5, 2026', online:true, pct:100, status:'pass'},
+  {store:'CVS #1402', city:'Berkeley CA', rep:'Aisha Rahman', init:'AR', repc:'#16a34a', date:'Apr 4, 2026', online:true, pct:100, status:'pass'},
+  {store:'Walgreens #3015', city:'Fremont CA', rep:'Aisha Rahman', init:'AR', repc:'#16a34a', date:'Apr 2, 2026', online:true, pct:67, status:'partial'},
+];
+const META={pass:{c:'green',l:'Compliant'},partial:{c:'amber',l:'Partial'},fail:{c:'red',l:'Failed'}};
+function renderList(){
+  document.getElementById('rlist').innerHTML=RESP.map(r=>{
+    const m=META[r.status];
+    return `<button class="card ritem" onclick="openDet()">
+      <span class="avatar" style="background:${r.repc}">${r.init}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:600">${r.store} <span class="mut" style="font-weight:400">${r.city}</span></div>
+        <div class="hint" style="font-size:12px">${r.rep}, ${r.date}${r.online?'':' (queued offline)'}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="pct" style="color:var(--${m.c}-fg)">${r.pct}%</div>
+        <span class="chip ${m.c}" style="height:19px;margin-top:2px">${m.l}</span>
+      </div>
+      <svg class="svg" style="color:var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>`;
+  }).join('');
+}
+function openList(){document.getElementById('listOverlay').classList.add('open')}
+function closeList(){document.getElementById('listOverlay').classList.remove('open')}
+function openDet(){closeList();document.getElementById('detOverlay').classList.add('open')}
+function closeDet(){document.getElementById('detOverlay').classList.remove('open')}
+function backToList(){closeDet();openList()}
+renderList();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { Modal, Avatar, Chip, Icon } from '../../ui'
-import { responseStatus, type ResponseRow } from './useResponses'
+import { type ResponseRow } from './useResponses'
 import type { Survey } from './useSurveys'
 import styles from './ResponsesListModal.module.css'
 
@@ -52,7 +52,6 @@ export function ResponsesListModal({
         ) : (
           <div className={styles.list}>
             {rows.map((r) => {
-              const sum = responseStatus({ ...r, items: [], questions: {} } as any)
               // Use overall boolean to determine a simple status for list view
               const listStatus =
                 r.overall === true ? 'pass' : r.overall === false ? 'fail' : 'na'
