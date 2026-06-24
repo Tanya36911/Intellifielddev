@@ -52,9 +52,15 @@ export function ResponsesListModal({
         ) : (
           <div className={styles.list}>
             {rows.map((r) => {
-              // Use overall boolean to determine a simple status for list view
-              const listStatus =
-                r.overall === true ? 'pass' : r.overall === false ? 'fail' : 'na'
+              // Compute status from scored/passed counts returned by the backend
+              const scored = r.scored ?? 0
+              const passed = r.passed ?? 0
+              const pct = scored > 0 ? Math.round((passed / scored) * 100) : null
+              let listStatus: 'pass' | 'partial' | 'fail' | 'na'
+              if (scored === 0) listStatus = 'na'
+              else if (passed === scored) listStatus = 'pass'
+              else if (passed === 0) listStatus = 'fail'
+              else listStatus = 'partial'
               const tone = STATUS_TONE[listStatus]
               const pctColor = tone ? `var(--${tone}-fg)` : 'var(--text-2)'
               return (
@@ -76,7 +82,7 @@ export function ResponsesListModal({
                   </div>
                   <div className={styles.rowRight}>
                     <div className={styles.rowPct} style={{ color: pctColor }}>
-                      {r.overall === true ? '100%' : r.overall === false ? '0%' : ''}
+                      {pct !== null ? `${pct}%` : ''}
                     </div>
                     <div className={styles.rowStatus}>
                       <Chip tone={tone}>{STATUS_LABEL[listStatus]}</Chip>
