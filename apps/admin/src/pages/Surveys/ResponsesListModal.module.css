@@ -1,0 +1,58 @@
+.body {
+  padding: 18px;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: border-color 0.12s;
+}
+.row:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+.rowInfo {
+  flex: 1;
+  min-width: 0;
+}
+.rowName {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.rowMeta {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.rowRight {
+  text-align: right;
+  flex-shrink: 0;
+}
+.rowPct {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rowStatus {
+  margin-top: 3px;
+}
+.empty {
+  padding: 28px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-3);
+  font-size: 13px;
+}
