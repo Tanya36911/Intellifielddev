@@ -1,0 +1,107 @@
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+.page {
+  padding: 22px;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.section {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sectionTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.nodeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.nodeRow:last-child {
+  border-bottom: none;
+}
+.nodeRowDisabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.nodeInfo {
+  flex: 1;
+}
+.nodeName {
+  font-size: 14px;
+  font-weight: 500;
+}
+.nodeHint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+.deadlineRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.deadlineField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.dateInput {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.dateInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.tzRow {
+  margin-top: 4px;
+}
+.hint {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.warn {
+  background: var(--amber-subtle, #fef3c7);
+  color: var(--amber, #92400e);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.error {
+  background: var(--error-subtle, #fee2e2);
+  color: var(--error, #b91c1c);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
