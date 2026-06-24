@@ -1,0 +1,20 @@
+.body {
+  padding: 20px 24px 24px;
+}
+
+.warning {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin-bottom: 22px;
+}
+
+.warning strong {
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
