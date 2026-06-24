@@ -4,7 +4,7 @@ import { Button, Card, Chip, Icon } from '../../ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import { surveyStats, useSurveyList, useSurvey, type Survey } from './useSurveys'
-import { useResponses, type ResponseRow } from './useResponses'
+import { useResponses, countBySurvey, responsesForSurvey, type ResponseRow } from './useResponses'
 import { useSkus } from '../Catalog/useCatalog'
 import { ResponsesListModal } from './ResponsesListModal'
 import { ResponseDetailModal } from './ResponseDetailModal'
@@ -143,17 +143,16 @@ export default function SurveyList() {
   const { data: skusData } = useSkus()
   const skus = skusData?.skus ?? []
 
-  // Build surveyId -> version ids map for countBySurvey
-  // We use survey.latest_version as a proxy -- but we don't have all version ids
-  // from the list endpoint. We match by survey_name on the response rows instead.
-  // Better: match by survey_version_id. We use a direct filter approach:
-  // each ResponseRow has survey_name; match that to the survey name.
-  // This is good enough for the badge count. Exact version-id filtering is
-  // used inside ResponsesListModal (passed as the filtered rows).
-  const countMap: Record<string, number> = {}
+  // Build surveyId -> version ids from response rows (using survey_name to identify
+  // which survey each row belongs to, since the list endpoint does not return all
+  // version ids). This lets us use the typed helpers correctly.
+  const surveyVersionMap: Record<string, string[]> = {}
   for (const s of surveys) {
-    countMap[s.id] = allRows.filter((r) => r.survey_name === s.name).length
+    const matchingRows = allRows.filter((r) => r.survey_name === s.name)
+    const vids = [...new Set(matchingRows.map((r) => r.survey_version_id))]
+    surveyVersionMap[s.id] = vids
   }
+  const countMap = countBySurvey(allRows, surveyVersionMap)
 
   // Modal state
   const [listModal, setListModal] = useState<Survey | null>(null)
@@ -204,9 +203,9 @@ export default function SurveyList() {
     navigate('/surveys/new')
   }
 
-  // Rows for the list modal
+  // Rows for the list modal -- use the helper with the pre-built version id set
   const listRows = listModal
-    ? allRows.filter((r) => r.survey_name === listModal.name)
+    ? responsesForSurvey(allRows, surveyVersionMap[listModal.id] ?? [])
     : []
 
   return (
