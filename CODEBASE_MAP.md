@@ -140,6 +140,41 @@ per store; drag-and-drop reorder, the version-diff panel, the phone preview, the
 pre-assign store-count estimate, and survey templates are deferred. 104 frontend
 automated checks, all green. Backend: 192 tests (190 prior plus 2 new), all green.
 
+As of W5 (the responses sub-feature inside the Surveys screen), the Surveys list
+now shows a response count badge on each survey row, and clicking it opens two
+layered pop-ups: a list of all submitted responses for that survey, and a detail
+view for one response. The backend's two responses endpoints were enriched to
+carry extra fields that the frontend needs:
+
+- `GET /responses` (the list) now returns `survey_id` (which survey the row
+  belongs to, as a stable id rather than a display name), `scored` (how many
+  questions in that response have a pass rule and were answered), and `passed`
+  (how many of those scored questions passed). These three are computed live from
+  the same scoring step that already ran for `overall`, so no new database
+  queries are added.
+- `GET /responses/{id}` (the detail) already returned everything needed; no
+  change to its payload.
+
+On the frontend (`apps/admin/src/pages/Surveys/`):
+
+- `useResponses.ts` holds the TypeScript shapes and data helpers for responses.
+  `ResponseRow` gained `survey_id`, `scored`, and `passed` fields to match the
+  enriched backend. The `responsesForSurvey` helper now filters by `survey_id`
+  directly (instead of matching survey names, which was fragile). The
+  `countBySurvey` helper takes a list of survey ids and counts each one's rows.
+  Checked by `useResponses.test.ts`.
+- `ResponsesListModal.tsx` is the pop-up that lists all responses for one
+  survey. Each row now shows a real percentage (passed / scored * 100, rounded)
+  and a Pass / Partial / Fail / Not scored chip, computed from the `scored` and
+  `passed` fields the backend returns. Checked by `ResponsesListModal.test.tsx`.
+- `ResponseDetailModal.tsx` is the pop-up that shows one response in full: the
+  rep's name, store, submission date, verdict header, and a per-question answer
+  block. Per-product (per-SKU) number questions show a grid of shade cells, each
+  tinted green (pass) or red (fail). Checked by `ResponseDetailModal.test.tsx`.
+- `SurveyList.tsx` uses `survey.id` (not `survey.name`) when calling the helpers,
+  so the count and the filtered list are always correct even if two surveys happen
+  to share a name.
+
 ```
    YOU (browser)              THE WAITER                THE PANTRY
   +--------------+   asks    +--------------+  reads/  +--------------+

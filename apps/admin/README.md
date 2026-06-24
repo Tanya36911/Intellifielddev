@@ -198,7 +198,10 @@ All of the kit is checked together by `ui/ui.test.tsx`.
   - `SurveyList.tsx` + `SurveyList.module.css`: the surveys list. Shows every
     survey for the company with a status chip (Published / Draft / Archived), a
     version chip, and an Assigned / Not assigned indicator. Three stat tiles at
-    the top count all surveys, published surveys, and drafts.
+    the top count all surveys, published surveys, and drafts. Each survey row
+    also shows a response-count badge; clicking it opens the responses pop-ups
+    described below. Uses `survey.id` (not `survey.name`) to filter and count
+    responses, so the numbers are always correct. Checked by `SurveyList.test.tsx`.
   - `Builder.tsx` + `Builder.module.css`: the by-hand survey builder. Lets an
     admin add questions of six types (Yes/No, Number, Single choice, Multiple
     choice, Photo, Short text), mark a question required, set a pass rule for
@@ -227,6 +230,26 @@ All of the kit is checked together by `ui/ui.test.tsx`.
     `/skus`, and `/nodes` endpoints. Also holds the pure helper functions that
     translate the builder's question shape to and from the backend's format.
     Checked by `useSurveys.test.ts`.
+  - `useResponses.ts`: the data layer for responses. Fetches the full list of
+    responses the signed-in user can see (`GET /responses`), and on request one
+    response in detail (`GET /responses/{id}`). Each row in the list now carries
+    `survey_id`, `scored` (questions that had a pass rule and were answered), and
+    `passed` (of those, how many passed). Pure helpers: `responsesForSurvey`
+    (filter rows to one survey by id), `countBySurvey` (response count per
+    survey id), and `responseStatus` (overall pass/partial/fail/na status from a
+    detail's questions map). Checked by `useResponses.test.ts`.
+  - `ResponsesListModal.tsx` + `ResponsesListModal.module.css`: the pop-up that
+    lists all responses for one survey. Each row shows the rep's avatar and name,
+    store name, submission date, a real percentage (passed / scored * 100), and a
+    Pass / Partial / Fail / Not scored chip. Clicking a row opens the detail
+    pop-up. Checked by `ResponsesListModal.test.tsx`.
+  - `ResponseDetailModal.tsx` + `ResponseDetailModal.module.css`: the pop-up
+    that shows one response in full. The header shows the rep, store, and a
+    verdict badge (percentage and pass/partial/fail/na label). Below that, each
+    survey question appears with its answer and a pass/fail result chip. Per-product
+    number questions show a color-dot grid: green cell for pass, red cell for fail,
+    with the count and a check or X icon. Photo questions show a placeholder.
+    Checked by `ResponseDetailModal.test.tsx`.
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
   for the menu items whose screens we have not built yet.
 A `.module.css` file is styling that applies ONLY to its own screen, so two
