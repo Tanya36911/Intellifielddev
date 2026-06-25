@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>W6 Payroll mockup</title>
+<style>
+/* ---- Tokens: deep-ocean accent, same as W3/W5 ---- */
+:root{
+  --accent:#1B4F8A; --accent-hover:#174274; --accent-subtle:#e8edf3; --accent-ring:rgba(27,79,138,.16);
+  --bg:#fafafa; --bg-elev:#f4f4f5; --surface:#fff; --surface-2:#fafafa; --surface-hover:#f4f4f5;
+  --border:#e9e9ec; --border-strong:#dcdce0; --border-faint:#f1f1f3;
+  --text:#18181b; --text-2:#52525b; --text-3:#8a8a93; --text-4:#b4b4bb;
+  --green:#16a34a; --green-bg:#ecfdf3; --green-fg:#157f3c;
+  --amber:#d97706; --amber-bg:#fffaeb; --amber-fg:#b45309;
+  --red:#dc2626; --red-bg:#fef3f2; --red-fg:#b42318;
+  --violet:#7c3aed; --violet-bg:#f5f3ff;
+  --shadow-xs:0 1px 2px rgba(24,24,27,.04);
+  --shadow-sm:0 1px 2px rgba(24,24,27,.05),0 1px 3px rgba(24,24,27,.04);
+  --shadow-pop:0 12px 40px rgba(24,24,27,.14),0 2px 8px rgba(24,24,27,.06);
+  --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-full:999px;
+  --sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sidebar-w:248px; --topbar-h:56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:var(--mono)}
+.mut{color:var(--text-3)}
+.hint{font-size:12.5px;color:var(--text-3);line-height:1.5}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.divider{height:1px;background:var(--border);border:none;margin:0}
+
+/* layout */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.companycard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px}
+.companycard .sq{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#c9a0e0,#9b6bd1)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;font-size:13.5px;font-weight:600;cursor:pointer}
+.nav a:hover{background:var(--surface-hover)}
+.nav a.active{background:var(--accent-subtle);color:var(--accent)}
+.nav a.soon{color:var(--text-4);cursor:default}
+.nav a.soon:hover{background:none}
+.nav a .soonchip{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-4);border:1px solid var(--border);border-radius:var(--r-full);padding:1px 7px;text-transform:uppercase}
+.nav a .newchip{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--accent);background:var(--accent-subtle);border-radius:var(--r-full);padding:1px 7px}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-4);padding:14px 10px 6px}
+.navicon{width:16px;height:16px;display:inline-block;vertical-align:middle;flex-shrink:0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:var(--topbar-h);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 22px;flex-shrink:0}
+.topbar .ttl{font-size:15.5px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text-3);margin-top:1px}
+.topbar .sp{flex:1}
+.page{padding:22px;overflow-y:auto}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;height:36px;padding:0 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-hover)}
+.btn svg{width:15px;height:15px}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px;border-radius:var(--r-xs)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:var(--shadow-xs)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger{border-color:var(--red);color:var(--red-fg)}
+.btn.danger:hover{background:var(--red-bg)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled,.btn.disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+
+/* card / chip / table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xs)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:var(--r-full);font-size:11.5px;font-weight:600;background:var(--bg-elev);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.chip.green{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip.amber{background:var(--amber-bg);color:var(--amber-fg);border-color:transparent}
+.chip.red{background:var(--red-bg);color:var(--red-fg);border-color:transparent}
+.chip.violet{background:var(--violet-bg);color:var(--violet);border-color:transparent}
+.chip.accent{background:var(--accent-subtle);color:var(--accent);border-color:transparent}
+.chip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--text-3);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface-2)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border-faint);font-size:13.5px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.flagrow td{background:var(--red-bg)}
+
+/* stat tiles */
+.stattiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stattile{padding:14px 16px}
+.stattile .lbl{font-size:11.5px;color:var(--text-3);margin-bottom:4px}
+.stattile .val{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+
+/* segmented */
+.segmented{display:inline-flex;padding:3px;gap:2px;background:var(--bg-elev);border-radius:var(--r-sm);border:1px solid var(--border)}
+.segmented button{border:none;background:transparent;color:var(--text-2);height:28px;padding:0 14px;border-radius:var(--r-xs);font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-xs)}
+
+/* period selector */
+.periodselector{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+
+/* countdown */
+.countdown{padding:16px 18px}
+.countdown .bigtime{font-family:var(--mono);font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.countdown.urgent{border-color:var(--amber);background:var(--amber-bg)}
+
+/* sealed banner */
+.sealedbanner{display:flex;align-items:center;gap:14px;padding:16px 20px;margin-bottom:14px;background:var(--surface-2)}
+.lockbadge{width:42px;height:42px;border-radius:var(--r-md);background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* avatar */
+.avatar{width:26px;height:26px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff;flex-shrink:0}
+
+/* overlay/modal */
+.overlay{position:fixed;inset:0;background:rgba(9,9,12,.42);z-index:8000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);max-width:100%;max-height:90vh;box-shadow:var(--shadow-pop);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.modalhead{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.modalbody{overflow-y:auto;padding:20px 22px}
+
+/* audit trail */
+.auditrow{display:flex;align-items:flex-start;gap:11px;padding:11px 4px}
+.auditrow + .auditrow{border-top:1px solid var(--border-faint)}
+.auditicon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* callout */
+.callout{max-width:1080px;margin:0 auto;padding:0 22px 22px}
+.callout .box{background:#fffdf5;border:1px solid #f0e2b8;border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;color:#6b5a1f}
+
+/* warning strip */
+.warnstrip{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--amber-bg);border-radius:var(--r-md);margin-bottom:14px;font-size:12.5px;color:var(--amber-fg);line-height:1.5}
+
+/* textarea */
+textarea.input{width:100%;padding:10px 12px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:13.5px;font-family:inherit;outline:none;resize:vertical}
+textarea.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">I</div>
+      <div><div style="font-weight:800;font-size:15px">Intelli</div><div class="hint" style="font-size:10.5px">Field Execution</div></div>
+    </div>
+    <div class="companycard">
+      <div class="sq"></div>
+      <div><div style="font-weight:700;font-size:13px">Lumen Beauty</div><div class="hint" style="font-size:10.5px">Tenant</div></div>
+    </div>
+    <nav class="nav">
+      <a href="#">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        Analytics
+      </a>
+      <a href="#">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        Surveys
+      </a>
+      <a href="#">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Catalog
+      </a>
+      <div class="navgroup">Organization</div>
+      <a href="#">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Hierarchy
+        <span class="soonchip">soon</span>
+      </a>
+      <a href="#">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        Users &amp; Roles
+        <span class="soonchip">soon</span>
+      </a>
+      <!-- PAYROLL: new nav item flagged as an addition (not in current prototype admin sidebar) -->
+      <a href="#" class="active" title="New item - not in prototype admin nav">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v2"/><path d="M12 16v2"/><path d="M8 10h2a2 2 0 1 1 0 4H8"/><path d="M10 14h4"/></svg>
+        Payroll
+        <span class="newchip">NEW</span>
+      </a>
+      <a href="#">
+        <svg class="navicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        Settings
+        <span class="soonchip">soon</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="ttl">Payroll</div>
+        <div class="sub">Review and approve rep field time. Cutoffs are in rep-local time.</div>
+      </div>
+      <div class="sp"></div>
+      <!-- only shown on the Open period tab and when pending > 0 -->
+      <button class="btn primary" id="approveAllBtn" onclick="approveAll()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Approve all pending (2)
+      </button>
+      <button class="btn" onclick="openExportModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </button>
+    </div>
+
+    <div class="page" id="mainPage">
+
+      <!-- period selector tabs -->
+      <div class="periodselector">
+        <div class="segmented">
+          <button class="active" id="tabOpen" onclick="switchTab('open')">Open &nbsp; Jun 1 - Jun 15</button>
+          <button id="tabSealed" onclick="switchTab('sealed')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Sealed &nbsp; May 16 - May 31
+          </button>
+        </div>
+        <span class="hint">Bi-weekly periods &middot; 4h grace window after cutoff</span>
+      </div>
+
+      <!-- OPEN PERIOD VIEW -->
+      <div id="openView">
+
+        <!-- countdown + stat tiles row -->
+        <div style="display:flex;gap:14px;margin-bottom:16px;align-items:stretch">
+
+          <!-- countdown card -->
+          <div class="card countdown" style="width:268px;flex-shrink:0">
+            <div class="eyebrow" style="margin-bottom:10px;display:flex;align-items:center;gap:7px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Period closes in
+            </div>
+            <div class="bigtime">09:22:14</div>
+            <div class="hint" style="margin-top:5px">Cutoff: Jun 15, 11:59 PM rep-local time</div>
+            <hr class="divider" style="margin:14px 0 10px">
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+              <div style="display:flex;justify-content:space-between"><span class="mut">After cutoff</span><span style="font-weight:600">4h grace, then hard lock</span></div>
+              <div style="display:flex;justify-content:space-between"><span class="mut">Basis</span><span>Rep-local time</span></div>
+            </div>
+          </div>
+
+          <!-- 4 stat tiles -->
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px">
+            <div class="card stattile">
+              <div class="lbl">Pending</div>
+              <div class="val" style="color:var(--amber-fg)">2</div>
+            </div>
+            <div class="card stattile">
+              <div class="lbl">Flagged</div>
+              <div class="val" style="color:var(--red-fg)">1</div>
+            </div>
+            <div class="card stattile">
+              <div class="lbl">Approved</div>
+              <div class="val" style="color:var(--green-fg)">2</div>
+            </div>
+            <div class="card stattile">
+              <div class="lbl">Reimbursable mileage</div>
+              <div class="val">614 mi</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- hours table -->
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+          <div style="overflow-x:auto">
+            <table class="tbl" style="min-width:860px">
+              <thead>
+                <tr>
+                  <th>Rep</th>
+                  <th>Visits</th>
+                  <th>Store hrs</th>
+                  <th>Reset</th>
+                  <th>Drive</th>
+                  <th>Miles</th>
+                  <th>Status</th>
+                  <th style="text-align:right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                <!-- Row 1: approved -->
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#2563eb">MB</div>
+                      <div>
+                        <div style="font-weight:600;font-size:13px">Marcus Bell</div>
+                        <div class="hint" style="font-size:11px">Southeast, CST</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="mono">18</span></td>
+                  <td><span class="mono">41.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">6.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">4.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">218<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip green"><span class="dot"></span>Approved</span></td>
+                  <td style="text-align:right">
+                    <button class="btn sm danger" onclick="flagRow(this,'marcus')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      Flag
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Row 2: flagged -->
+                <tr class="flagrow" id="flagRowJordan">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#d97706">JR</div>
+                      <div>
+                        <div style="font-weight:600;font-size:13px">Jordan Rivera</div>
+                        <div class="hint" style="font-size:11px">Southwest, MST</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="mono">14</span></td>
+                  <td><span class="mono">38.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">0.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">9.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">187<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip red"><span class="dot"></span>Flagged</span></td>
+                  <td style="text-align:right">
+                    <div style="display:inline-flex;gap:6px">
+                      <button class="btn sm primary" onclick="clearAndApprove(this,'jordan')">Clear &amp; approve</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="flagrow" id="flagNoteJordan">
+                  <td colspan="8" style="padding-top:0;font-size:12px;color:var(--red-fg)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Drive time (9.5h) is unusually high vs visits (14). Flagged for review.
+                  </td>
+                </tr>
+
+                <!-- Row 3: pending -->
+                <tr id="rowAisha">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#7c3aed">AK</div>
+                      <div>
+                        <div style="font-weight:600;font-size:13px">Aisha Kim</div>
+                        <div class="hint" style="font-size:11px">Northeast, EST</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="mono">22</span></td>
+                  <td><span class="mono">46.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">8.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">3.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">109<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip">Pending</span></td>
+                  <td style="text-align:right">
+                    <div style="display:inline-flex;gap:6px">
+                      <button class="btn sm primary" onclick="approveOne(this,'aisha')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        Approve
+                      </button>
+                      <button class="btn sm danger" onclick="flagRow(this,'aisha')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Row 4: pending -->
+                <tr id="rowDevin">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#16a34a">DW</div>
+                      <div>
+                        <div style="font-weight:600;font-size:13px">Devin Walsh</div>
+                        <div class="hint" style="font-size:11px">Midwest, CST</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="mono">17</span></td>
+                  <td><span class="mono">39.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">5.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">5.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">100<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip">Pending</span></td>
+                  <td style="text-align:right">
+                    <div style="display:inline-flex;gap:6px">
+                      <button class="btn sm primary" onclick="approveOne(this,'devin')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        Approve
+                      </button>
+                      <button class="btn sm danger" onclick="flagRow(this,'devin')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Row 5: approved -->
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#db2777">SP</div>
+                      <div>
+                        <div style="font-weight:600;font-size:13px">Sofia Patel</div>
+                        <div class="hint" style="font-size:11px">West, PST</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="mono">20</span></td>
+                  <td><span class="mono">43.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">7.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">2.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">0<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip green"><span class="dot"></span>Approved</span></td>
+                  <td style="text-align:right">
+                    <button class="btn sm danger">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      Flag
+                    </button>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Seal period button -->
+        <div style="display:flex;justify-content:flex-end;gap:10px">
+          <span class="hint" style="align-self:center">All entries must be approved before you can seal the period.</span>
+          <button class="btn disabled" id="sealBtn" title="Approve all entries first">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Seal period
+          </button>
+        </div>
+
+      </div><!-- /#openView -->
+
+      <!-- SEALED PERIOD VIEW (hidden by default) -->
+      <div id="sealedView" style="display:none">
+
+        <!-- sealed banner -->
+        <div class="card sealedbanner">
+          <div class="lockbadge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fafafa" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <h3 style="font-size:15px">Period sealed</h3>
+              <span class="chip">Hard lock</span>
+            </div>
+            <div class="hint">Locked Jun 1, 2026 at 12:04 AM. Grace window elapsed. All 4 entries are final unless individually reopened.</div>
+          </div>
+          <div style="text-align:right">
+            <div class="mono" style="font-size:20px;font-weight:700">629.5h</div>
+            <div class="hint" style="font-size:11px">514 mi reimbursable</div>
+          </div>
+        </div>
+
+        <!-- sealed table -->
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+          <div style="overflow-x:auto">
+            <table class="tbl" style="min-width:860px">
+              <thead>
+                <tr>
+                  <th>Rep</th>
+                  <th>Visits</th>
+                  <th>Store hrs</th>
+                  <th>Reset</th>
+                  <th>Drive</th>
+                  <th>Miles</th>
+                  <th>Status</th>
+                  <th style="text-align:right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#2563eb">MB</div>
+                      <div><div style="font-weight:600;font-size:13px">Marcus Bell</div><div class="hint" style="font-size:11px">Southeast, CST</div></div>
+                    </div>
+                  </td>
+                  <td><span class="mono">19</span></td>
+                  <td><span class="mono">40.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">5.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">4.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">210<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip green"><span class="dot"></span>Approved</span></td>
+                  <td style="text-align:right"><button class="btn sm" onclick="openReopenModal('Marcus Bell')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Reopen</button></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#7c3aed">AK</div>
+                      <div><div style="font-weight:600;font-size:13px">Aisha Kim</div><div class="hint" style="font-size:11px">Northeast, EST</div></div>
+                    </div>
+                  </td>
+                  <td><span class="mono">21</span></td>
+                  <td><span class="mono">44.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">7.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">3.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">120<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip green"><span class="dot"></span>Approved</span></td>
+                  <td style="text-align:right"><button class="btn sm" onclick="openReopenModal('Aisha Kim')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Reopen</button></td>
+                </tr>
+
+                <!-- reopened row -->
+                <tr style="background:var(--amber-bg)">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#16a34a">DW</div>
+                      <div><div style="font-weight:600;font-size:13px">Devin Walsh</div><div class="hint" style="font-size:11px">Midwest, CST</div></div>
+                    </div>
+                  </td>
+                  <td><span class="mono">16</span></td>
+                  <td><span class="mono">38.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">5.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">4.5<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">184<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip amber"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Reopened</span></td>
+                  <td style="text-align:right"><span class="chip amber" style="height:24px">Grace 4h window</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar" style="background:#db2777">SP</div>
+                      <div><div style="font-weight:600;font-size:13px">Sofia Patel</div><div class="hint" style="font-size:11px">West, PST</div></div>
+                    </div>
+                  </td>
+                  <td><span class="mono">18</span></td>
+                  <td><span class="mono">41.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">6.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">3.0<span class="hint" style="font-size:10.5px">h</span></span></td>
+                  <td><span class="mono">0<span class="hint" style="font-size:10.5px"> mi</span></span></td>
+                  <td><span class="chip green"><span class="dot"></span>Approved</span></td>
+                  <td style="text-align:right"><button class="btn sm" onclick="openReopenModal('Sofia Patel')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Reopen</button></td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- audit trail -->
+        <div class="card" style="padding:16px 20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" style="color:var(--text-3)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style="font-weight:700;font-size:14px">Reopen audit trail</span>
+            <span class="hint" style="margin-left:4px">Every reopen on this period is recorded</span>
+          </div>
+
+          <div class="auditrow">
+            <div class="auditicon" style="background:var(--violet-bg)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:13px"><strong>Sarah Mitchell</strong> reopened Devin Walsh's entry</div>
+              <div class="hint" style="font-size:12px;margin-top:2px">"Corrected mis-logged drive time for the Memphis run on May 14"</div>
+            </div>
+            <span class="chip violet" style="height:20px">Payroll</span>
+            <span class="hint mono" style="font-size:11.5px;white-space:nowrap;margin-left:8px">May 20, 9:14 AM</span>
+          </div>
+
+          <div class="auditrow" id="freshAuditRow" style="display:none;background:var(--amber-bg);border-radius:var(--r-sm)">
+            <div class="auditicon" style="background:var(--violet-bg)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:13px" id="freshAuditText"></div>
+              <div class="hint" style="font-size:12px;margin-top:2px" id="freshAuditReason"></div>
+            </div>
+            <span class="chip violet" style="height:20px">Payroll</span>
+            <span class="hint mono" style="font-size:11.5px;white-space:nowrap;margin-left:8px">Just now</span>
+          </div>
+
+        </div>
+      </div><!-- /#sealedView -->
+
+    </div><!-- /.page -->
+  </div><!-- /.main -->
+</div><!-- /.app -->
+
+<!-- REOPEN MODAL -->
+<div class="overlay" id="reopenOverlay" onclick="if(event.target===this)closeReopenModal()">
+  <div class="modal" style="width:480px">
+    <div class="modalhead">
+      <div>
+        <h3 style="font-size:16px">Reopen period for one rep</h3>
+        <p class="hint" style="margin-top:3px" id="reopenSubtitle"></p>
+      </div>
+      <button class="btn sm ghost" onclick="closeReopenModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modalbody">
+      <div class="warnstrip">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>
+          This reopens <strong id="reopenRepName"></strong>'s entry only. It grants a <strong>4-hour grace window</strong> to correct their submission, then re-seals automatically. Every reopen is <strong>recorded in the audit log</strong>.
+        </div>
+      </div>
+      <div style="font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:6px">Reason (required, saved to audit log)</div>
+      <textarea class="input" rows="3" id="reopenReason" placeholder="e.g. Correct mis-logged drive time for the Memphis run on Jun 3."></textarea>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn primary" style="flex:1" id="confirmReopenBtn" onclick="confirmReopen()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Reopen with grace window
+        </button>
+        <button class="btn" onclick="closeReopenModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="overlay" id="exportOverlay" onclick="if(event.target===this)closeExportModal()">
+  <div class="modal" style="width:400px">
+    <div class="modalhead">
+      <div>
+        <h3 style="font-size:16px">Download CSV</h3>
+        <p class="hint" style="margin-top:3px">Export payroll data for the selected period</p>
+      </div>
+      <button class="btn sm ghost" onclick="closeExportModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modalbody">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--accent-subtle)">
+          <input type="radio" name="csvPeriod" checked style="accent-color:var(--accent)">
+          <div><div style="font-weight:600;font-size:13.5px">Open period &nbsp; Jun 1 - Jun 15</div><div class="hint">Current in-progress period</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm)">
+          <input type="radio" name="csvPeriod" style="accent-color:var(--accent)">
+          <div>
+            <div style="font-weight:600;font-size:13.5px">Sealed period &nbsp; May 16 - May 31
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px;color:var(--text-3)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="hint">Sealed Jun 1</div>
+          </div>
+        </label>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-3);margin-bottom:14px">Columns: rep name, district, visits, store hours, reset hours, drive hours, miles, status</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" style="flex:1" onclick="closeExportModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download payroll.csv
+        </button>
+        <button class="btn" onclick="closeExportModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- callout -->
+<div class="callout">
+  <div class="box">
+    <strong>Mockup for approval (W6 Payroll).</strong>
+    <strong>Entry-point note:</strong> Payroll is NOT in the current admin sidebar prototype (nav.ts lists Analytics, Surveys, Catalog, Hierarchy, Users &amp; Roles, Settings). It lives in the Manager app (DM) in the prototype. This mockup adds "Payroll" as a new admin sidebar item (flagged with a NEW chip) because the backend endpoints are admin-gated. The decision to add it to the admin nav or make it manager-only should be confirmed by the owner.
+    &nbsp;|&nbsp;
+    <span class="mono">/pay-periods, /time-entries, /audit, /export/payroll</span>
+    &nbsp;|&nbsp;
+    Deferred: rep-level hour log detail modal, inline hour editing, the require_payroll disabled state (403 screen).
+    Click the <strong>Sealed</strong> tab to see the locked period and Reopen action. Click <strong>Reopen</strong> to see the audit-logged modal.
+  </div>
+</div>
+
+<script>
+let currentTab = 'open';
+let reopenRepNameVal = '';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('openView').style.display = tab === 'open' ? '' : 'none';
+  document.getElementById('sealedView').style.display = tab === 'sealed' ? '' : 'none';
+  document.getElementById('tabOpen').className = tab === 'open' ? 'active' : '';
+  document.getElementById('tabSealed').className = tab === 'sealed' ? 'active' : '';
+  document.getElementById('approveAllBtn').style.display = tab === 'open' ? '' : 'none';
+}
+
+function approveOne(btn, rep) {
+  const rowId = 'row' + rep.charAt(0).toUpperCase() + rep.slice(1);
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const statusCell = row.cells[6];
+  const actionCell = row.cells[7];
+  statusCell.innerHTML = '<span class="chip green"><span class="dot"></span>Approved</span>';
+  actionCell.innerHTML = '<button class="btn sm danger"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Flag</button>';
+}
+
+function clearAndApprove(btn, rep) {
+  const flagRowEl = document.getElementById('flagRowJordan');
+  const flagNoteEl = document.getElementById('flagNoteJordan');
+  if (flagRowEl) { flagRowEl.classList.remove('flagrow'); flagRowEl.id = ''; }
+  if (flagNoteEl) { flagNoteEl.remove(); }
+  if (flagRowEl) {
+    flagRowEl.cells[6].innerHTML = '<span class="chip green"><span class="dot"></span>Approved</span>';
+    flagRowEl.cells[7].innerHTML = '<button class="btn sm danger"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Flag</button>';
+  }
+}
+
+function flagRow(btn, rep) {
+  // simple toggle for demo purposes
+}
+
+function approveAll() {
+  approveOne(null, 'aisha');
+  approveOne(null, 'devin');
+  document.getElementById('approveAllBtn').disabled = true;
+  document.getElementById('approveAllBtn').textContent = 'All approved';
+  document.getElementById('sealBtn').classList.remove('disabled');
+  document.getElementById('sealBtn').removeAttribute('title');
+}
+
+function openReopenModal(repName) {
+  reopenRepNameVal = repName;
+  document.getElementById('reopenSubtitle').textContent = repName + ', sealed period May 16 - May 31';
+  document.getElementById('reopenRepName').textContent = repName + "'s";
+  document.getElementById('reopenReason').value = '';
+  document.getElementById('confirmReopenBtn').disabled = true;
+  document.getElementById('reopenOverlay').classList.add('open');
+}
+
+function closeReopenModal() {
+  document.getElementById('reopenOverlay').classList.remove('open');
+}
+
+document.getElementById('reopenReason').addEventListener('input', function() {
+  document.getElementById('confirmReopenBtn').disabled = !this.value.trim();
+});
+
+function confirmReopen() {
+  const reason = document.getElementById('reopenReason').value.trim();
+  const freshRow = document.getElementById('freshAuditRow');
+  document.getElementById('freshAuditText').innerHTML = '<strong>You</strong> reopened ' + reopenRepNameVal + "'s entry";
+  document.getElementById('freshAuditReason').textContent = '"' + reason + '"';
+  freshRow.style.display = 'flex';
+  closeReopenModal();
+}
+
+function openExportModal() {
+  document.getElementById('exportOverlay').classList.add('open');
+}
+
+function closeExportModal() {
+  document.getElementById('exportOverlay').classList.remove('open');
+}
+</script>
+</body>
+</html>

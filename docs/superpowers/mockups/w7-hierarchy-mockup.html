@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>W7 Hierarchy mockup</title>
+<style>
+/* ---- Tokens: same deep-ocean palette as W3/W5 ---- */
+:root{
+  --accent:#1B4F8A; --accent-hover:#174274; --accent-fg:#fff; --accent-subtle:#e8edf3; --accent-ring:rgba(27,79,138,.16);
+  --bg:#fafafa; --bg-elev:#f4f4f5; --surface:#fff; --surface-2:#fafafa; --surface-hover:#f4f4f5;
+  --border:#e9e9ec; --border-strong:#dcdce0; --border-faint:#f1f1f3;
+  --text:#18181b; --text-2:#52525b; --text-3:#8a8a93; --text-4:#b4b4bb;
+  --green:#16a34a; --green-bg:#ecfdf3; --green-fg:#157f3c;
+  --amber:#d97706; --amber-bg:#fffaeb; --amber-fg:#b45309;
+  --red:#dc2626; --red-bg:#fef3f2; --red-fg:#b42318;
+  --shadow-xs:0 1px 2px rgba(24,24,27,.04);
+  --shadow-sm:0 1px 2px rgba(24,24,27,.05),0 1px 3px rgba(24,24,27,.04);
+  --shadow-pop:0 12px 40px rgba(24,24,27,.14),0 2px 8px rgba(24,24,27,.06);
+  --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-full:999px;
+  --sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sidebar-w:248px; --topbar-h:56px;
+
+  /* level colour palette (matches prototype) */
+  --lv0:#1B4F8A;   /* Company */
+  --lv1:#0ea5e9;   /* Region  */
+  --lv2:#16a34a;   /* District */
+  --lv3:#d97706;   /* Store (square dot) */
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:var(--mono)} .mut{color:var(--text-3)}
+.hint{font-size:12.5px;color:var(--text-3);line-height:1.5}
+.label{font-size:12.5px;font-weight:600;color:var(--text-2)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.divider{height:1px;background:var(--border);border:none;margin:0}
+
+/* ---- layout ---- */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.companycard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px}
+.companycard .sq{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#c9a0e0,#9b6bd1)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;font-size:13.5px;font-weight:600}
+.nav a.active{background:var(--accent-subtle);color:var(--accent)}
+.nav a.soon{color:var(--text-4)}
+.nav a.soon .soonchip{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--text-4);border:1px solid var(--border);border-radius:var(--r-full);padding:1px 7px;text-transform:uppercase}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-4);padding:14px 10px 6px}
+.footprint{margin-top:auto;display:flex;gap:14px;padding:12px 10px;border-top:1px solid var(--border)}
+.footprint b{font-size:17px;font-weight:700;display:block}
+.footprint span{font-size:10.5px;color:var(--text-3)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:var(--topbar-h);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 22px}
+.topbar .ttl{font-size:15.5px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text-3)}
+.topbar .sp{flex:1}
+.page{padding:22px;max-width:1100px;width:100%;margin:0 auto}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;height:36px;padding:0 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-hover)} .btn svg{width:15px;height:15px}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px;border-radius:var(--r-xs)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:var(--shadow-xs)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled,.btn.disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+.btn.icon{width:36px;padding:0} .btn.icon.sm{width:30px}
+
+/* ---- inputs ---- */
+.input{height:34px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.input::placeholder{color:var(--text-4)}
+select.input{appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a8a93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+/* ---- card / chip ---- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xs)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:var(--r-full);font-size:11.5px;font-weight:600;background:var(--bg-elev);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.chip.green{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip.amber{background:var(--amber-bg);color:var(--amber-fg);border-color:transparent}
+.chip.accent{background:var(--accent-subtle);color:var(--accent);border-color:transparent}
+.chip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+
+/* ---- stat tiles ---- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stat{display:flex;align-items:center;gap:13px;padding:16px}
+.stat .ic{width:38px;height:38px;border-radius:10px;background:var(--accent-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+.stat .big{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.stat .lbl{font-size:11.5px;color:var(--text-3);margin-top:3px}
+
+/* ---- toolbar ---- */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.searchwrap{position:relative;flex:1;min-width:220px;max-width:320px}
+.searchwrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none}
+.searchwrap .input{padding-left:32px;width:100%}
+
+/* ---- level legend ---- */
+.legend{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.lvchip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-full);font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-2)}
+
+/* ---- info banners ---- */
+.banner{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface-2);font-size:12.5px;margin-bottom:8px}
+.banner.accent-banner{background:var(--accent-subtle);border-color:transparent}
+
+/* ---- tree card ---- */
+.treecard{padding:8px 8px}
+
+/* ---- tree row ---- */
+.trow{display:flex;align-items:center;height:36px;padding-right:8px;border-radius:var(--r-sm);cursor:default;gap:6px;position:relative}
+.trow:hover{background:var(--surface-hover)}
+.toggle-btn{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--text-3);border-radius:var(--r-xs);flex-shrink:0}
+.toggle-btn:hover{background:var(--bg-elev)}
+.lvdot{border-radius:99px;flex-shrink:0}
+.lvdot.square{border-radius:2px}
+.tname{font-size:13.5px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tname.bold{font-weight:700}
+.tname.store-link{cursor:pointer;text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:3px}
+.tname.store-link:hover{color:var(--accent)}
+.tlabel{font-size:10.5px;font-weight:600;color:var(--text-3);border:1px solid var(--border);border-radius:var(--r-full);padding:0 7px;height:18px;display:inline-flex;align-items:center;background:transparent}
+.tcode{font-family:var(--mono);font-size:10.5px;color:var(--text-4)}
+.tchainbadge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 7px;border-radius:var(--r-full);font-size:10.5px;font-weight:600;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2)}
+.tcount{font-size:11px;color:var(--text-4);font-weight:500}
+.leaf-dot{width:5px;height:5px;border-radius:99px;background:var(--border-strong);display:inline-block;flex-shrink:0}
+
+/* ---- modal ---- */
+.overlay{position:fixed;inset:0;background:rgba(9,9,12,.42);z-index:8000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);width:460px;max-width:100%;max-height:88vh;box-shadow:var(--shadow-pop);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.modalhead{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.modalbody{overflow-y:auto;padding:20px 22px}
+
+/* ---- path breadcrumb inside modal ---- */
+.pathrow{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.pathdot{width:7px;height:7px;border-radius:99px;flex-shrink:0}
+.pathdot.square{border-radius:2px}
+.pathname{font-size:13px;font-weight:500}
+.pathchip{font-size:10px;font-weight:600;border:1px solid var(--border);border-radius:var(--r-full);padding:0 6px;height:17px;display:inline-flex;align-items:center;background:transparent;color:var(--text-3)}
+.arrowdown{color:var(--text-4);font-size:13px;margin-left:2px}
+
+/* ---- attr table inside modal ---- */
+.attrtbl{width:100%;border-collapse:collapse}
+.attrtbl td{padding:9px 0;border-bottom:1px solid var(--border-faint);font-size:13px;vertical-align:middle}
+.attrtbl tr:last-child td{border-bottom:none}
+.attrtbl td:first-child{color:var(--text-3);font-size:12px;width:110px}
+
+/* ---- callout ---- */
+.callout{margin:18px auto 0;max-width:1100px;padding:0 22px 22px}
+.callout .box{background:#fffdf5;border:1px solid #f0e2b8;border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;color:#6b5a1f}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">I</div>
+      <div><div style="font-weight:800;font-size:15px">Intelli</div><div class="hint" style="font-size:10.5px">Field Execution</div></div>
+    </div>
+    <div class="companycard">
+      <div class="sq"></div>
+      <div><div style="font-weight:700;font-size:13px">Lumen Beauty</div><div class="hint" style="font-size:10.5px">Tenant</div></div>
+    </div>
+    <nav class="nav">
+      <a href="#">Analytics</a>
+      <a href="#">Form Builder</a>
+      <a href="#">Surveys</a>
+      <a href="#">Catalog</a>
+      <div class="navgroup">Organization</div>
+      <a href="#" class="active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 2v4"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19a3.5 3.5 0 0 1 11 0"/><path d="M3 22h18"/></svg>
+        Hierarchy
+      </a>
+      <a href="#" class="soon">Users &amp; Roles <span class="soonchip">soon</span></a>
+      <a href="#" class="soon">Settings <span class="soonchip">soon</span></a>
+    </nav>
+    <div class="footprint">
+      <div><b>165</b><span>Nodes</span></div>
+      <div><b>112</b><span>Stores</span></div>
+      <div><b>3</b><span>Levels</span></div>
+    </div>
+  </aside>
+
+  <!-- main -->
+  <div class="main">
+
+    <!-- topbar -->
+    <div class="topbar">
+      <div>
+        <div class="ttl">Hierarchy</div>
+        <div class="sub">Lumen Beauty. 165 nodes, 112 stores, 3 levels.</div>
+      </div>
+      <div class="sp"></div>
+      <button class="btn sm disabled" title="Coming soon">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        Edit <span style="font-size:9px;border:1px solid var(--border);border-radius:99px;padding:0 6px;margin-left:2px">soon</span>
+      </button>
+      <button class="btn sm disabled" title="Coming soon">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export <span style="font-size:9px;border:1px solid var(--border);border-radius:99px;padding:0 6px;margin-left:2px">soon</span>
+      </button>
+    </div>
+
+    <div class="page">
+
+      <!-- stat tiles -->
+      <div class="stats">
+        <div class="card stat">
+          <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="5" r="3"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/><path d="M12 8v5"/><path d="M8 13H5a3 3 0 1 0 0 6"/><path d="M19 13h3a3 3 0 1 1 0 6"/></svg></div>
+          <div><div class="big">3</div><div class="lbl">Org levels</div></div>
+        </div>
+        <div class="card stat">
+          <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/></svg></div>
+          <div><div class="big">4</div><div class="lbl">Regions</div></div>
+        </div>
+        <div class="card stat">
+          <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg></div>
+          <div><div class="big">12</div><div class="lbl">Districts</div></div>
+        </div>
+        <div class="card stat">
+          <div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <div><div class="big">112</div><div class="lbl">Stores</div></div>
+        </div>
+      </div>
+
+      <!-- toolbar: search + chain filter + expand/collapse -->
+      <div class="toolbar">
+        <div class="searchwrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
+          <input class="input" id="searchBox" placeholder="Find a node..." oninput="doSearch(this.value)" />
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          <select class="input" id="chainSel" onchange="doChainFilter(this.value)" style="width:auto">
+            <option value="All">All chains</option>
+            <option>CVS</option>
+            <option>Walgreens</option>
+            <option>Target</option>
+          </select>
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn sm ghost" onclick="expandAll(true)">Expand all</button>
+        <button class="btn sm ghost" onclick="expandAll(false)">Collapse</button>
+      </div>
+
+      <!-- level legend -->
+      <div class="legend">
+        <span class="lvchip"><span style="width:8px;height:8px;border-radius:99px;background:var(--lv0)"></span>Company</span>
+        <span class="lvchip"><span style="width:8px;height:8px;border-radius:99px;background:var(--lv1)"></span>Region</span>
+        <span class="lvchip"><span style="width:8px;height:8px;border-radius:99px;background:var(--lv2)"></span>District</span>
+        <span class="lvchip"><span style="width:8px;height:8px;border-radius:2px;background:var(--lv3)"></span>Store <span style="color:var(--text-4);font-weight:500;font-size:11px">locked level</span></span>
+      </div>
+
+      <!-- info banners -->
+      <div class="banner" style="margin-bottom:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.75" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span><strong style="color:var(--text-2)">Store</strong> is a locked level. Chain (CVS, Walgreens, Target) is a store <strong style="color:var(--text-2)">attribute</strong> used for survey targeting, not a management level. Click any store name to see its details.</span>
+      </div>
+      <div class="banner accent-banner" id="chainBanner" style="display:none;margin-bottom:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span id="chainBannerText" style="flex:1"></span>
+        <button class="btn sm ghost" onclick="clearChain()" style="flex-shrink:0">Clear</button>
+      </div>
+
+      <!-- tree -->
+      <div class="card treecard" id="treeRoot"></div>
+
+    </div><!-- .page -->
+  </div><!-- .main -->
+</div><!-- .app -->
+
+<!-- callout -->
+<div class="callout">
+  <div class="box">
+    <b>Mockup for approval (W7 Hierarchy, view-only).</b> Real data from <span class="mono">GET /nodes</span>. Level names (Region/District/Store) shown here as real names; a tiny read-only backend endpoint is needed to serve the org level definitions table (see report). Deferred and NOT mocked as working: edit/add/rename/delete nodes, bulk CSV import, coverage mode (manager/rep overlay). Click any underlined store name to preview the detail panel.
+  </div>
+</div>
+
+<!-- store detail modal -->
+<div class="overlay" id="storeOverlay" onclick="if(event.target===this)closeStore()">
+  <div class="modal" id="storeModal">
+    <div class="modalhead">
+      <div>
+        <h3 id="storeTitle" style="font-size:16px">Store</h3>
+        <p class="hint" style="margin-top:3px">Store node: management position + attributes</p>
+      </div>
+      <button class="btn icon sm ghost" onclick="closeStore()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modalbody" id="storeBody"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   Demo data: Lumen Beauty org tree
+   level 0 = Company, 1 = Region, 2 = District, 3 = Store
+   chain colours match prototype RETAILER_TONE
+   ===================================================================== */
+const CHAIN_COLOR = { CVS:'#cc0000', Walgreens:'#e01a2b', Target:'#cc0000' };
+const LEVEL_NAMES = ['Company','Region','District','Store'];
+const LEVEL_COLORS = ['#1B4F8A','#0ea5e9','#16a34a','#d97706'];
+
+const NODES = [
+  // Company root
+  {id:'n0', name:'Lumen Beauty', level:0, parentId:null, code:'LB'},
+
+  // Regions
+  {id:'r1', name:'West Region',    level:1, parentId:'n0', code:'R-W'},
+  {id:'r2', name:'Central Region', level:1, parentId:'n0', code:'R-C'},
+  {id:'r3', name:'East Region',    level:1, parentId:'n0', code:'R-E'},
+  {id:'r4', name:'South Region',   level:1, parentId:'n0', code:'R-S'},
+
+  // West districts
+  {id:'d1', name:'Bay Area',      level:2, parentId:'r1', code:'D-BA'},
+  {id:'d2', name:'SoCal',         level:2, parentId:'r1', code:'D-SC'},
+  {id:'d3', name:'Pacific NW',    level:2, parentId:'r1', code:'D-PW'},
+
+  // Central districts
+  {id:'d4', name:'Chicago Metro', level:2, parentId:'r2', code:'D-CH'},
+  {id:'d5', name:'Twin Cities',   level:2, parentId:'r2', code:'D-TC'},
+
+  // East districts
+  {id:'d6', name:'NYC Metro',     level:2, parentId:'r3', code:'D-NY'},
+  {id:'d7', name:'Mid-Atlantic',  level:2, parentId:'r3', code:'D-MA'},
+  {id:'d8', name:'New England',   level:2, parentId:'r3', code:'D-NE'},
+
+  // South districts
+  {id:'d9',  name:'Texas',        level:2, parentId:'r4', code:'D-TX'},
+  {id:'d10', name:'Southeast',    level:2, parentId:'r4', code:'D-SE'},
+  {id:'d11', name:'Sunbelt',      level:2, parentId:'r4', code:'D-SB'},
+  {id:'d12', name:'Gulf Coast',   level:2, parentId:'r4', code:'D-GC'},
+
+  // Bay Area stores
+  {id:'s1',  name:'CVS San Francisco', level:3, parentId:'d1', code:'CVS-1040',  chain:'CVS',       city:'San Francisco, CA'},
+  {id:'s2',  name:'Walgreens Oakland', level:3, parentId:'d1', code:'WAG-2210',  chain:'Walgreens', city:'Oakland, CA'},
+  {id:'s3',  name:'Target San Jose',   level:3, parentId:'d1', code:'TGT-1180',  chain:'Target',    city:'San Jose, CA'},
+  {id:'s4',  name:'CVS Berkeley',      level:3, parentId:'d1', code:'CVS-1402',  chain:'CVS',       city:'Berkeley, CA'},
+  {id:'s5',  name:'Walgreens Fremont', level:3, parentId:'d1', code:'WAG-3015',  chain:'Walgreens', city:'Fremont, CA'},
+
+  // SoCal stores
+  {id:'s6',  name:'CVS Los Angeles',   level:3, parentId:'d2', code:'CVS-2001',  chain:'CVS',       city:'Los Angeles, CA'},
+  {id:'s7',  name:'Target Santa Monica', level:3, parentId:'d2', code:'TGT-2201', chain:'Target',   city:'Santa Monica, CA'},
+  {id:'s8',  name:'Walgreens Pasadena', level:3, parentId:'d2', code:'WAG-2880', chain:'Walgreens', city:'Pasadena, CA'},
+  {id:'s9',  name:'CVS San Diego',     level:3, parentId:'d2', code:'CVS-2540',  chain:'CVS',       city:'San Diego, CA'},
+
+  // Pacific NW stores
+  {id:'s10', name:'CVS Seattle',       level:3, parentId:'d3', code:'CVS-3010',  chain:'CVS',       city:'Seattle, WA'},
+  {id:'s11', name:'Walgreens Portland', level:3, parentId:'d3', code:'WAG-3201', chain:'Walgreens', city:'Portland, OR'},
+
+  // Chicago Metro stores
+  {id:'s12', name:'CVS Chicago Loop',  level:3, parentId:'d4', code:'CVS-4001',  chain:'CVS',       city:'Chicago, IL'},
+  {id:'s13', name:'Walgreens Chicago', level:3, parentId:'d4', code:'WAG-4010',  chain:'Walgreens', city:'Chicago, IL'},
+  {id:'s14', name:'Target Evanston',   level:3, parentId:'d4', code:'TGT-4100',  chain:'Target',    city:'Evanston, IL'},
+
+  // Twin Cities stores
+  {id:'s15', name:'Target Minneapolis', level:3, parentId:'d5', code:'TGT-5001', chain:'Target',    city:'Minneapolis, MN'},
+  {id:'s16', name:'CVS St. Paul',      level:3, parentId:'d5', code:'CVS-5020',  chain:'CVS',       city:'St. Paul, MN'},
+
+  // NYC Metro stores
+  {id:'s17', name:'CVS Manhattan',     level:3, parentId:'d6', code:'CVS-6001',  chain:'CVS',       city:'New York, NY'},
+  {id:'s18', name:'Walgreens Brooklyn', level:3, parentId:'d6', code:'WAG-6040', chain:'Walgreens', city:'Brooklyn, NY'},
+  {id:'s19', name:'Target Queens',     level:3, parentId:'d6', code:'TGT-6200',  chain:'Target',    city:'Queens, NY'},
+
+  // Mid-Atlantic stores
+  {id:'s20', name:'CVS Philadelphia',  level:3, parentId:'d7', code:'CVS-7001',  chain:'CVS',       city:'Philadelphia, PA'},
+  {id:'s21', name:'Walgreens Baltimore', level:3, parentId:'d7', code:'WAG-7100', chain:'Walgreens', city:'Baltimore, MD'},
+  {id:'s22', name:'Target Washington', level:3, parentId:'d7', code:'TGT-7200',  chain:'Target',    city:'Washington, DC'},
+
+  // New England stores
+  {id:'s23', name:'CVS Boston',        level:3, parentId:'d8', code:'CVS-8001',  chain:'CVS',       city:'Boston, MA'},
+  {id:'s24', name:'Walgreens Providence', level:3, parentId:'d8', code:'WAG-8100', chain:'Walgreens', city:'Providence, RI'},
+
+  // Texas stores
+  {id:'s25', name:'Target Houston',    level:3, parentId:'d9', code:'TGT-9001',  chain:'Target',    city:'Houston, TX'},
+  {id:'s26', name:'CVS Dallas',        level:3, parentId:'d9', code:'CVS-9040',  chain:'CVS',       city:'Dallas, TX'},
+  {id:'s27', name:'Walgreens Austin',  level:3, parentId:'d9', code:'WAG-9200',  chain:'Walgreens', city:'Austin, TX'},
+
+  // Southeast stores
+  {id:'s28', name:'CVS Atlanta',       level:3, parentId:'d10', code:'CVS-A001', chain:'CVS',       city:'Atlanta, GA'},
+  {id:'s29', name:'Target Charlotte',  level:3, parentId:'d10', code:'TGT-A100', chain:'Target',    city:'Charlotte, NC'},
+
+  // Sunbelt stores
+  {id:'s30', name:'CVS Phoenix',       level:3, parentId:'d11', code:'CVS-B001', chain:'CVS',       city:'Phoenix, AZ'},
+  {id:'s31', name:'Walgreens Las Vegas', level:3, parentId:'d11', code:'WAG-B100', chain:'Walgreens', city:'Las Vegas, NV'},
+  {id:'s32', name:'Target Scottsdale', level:3, parentId:'d11', code:'TGT-B200', chain:'Target',    city:'Scottsdale, AZ'},
+
+  // Gulf Coast stores
+  {id:'s33', name:'CVS New Orleans',   level:3, parentId:'d12', code:'CVS-C001', chain:'CVS',       city:'New Orleans, LA'},
+  {id:'s34', name:'Walgreens Tampa',   level:3, parentId:'d12', code:'WAG-C100', chain:'Walgreens', city:'Tampa, FL'},
+];
+
+/* ---- build index ---- */
+const byId = {};
+const children = {};
+NODES.forEach(n => { byId[n.id] = n; children[n.id] = []; });
+NODES.forEach(n => { if (n.parentId) children[n.parentId].push(n.id); });
+
+/* ---- state ---- */
+let expanded = {};
+let searchQuery = '';
+let chainFilter = 'All';
+let chainKeep = null;
+
+// Initially expand company + all regions
+NODES.forEach(n => { if (n.level <= 1) expanded[n.id] = true; });
+
+/* ---- chain keep set ---- */
+function buildChainKeep(chain) {
+  if (chain === 'All') return null;
+  const keep = new Set();
+  NODES.forEach(n => {
+    if (n.level === 3 && n.chain === chain) {
+      keep.add(n.id);
+      let p = n.parentId;
+      while (p) { keep.add(p); const pn = byId[p]; p = pn ? pn.parentId : null; }
+    }
+  });
+  return keep;
+}
+
+/* ---- search match: return all nodes matching the query + their ancestors ---- */
+function buildSearchKeep(q) {
+  if (!q) return null;
+  const ql = q.toLowerCase();
+  const keep = new Set();
+  NODES.forEach(n => {
+    const hit = n.name.toLowerCase().includes(ql) || (n.code && n.code.toLowerCase().includes(ql)) || (n.chain && n.chain.toLowerCase().includes(ql));
+    if (hit) {
+      keep.add(n.id);
+      let p = n.parentId;
+      while (p) { keep.add(p); const pn = byId[p]; p = pn ? pn.parentId : null; }
+    }
+  });
+  return keep;
+}
+
+/* ---- rendering ---- */
+function svgChev(open) {
+  return open
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>'
+    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>';
+}
+
+function renderNode(id, depth, searchKeep) {
+  const n = byId[id];
+  if (!n) return '';
+  // filter checks
+  if (chainKeep && !chainKeep.has(id)) return '';
+  if (searchKeep && !searchKeep.has(id)) return '';
+
+  const kids = children[id] || [];
+  const isStore = n.level === 3;
+  const isOpen = expanded[id];
+  const lvColor = LEVEL_COLORS[n.level] || '#71717a';
+  const lvName = LEVEL_NAMES[n.level] || ('Level ' + n.level);
+  const indent = depth * 22 + 6;
+
+  // dot shape: stores get a square, others a circle
+  const dotStyle = isStore
+    ? `width:8px;height:8px;border-radius:2px;background:${lvColor};flex-shrink:0`
+    : `width:8px;height:8px;border-radius:99px;background:${lvColor};flex-shrink:0`;
+
+  // toggle button or leaf dot
+  let toggleHtml;
+  if (kids.length > 0) {
+    toggleHtml = `<button class="toggle-btn" onclick="toggle('${id}')">${svgChev(isOpen)}</button>`;
+  } else {
+    toggleHtml = `<span style="width:22px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><span class="leaf-dot"></span></span>`;
+  }
+
+  // name: stores are clickable links, others are plain text
+  let nameHtml;
+  if (isStore) {
+    nameHtml = `<span class="tname store-link" onclick="openStore('${id}')">${n.name}</span>`;
+  } else {
+    const bold = n.level <= 1 ? ' bold' : '';
+    nameHtml = `<span class="tname${bold}">${n.name}</span>`;
+  }
+
+  // level label chip
+  const labelHtml = `<span class="tlabel">${lvName}</span>`;
+
+  // chain badge (stores only)
+  let chainHtml = '';
+  if (isStore && n.chain) {
+    const cc = CHAIN_COLOR[n.chain] || '#999';
+    chainHtml = `<span class="tchainbadge"><span style="width:6px;height:6px;border-radius:99px;background:${cc}"></span>${n.chain}</span>`;
+  }
+
+  // store code
+  const codeHtml = n.code ? `<span class="tcode">${n.code}</span>` : '';
+
+  // child count (non-stores)
+  const countHtml = (!isStore && kids.length > 0) ? `<span class="tcount">${kids.length}</span>` : '';
+
+  let html = `<div class="trow" style="padding-left:${indent}px">
+    ${toggleHtml}
+    <span style="${dotStyle}"></span>
+    ${nameHtml}
+    ${labelHtml}
+    ${chainHtml}
+    ${codeHtml}
+    ${countHtml}
+  </div>`;
+
+  // children
+  if (isOpen || (searchKeep && searchKeep.has(id))) {
+    // filter kids
+    let renderKids = kids;
+    if (chainKeep) renderKids = renderKids.filter(k => chainKeep.has(k));
+    if (searchKeep) renderKids = renderKids.filter(k => searchKeep.has(k));
+    renderKids.forEach(kid => { html += renderNode(kid, depth + 1, searchKeep); });
+  }
+  return html;
+}
+
+function render() {
+  const searchKeep = buildSearchKeep(searchQuery);
+  const root = document.getElementById('treeRoot');
+  root.innerHTML = renderNode('n0', 0, searchKeep);
+}
+
+function toggle(id) {
+  expanded[id] = !expanded[id];
+  render();
+}
+
+function expandAll(v) {
+  NODES.forEach(n => { expanded[n.id] = v; });
+  render();
+}
+
+function doSearch(q) {
+  searchQuery = q;
+  // expand everything when searching so results are visible
+  if (q) NODES.forEach(n => { expanded[n.id] = true; });
+  render();
+}
+
+function doChainFilter(chain) {
+  chainFilter = chain;
+  chainKeep = buildChainKeep(chain);
+  // update chain banner
+  const banner = document.getElementById('chainBanner');
+  const bannerText = document.getElementById('chainBannerText');
+  if (chain === 'All') {
+    banner.style.display = 'none';
+  } else {
+    const count = NODES.filter(n => n.level === 3 && n.chain === chain).length;
+    bannerText.innerHTML = `Showing <strong>${count} ${chain}</strong> stores. Chain is a store attribute, not a management level. Nobody is pinned to "${chain}".`;
+    banner.style.display = 'flex';
+    // expand all so chain stores are visible
+    NODES.forEach(n => { expanded[n.id] = true; });
+  }
+  render();
+}
+
+function clearChain() {
+  document.getElementById('chainSel').value = 'All';
+  doChainFilter('All');
+}
+
+/* ---- store detail modal ---- */
+function openStore(id) {
+  const n = byId[id];
+  if (!n) return;
+
+  // build management path (ancestors)
+  const path = [];
+  let p = n.parentId;
+  while (p) { const pn = byId[p]; if (!pn) break; path.unshift(pn); p = pn.parentId; }
+
+  document.getElementById('storeTitle').textContent = n.name;
+
+  // path HTML
+  let pathHtml = '<div class="label" style="margin-bottom:10px">Management position</div><div style="margin-bottom:18px">';
+  path.forEach((pn, i) => {
+    const pc = LEVEL_COLORS[pn.level] || '#999';
+    const pname = LEVEL_NAMES[pn.level] || 'Level ' + pn.level;
+    const arrowHtml = i > 0 ? `<div class="arrowdown" style="padding-left:${i*14+3}px">&#8595;</div>` : '';
+    pathHtml += `${arrowHtml}<div class="pathrow" style="padding-left:${i*14}px">
+      <span class="pathdot" style="background:${pc}"></span>
+      <span class="pathname">${pn.name}</span>
+      <span class="pathchip">${pname}</span>
+    </div>`;
+  });
+  // the store itself
+  const lastArrow = `<div class="arrowdown" style="padding-left:${path.length*14+3}px">&#8595;</div>`;
+  pathHtml += `${lastArrow}<div class="pathrow" style="padding-left:${path.length*14}px">
+    <span class="pathdot square" style="background:${LEVEL_COLORS[3]}"></span>
+    <span class="pathname" style="font-weight:600">${n.name}</span>
+    <span class="pathchip">Store</span>
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" stroke-width="2" stroke-linecap="round" title="Locked level" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  </div>`;
+  pathHtml += '</div>';
+
+  // attributes
+  const chainColor = CHAIN_COLOR[n.chain] || '#999';
+  const chainBadge = n.chain
+    ? `<span class="chip" style="height:20px;font-size:11px"><span style="width:7px;height:7px;border-radius:99px;background:${chainColor}"></span>${n.chain}</span>`
+    : '<span class="mut">None</span>';
+
+  pathHtml += `<div class="label" style="margin-bottom:10px">Store attributes</div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+    <table class="attrtbl">
+      <tr><td>Chain</td><td>${chainBadge}</td></tr>
+      <tr><td>Store ID</td><td><span class="mono" style="font-size:12.5px">${n.code}</span></td></tr>
+      <tr><td>Location</td><td style="font-size:12.5px">${n.city || 'Not set'}</td></tr>
+    </table>
+  </div>
+  <div style="display:flex;align-items:flex-start;gap:9px;padding:11px 13px;background:var(--accent-subtle);border-radius:var(--r-md)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    <div style="font-size:12px;color:var(--text-2);line-height:1.5">Chain is a store attribute used for survey targeting and filtering. It is <strong>not a management level</strong>. This store reports up through its district and region above.</div>
+  </div>`;
+
+  document.getElementById('storeBody').innerHTML = pathHtml;
+  document.getElementById('storeOverlay').classList.add('open');
+}
+
+function closeStore() {
+  document.getElementById('storeOverlay').classList.remove('open');
+}
+
+render();
+</script>
+</body>
+</html>
