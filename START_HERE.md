@@ -191,10 +191,13 @@ level names, tenant-scoped). New files in apps/admin/src/pages/Hierarchy/.
 Deferred (greyed "soon" on screen): coverage mode, add/rename/delete nodes, bulk
 import, export.
 
-**ALL ADMIN WEB SCREENS ARE NOW COMPLETE** (W1 dashboard, W3 catalog, W4 surveys,
+**The six demo-order Admin screens are DONE** (W1 dashboard, W3 catalog, W4 surveys,
 W5 responses, W6 payroll, W7 hierarchy). Current green baseline: 198 backend tests
-+ 196 frontend tests, build clean. What is next per the roadmap: the **Manager web
-app** and/or **Phase 5** (the Field mobile app + offline sync).
++ 196 frontend tests, build clean. Still to build in the Admin app: **Users & Roles**
+and **Settings** (the two remaining sidebar items, each needs a small backend brick
+first, GET/POST /users and GET/PATCH /tenants), then the **setup wizard**. What is
+next: build Users & Roles + Settings. The **Manager web app** and **Phase 5** (the
+Field mobile app + offline sync) are the larger tracks after that.
 
 ---
 
@@ -355,11 +358,11 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > clean. Everything is committed to main but NOT pushed yet (pushing auto-deploys to
 > the dev server, so ask me before pushing).
 >
-> What's next: the Manager web app (reuses most Admin screens + the same backend,
-> scoped to a manager's branch) and/or Phase 5 (the Field mobile app + offline
-> sync), per ROADMAP.md, unless I say otherwise. On-screen hierarchy editing and the
-> setup wizard still need small backend bricks first (Users GET/POST /users;
-> node-write endpoints).
+> What's next: the two remaining Admin sidebar screens, Users & Roles and Settings
+> (both currently coming-soon), unless I say otherwise. Each needs a small backend
+> brick first (Users: GET/POST /users; Settings: GET/PATCH /tenants), then the
+> screen. After those, the setup wizard (needs the Users brick + on-screen hierarchy
+> editing), then the Manager web app and Phase 5 (the Field mobile app + offline sync).
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser
@@ -425,12 +428,15 @@ project memory, so a new chat in this folder already knows them.)
   panel. Backed by GET /nodes plus the new GET /org-levels endpoint
   (tenant-scoped level names, added to api/app/hierarchy.py + api/app/scope.py
   with a test). New files in apps/admin/src/pages/Hierarchy/.
-- **ALL ADMIN WEB SCREENS ARE NOW COMPLETE** (W1, W3, W4, W5, W6, W7). Current
-  green baseline: 198 backend tests + 196 frontend tests, build clean.
-- **NEXT (see [ROADMAP.md](ROADMAP.md)): the Manager web app and/or Phase 5
-  (the Field mobile app + offline sync).** On-screen hierarchy editing and the
-  setup wizard still need small backend bricks first (Users GET/POST /users;
-  node-write endpoints).
+- **The six demo-order Admin screens are DONE** (W1, W3, W4, W5, W6, W7). Current
+  green baseline: 198 backend tests + 196 frontend tests, build clean. Still to build
+  in the Admin app: Users & Roles and Settings (the two remaining sidebar items),
+  then the setup wizard.
+- **NEXT (see [ROADMAP.md](ROADMAP.md)): Users & Roles and Settings.** Each needs a
+  small backend brick first (Users: GET/POST /users; Settings: GET/PATCH /tenants),
+  then the screen. After those: the setup wizard (needs the Users brick + on-screen
+  hierarchy editing, i.e. node-write endpoints), then the Manager web app and Phase 5
+  (the Field mobile app + offline sync).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password
