@@ -1,6 +1,7 @@
 // The sidebar navigation list, ported from the prototype shell.jsx NAV.
-// `path` drives React Router; `comingSoon` flags the not-yet-built screens
-// (they route to the shared ComingSoon placeholder and show a "soon" chip).
+// `path` drives React Router; `comingSoon` flags a not-yet-built screen, which
+// the sidebar shows with a "soon" chip instead of a link. No screen is
+// coming-soon right now (the next one, the setup wizard, will set the flag again).
 import { ICONS } from '../ui'
 
 export type NavItem = {

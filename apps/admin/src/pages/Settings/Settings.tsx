@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Icon, ICONS } from '../../ui'
+import { ApiError } from '../../lib/api'
 import { selectSession, useAppDispatch, useAppSelector } from '../../store'
 import { signedIn } from '../../store/auth'
 import { tenantChanges, useTenant, useUpdateTenant } from './useSettings'
@@ -28,6 +29,8 @@ export default function Settings() {
   const [section, setSection] = useState('company')
   const [name, setName] = useState('')
   const [payroll, setPayroll] = useState(true)
+  const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // Seed local edit state once the tenant loads.
   useEffect(() => {
@@ -37,12 +40,26 @@ export default function Settings() {
   const changes = tenantQ.data ? tenantChanges(tenantQ.data, { name, payroll_enabled: payroll }) : {}
   const dirty = Object.keys(changes).length > 0
 
+  // Editing clears a stale "Saved"/error message.
+  function edit(fn: () => void) {
+    setSaved(false)
+    setSaveError(null)
+    fn()
+  }
+
   async function save() {
     if (!dirty) return
-    const updated = await update.mutateAsync(changes).catch(() => null)
-    if (updated && session && 'name' in changes) {
-      // Refresh the sidebar company name without a re-login.
-      dispatch(signedIn({ ...session, user: { ...session.user, company_name: updated.name } }))
+    setSaveError(null)
+    try {
+      const updated = await update.mutateAsync(changes)
+      if (session && 'name' in changes) {
+        // Refresh the sidebar company name without a re-login.
+        dispatch(signedIn({ ...session, user: { ...session.user, company_name: updated.name } }))
+      }
+      setSaved(true)
+    } catch (e) {
+      setSaved(false)
+      setSaveError(e instanceof ApiError ? e.message : 'Could not save. Try again.')
     }
   }
 
@@ -55,9 +72,15 @@ export default function Settings() {
         </div>
         <div className={styles.sp} />
         {canEdit && (
-          <Button variant="primary" disabled={!dirty || update.isPending} onClick={save}>
-            <Icon name="check" size={15} /> Save changes
-          </Button>
+          <>
+            {saveError && <span className={styles.saveError}>{saveError}</span>}
+            {!saveError && saved && !dirty && (
+              <span className={styles.saved}><Icon name="check" size={13} /> Saved</span>
+            )}
+            <Button variant="primary" disabled={!dirty || update.isPending} onClick={save}>
+              <Icon name="check" size={15} /> Save changes
+            </Button>
+          </>
         )}
       </div>
 
@@ -82,10 +105,12 @@ export default function Settings() {
             </div>
             <div>
               {section === 'company' && (
-                <CompanyPanel name={name} code={tenantQ.data.code} canEdit={canEdit} onName={setName} />
+                <CompanyPanel name={name} code={tenantQ.data.code} canEdit={canEdit}
+                  onName={(v) => edit(() => setName(v))} />
               )}
               {section === 'payroll' && (
-                <PayrollPanel on={payroll} canEdit={canEdit} onToggle={setPayroll} />
+                <PayrollPanel on={payroll} canEdit={canEdit}
+                  onToggle={(v) => edit(() => setPayroll(v))} />
               )}
               {section === 'workmodel' && (
                 <ComingSoonPanel icon="target" title="Work model"

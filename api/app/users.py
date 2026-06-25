@@ -30,8 +30,12 @@ class UserUpdate(BaseModel):
 
     @model_validator(mode="after")
     def _at_least_one(self):
-        if not self.model_fields_set:
+        fields = self.model_fields_set
+        if not fields:
             raise ValueError("provide role and/or node_id")
+        # node_id may be explicitly null (means unpin); role may not be null.
+        if "role" in fields and self.role is None:
+            raise ValueError("role cannot be null")
         return self
 
 

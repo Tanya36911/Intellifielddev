@@ -65,6 +65,15 @@ export default function Users() {
                 </Card>
               ))}
             </div>
+            <div className={styles.banner}>
+              <div className={styles.bannerIcon}><Icon name="shield" size={16} /></div>
+              <div className={styles.bannerText}>
+                <strong>A role is what a person can do. Their pin is where they can do it.</strong>{' '}
+                Pin someone to a node and they automatically see that node and everything beneath
+                it, never a sibling branch and never another company. This is the same rule the
+                backend enforces on every request.
+              </div>
+            </div>
             <UserTable users={users} levels={levels} canEdit={canEdit} onMovePin={setPinUser} />
           </>
         )}

@@ -17,8 +17,14 @@ class TenantUpdate(BaseModel):
 
     @model_validator(mode="after")
     def _at_least_one(self):
-        if not self.model_fields_set:
+        fields = self.model_fields_set
+        if not fields:
             raise ValueError("provide name and/or payroll_enabled")
+        # Neither field is nullable: an explicit null would try to write NULL.
+        if "name" in fields and self.name is None:
+            raise ValueError("name cannot be null")
+        if "payroll_enabled" in fields and self.payroll_enabled is None:
+            raise ValueError("payroll_enabled cannot be null")
         return self
 
 

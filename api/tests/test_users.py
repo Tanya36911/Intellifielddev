@@ -201,3 +201,10 @@ def test_patch_unknown_user(client, login):
     token = login("dana@lumenbeauty.com")
     assert _patch(client, token, "00000000-0000-0000-0000-000000000000",
                   role="rep").status_code == 404
+
+
+def test_patch_null_role_rejected(client, login):
+    # An explicit null role must be a clean 422, never a 500 from a NULL write.
+    token = login("dana@lumenbeauty.com")
+    marcus = _find(client, token, "marcus@lumenbeauty.com")
+    assert _patch(client, token, marcus["id"], role=None).status_code == 422

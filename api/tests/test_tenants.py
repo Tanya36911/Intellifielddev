@@ -66,3 +66,10 @@ def test_code_is_not_changed(client, login):
     resp = _patch(client, token, name="Lumen Beauty", code="hacked")
     assert resp.status_code == 200, resp.text
     assert resp.json()["code"] == "lumen"
+
+
+def test_null_fields_rejected(client, login):
+    # Explicit nulls must be a clean 422, never a 500 from a NULL write.
+    token = login("dana@lumenbeauty.com")
+    assert _patch(client, token, name=None).status_code == 422
+    assert _patch(client, token, payroll_enabled=None).status_code == 422
