@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useReducer, useRef, useState } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { Avatar, Button, Card, Chip, Icon, Segmented } from '../../ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
@@ -277,6 +279,8 @@ export default function Payroll() {
   const isAdmin = session?.user.role === 'admin'
   const isManagerOrAdmin = isAdmin || session?.user.role === 'manager'
 
+  // All hooks must come before any conditional return (React rules of hooks)
+  const queryClient = useQueryClient()
   const periodsQuery = usePayPeriods()
   const periods = periodsQuery.data?.periods ?? []
 
@@ -302,6 +306,11 @@ export default function Payroll() {
   const [reopenTarget, setReopenTarget] = useState<TimeEntry | null>(null)
   const [csvLoading, setCsvLoading] = useState(false)
 
+  // Fix 1: non-manager/admin reps must not see this screen (guard after all hooks)
+  if (!isManagerOrAdmin) {
+    return <Navigate to="/" replace />
+  }
+
   // Payroll disabled: 403 from the periods query
   const payrollDisabled =
     isPayrollDisabled(periodsQuery.error) || isPayrollDisabled(entriesQuery.error)
@@ -309,8 +318,9 @@ export default function Payroll() {
   const stats = calcStats(entries)
   const sealable = canSeal(entries)
 
+  // Fix 2: include reset_minutes in the sealed-period total hours
   const totalHours = (
-    entries.reduce((sum, e) => sum + e.store_minutes + e.drive_minutes, 0) / 60
+    entries.reduce((sum, e) => sum + e.store_minutes + e.reset_minutes + e.drive_minutes, 0) / 60
   ).toFixed(1)
 
   async function handleExport() {
@@ -331,6 +341,25 @@ export default function Payroll() {
         <div className={styles.scroll}>
           <div className={styles.page}>
             <div className={styles.note}>Loading...</div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  // Fix 3: non-403 error from pay-periods query (e.g. 500/timeout)
+  if (periodsQuery.error && !payrollDisabled) {
+    return (
+      <>
+        <Topbar title="Payroll" subtitle="Review and approve rep field time." />
+        <div className={styles.scroll}>
+          <div className={styles.page}>
+            <Card className={styles.empty}>
+              <div className={styles.emptyIcon}>
+                <Icon name="alert" size={26} />
+              </div>
+              <div className={styles.emptyTitle}>Something went wrong loading payroll. Try refreshing.</div>
+            </Card>
           </div>
         </div>
       </>
@@ -369,10 +398,13 @@ export default function Payroll() {
           <Button
             size="sm"
             variant="primary"
-            onClick={() => {
-              entries
-                .filter((e) => e.status === 'pending')
-                .forEach((e) => approveEntry.mutate(e.id))
+            onClick={async () => {
+              // Fix 5: batch approvals and do a single cache invalidation afterwards
+              const pending = entries.filter((e) => e.status === 'pending')
+              await Promise.allSettled(
+                pending.map((e) => approveEntry.mutateAsync(e.id)),
+              )
+              queryClient.invalidateQueries({ queryKey: ['time-entries'] })
             }}
           >
             <Icon name="check" size={14} /> Approve all pending ({stats.pending})
@@ -412,7 +444,11 @@ export default function Payroll() {
                     ? (openPeriod ? `Open  ${formatPeriodLabel(openPeriod)}` : 'Open')
                     : (latestSealed ? `Sealed  ${formatPeriodLabel(latestSealed)}` : 'Sealed')
                   }
-                  onChange={(v) => setTab(v.startsWith('Open') ? 'open' : 'sealed')}
+                  onChange={(v) => {
+                    // Fix 4: clear reopenTarget when switching tabs so modal can't show stale period
+                    setReopenTarget(null)
+                    setTab(v.startsWith('Open') ? 'open' : 'sealed')
+                  }}
                 />
                 <span className={styles.periodHint}>
                   {activePeriod ? `${activePeriod.grace_hours}h grace window after cutoff` : ''}

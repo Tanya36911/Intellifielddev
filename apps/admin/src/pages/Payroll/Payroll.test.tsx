@@ -309,13 +309,15 @@ describe('Payroll (non-admin / manager)', () => {
     expect(screen.queryByRole('button', { name: /seal period/i })).toBeNull()
   })
 
-  it('rep user sees no approve or seal buttons', async () => {
+  it('rep user is redirected to / and sees no payroll table', async () => {
     mockApiGetOpenOnly()
     renderApp(<Payroll />, { session: repSession() })
 
-    await screen.findByText('Marcus Bell')
-    expect(screen.queryByRole('button', { name: /^approve$/i })).toBeNull()
-    expect(screen.queryByRole('button', { name: /seal period/i })).toBeNull()
+    // Rep should be redirected - no payroll table should render
+    await waitFor(() => {
+      expect(screen.queryByText('Marcus Bell')).toBeNull()
+      expect(screen.queryByRole('table')).toBeNull()
+    })
   })
 })
 
@@ -334,6 +336,18 @@ describe('Payroll - empty state', () => {
     renderApp(<Payroll />, { session: adminSession() })
 
     expect(await screen.findByText('No pay periods yet')).toBeTruthy()
+  })
+})
+
+describe('Payroll - non-403 error state', () => {
+  it('shows error card when pay-periods query fails with a non-403 error', async () => {
+    vi.mocked(apiGet).mockRejectedValue(new ApiError(500, 'Internal Server Error'))
+    renderApp(<Payroll />, { session: adminSession() })
+
+    expect(
+      await screen.findByText('Something went wrong loading payroll. Try refreshing.'),
+    ).toBeTruthy()
+    expect(screen.queryByRole('table')).toBeNull()
   })
 })
 
