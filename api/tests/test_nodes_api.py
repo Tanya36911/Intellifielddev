@@ -38,3 +38,22 @@ def test_api_no_pin_sees_nothing(client, login):
 def test_api_requires_a_token(client):
     resp = client.get("/nodes")
     assert resp.status_code == 401
+
+
+def test_api_org_levels(client, login):
+    resp = client.get(
+        "/org-levels", headers={"Authorization": f"Bearer {login('dana@lumenbeauty.com')}"}
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["count"] == 4
+    levels = body["levels"]
+    assert [lvl["level_order"] for lvl in levels] == [0, 1, 2, 3]
+    assert [lvl["name"] for lvl in levels] == ["Company", "Region", "District", "Store"]
+    # Company (first) and Store (last) are the locked ends; middle levels editable.
+    assert levels[0]["locked"] is True and levels[3]["locked"] is True
+    assert levels[1]["locked"] is False
+
+
+def test_api_org_levels_requires_a_token(client):
+    assert client.get("/org-levels").status_code == 401

@@ -11,3 +11,11 @@ router = APIRouter(tags=["hierarchy"])
 def list_nodes(repo: ScopedRepo = Depends(get_scoped_repo)) -> dict:
     nodes = repo.list_nodes()
     return {"nodes": nodes, "count": len(nodes)}
+
+
+@router.get("/org-levels")
+def list_org_levels(repo: ScopedRepo = Depends(get_scoped_repo)) -> dict:
+    """The company's org level names (Company, Region, ... Store), in order, so a
+    screen can label a node's numeric level_order. Tenant-scoped (company-wide)."""
+    levels = repo.list_org_levels()
+    return {"levels": levels, "count": len(levels)}

@@ -78,6 +78,20 @@ class ScopedRepo:
             ).mappings().all()
         return [dict(r) for r in rows]
 
+    def list_org_levels(self) -> list[dict]:
+        """The company's org level definitions (Company, Region, ... Store), in
+        order. Tenant-scoped, not branch-scoped: the level labels are company-wide,
+        so any signed-in user (even an unpinned one) can read them."""
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "select level_order, name, locked from org_level_definitions "
+                    "where tenant_id = cast(:tid as uuid) order by level_order"
+                ),
+                {"tid": str(self.tenant_id)},
+            ).mappings().all()
+        return [dict(r) for r in rows]
+
     # ----- catalog (company-wide: filtered by tenant only, not by path) -----
 
     _SKU_COLS = "id, line, variant, upc, color, status, reference_images, created_at"
