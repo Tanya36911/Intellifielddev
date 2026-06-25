@@ -1,0 +1,146 @@
+.row {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding-right: 8px;
+  border-radius: var(--r-sm);
+  cursor: default;
+  gap: 6px;
+  position: relative;
+}
+
+.row:hover {
+  background: var(--surface-hover);
+}
+
+.toggleBtn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-3);
+  border-radius: var(--r-xs);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.toggleBtn:hover {
+  background: var(--bg-elev);
+}
+
+.leafDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--border-strong);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.lvDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.lvDotSquare {
+  border-radius: 2px;
+}
+
+.name {
+  font-size: 13.5px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameBold {
+  font-weight: 700;
+}
+
+.storeBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.storeBtn:hover {
+  color: var(--accent);
+}
+
+.levelLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 0 7px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.chainBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--r-full);
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.code {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-4);
+  flex-shrink: 0;
+}
+
+.childCount {
+  font-size: 11px;
+  color: var(--text-4);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.toggleWrap {
+  width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.children {
+  /* children indent via paddingLeft on each row */
+}
