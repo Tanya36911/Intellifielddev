@@ -41,8 +41,11 @@ fast-follow, never the headline.
   - [x] **W1** app shell + Analytics dashboard (the old W2 analytics is folded into
     W1: the shell ships with the real dashboard as its first screen, not a stub Home);
     [x] **W3** catalog; [x] **W4** survey builder + assignments; [x] **W5** responses
-    + detail; [x] **W6** payroll; [x] **W7** org hierarchy (view).
-  - ALL ADMIN WEB SCREENS COMPLETE as of 2026-06-25.
+    + detail; [x] **W6** payroll; [x] **W7** org hierarchy (view);
+    [x] **Users & Roles** (the team screen at /users); [x] **Settings** (company
+    name + payroll on/off at /settings).
+  - ALL ADMIN WEB SIDEBAR SCREENS COMPLETE as of 2026-06-25 (the six demo-order
+    screens plus Users & Roles and Settings). NEXT: the setup wizard.
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
   first. Split into a backend sync-contract track and a mobile track.
@@ -341,3 +344,43 @@ fast-follow, never the headline.
   workflow); review caught and fixed a re-scoring bug, a name-collision response-bucketing bug, and
   the partial/% list display, then merged to main. Gate GREEN: 196 backend + 133 frontend, build
   clean. W6 (payroll) next.
+- 2026-06-25: USERS & ROLES + SETTINGS COMPLETE - the two remaining Admin sidebar screens are now
+  real (were "coming soon" placeholders). With these, ALL Admin web sidebar screens are done.
+  Users & Roles (/users): a People tab with three role-count cards (Admin / Manager / Rep), a
+  plain-language banner ("a role is what a person can do, their pin is where they can do it"), and a
+  team table (name, email, role, pinned node with an inheritance sentence); a Roles tab with a
+  read-only capability matrix (Full / Scoped / None per role). Admins can add a user (name, email,
+  role, which org node to pin to, and a starting password the admin sets), change a role inline, and
+  move or remove a pin; non-admins see it read-only (same pattern as Catalog). Settings (/settings):
+  real and saved in v1 are the company name (editable) and a payroll on/off switch (it genuinely
+  controls whether the Payroll screen and its backend actions are available); shown honestly as
+  "coming soon" (not faked) are pay-period defaults, work model, store chain logos, audit log, and
+  data & security; non-admins see it read-only. Backend bricks (no migration; the users +
+  assignments + tenants tables already existed): new api/app/users.py with GET /users (team list,
+  branch-scoped through the existing scope-follows-pin guard: a pinned user is visible when pinned
+  at/under the caller's node; unpinned users are visible only to a caller at the company root; an
+  unpinned caller sees none), admin-only POST /users (add + pin, password stored only as an Argon2
+  hash, duplicate email 409, node out of scope 404), and admin-only PATCH /users/{id} (change role
+  and/or move-or-remove the pin, with a "cannot remove the last admin" guard); the pin is one row in
+  the existing assignments table. New api/app/tenants.py with GET /tenants (this company's config,
+  any signed-in user) and admin-only PATCH /tenants (update name and/or payroll_enabled; the company
+  code is permanent and not editable). Both routers registered in api/app/main.py. scope.py gained a
+  users section (list/get/create/update_user) and a tenant section (get/update_tenant) plus a
+  LastAdminError. Tests: api/tests/test_users.py, api/tests/test_tenants.py. Frontend: new
+  apps/admin/src/pages/Users/ (useUsers.ts, pinOptions.ts, RolesReference.tsx, AddUserModal.tsx,
+  MovePinModal.tsx, UserTable.tsx, RoleSelect.tsx, Users.tsx, plus CSS modules and tests) and
+  apps/admin/src/pages/Settings/ (useSettings.ts, CompanyPanel.tsx, PayrollPanel.tsx,
+  ComingSoonPanel.tsx, Settings.tsx, plus CSS and tests); App.tsx now routes /users and /settings to
+  the real screens; shell/nav.ts dropped the comingSoon flags on those two items. Deferred, recorded
+  honestly: real emailed invite links (needs an email system; v1 has the admin set a starting
+  password), enable/disable a user (no status column yet), manager-scoped user invites (admin-only in
+  v1), custom roles; and for Settings the pay-period defaults, work model, store logos, a unified
+  company audit feed, and the data & security panel. Built brainstorm -> spec -> plan -> parallel
+  worktree build (one per screen) -> adversarial review pass; specs in
+  docs/superpowers/specs/2026-06-25-users-roles-design.md and 2026-06-25-settings-design.md, plans in
+  docs/superpowers/plans/2026-06-25-users-roles.md and 2026-06-25-settings.md, mockups in
+  docs/superpowers/mockups/. Gate GREEN: 230 backend tests + 213 frontend tests, admin build clean
+  (previous baseline 198 backend + 196 frontend). Committed locally but NOT pushed yet (pushing
+  auto-deploys). ALL ADMIN WEB SIDEBAR SCREENS NOW COMPLETE. NEXT: the setup wizard (needs the Users
+  brick plus on-screen hierarchy editing, meaning node add/rename/delete endpoints), then the Manager
+  web app and Phase 5 (the Field mobile app + offline sync).

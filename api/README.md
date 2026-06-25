@@ -53,7 +53,8 @@ The starting point. When the backend boots, this file runs first. It:
 - plugs in each feature router (login from `auth.py`, the org tree from
   `hierarchy.py`, the catalog from `catalog.py`, surveys from `surveys.py`,
   responses from `responses.py`, analytics from `analytics.py`, payroll
-  from `payroll.py`, and the data exports from `exports.py`),
+  from `payroll.py`, the data exports from `exports.py`, the team list from
+  `users.py`, and the company settings from `tenants.py`),
 - and sets the "guest list" (called CORS) that says which web addresses are
   allowed to call the backend. Right now that is the local Admin app.
 
@@ -131,7 +132,13 @@ of the tree. As of Phase 4c the ScopedRepo gained a payroll section: pay periods
 are company-wide (any admin in the company can see them), while time entries are
 role-scoped (reps see their own; managers see their branch; admins see all). It
 also gained an `_audit` helper that writes a permanent, tamper-evident log entry
-whenever a sensitive payroll action happens (such as reopening a sealed period).
+whenever a sensitive payroll action happens (such as reopening a sealed period). As
+of the Users & Roles and Settings screens (2026-06-25) the ScopedRepo gained a users
+section (list / get / create / update_user, branch-scoped exactly like the org tree,
+so you only ever see and manage people in your own part of the company) and a tenant
+section (get / update_tenant, for reading and updating this company's settings), plus
+a `LastAdminError` that the users section raises if an update would remove the
+company's last remaining admin.
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
@@ -300,6 +307,38 @@ always carry the same columns in the same order. Pass/fail is worked out live
 through the one `compliance.py` brain, never stored, and "not scored" shows as a
 blank cell, never a false. No new database tables: this only reads what Phases
 4a, 4b, and 4c already store.
+
+### app/users.py  (the team / users API)
+Defines the endpoints behind the Admin "Users & Roles" screen, all through the
+ScopedRepo, with no new database table (the people and pin tables already existed).
+- `GET /users` returns the team list the caller is allowed to see, branch-scoped by
+  the same "see only your branch" rule as everything else: a person who is pinned to
+  a spot shows up when that spot is at or below the caller's own spot; a person with
+  no pin shows only to a caller standing at the company root; a caller with no pin
+  sees nobody (the safe default). Any signed-in person can read it.
+- `POST /users` (admins only) adds a person and pins them in one step. The starting
+  password the admin types is stored only as a scrambled one-way Argon2 hash, never
+  as the real text. A duplicate email is refused with a 409; pinning to a node
+  outside the caller's branch is refused with a 404. The pin itself is one row in the
+  existing `assignments` table.
+- `PATCH /users/{id}` (admins only) changes a person's role and/or moves or removes
+  their pin. It has a "you cannot remove the last admin" safety guard so a company can
+  never be left with nobody who can administer it (the guard raises a `LastAdminError`,
+  turned into a clear refusal).
+Deliberately deferred and noted honestly: real emailed invite links (this needs an
+email system; for now the admin sets a starting password), enable/disable a person
+(there is no status column yet), manager-scoped invites (admin-only for now), and
+custom roles.
+
+### app/tenants.py  (the company-settings API)
+Defines the two endpoints behind the Admin "Settings" screen, through the ScopedRepo,
+again with no new database table (the company table already had the name, the
+permanent company code, and the payroll on/off switch).
+- `GET /tenants` returns this company's settings (the name, the code, and whether
+  payroll is switched on). Any signed-in person can read it.
+- `PATCH /tenants` (admins only) updates the company name and/or the payroll on/off
+  switch. The payroll switch genuinely controls whether the Payroll screen and its
+  backend actions are available. The company code is permanent and cannot be edited.
 
 ### app/seed.py  (puts the demo data in)
 Creates two demo companies and their org trees so you can log in and so the

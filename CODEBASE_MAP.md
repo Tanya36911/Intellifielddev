@@ -174,11 +174,55 @@ New files: `apps/admin/src/pages/Hierarchy/` (`Hierarchy.tsx`, `useHierarchy.ts`
 (shown as greyed "soon" labels on screen): coverage mode (managers/reps overlay),
 adding/renaming/deleting nodes, bulk import, and export.
 
-With W6 and W7 shipped, **all the Admin web screens in the roadmap are complete**:
-W1 (dashboard + shell), W3 (catalog), W4 (surveys), W5 (responses), W6 (payroll),
-and W7 (hierarchy). The current green baseline is 198 backend tests + 196 frontend
-tests, build clean. What is next per the roadmap: the Manager web app and/or
-Phase 5 (the Field mobile app + offline sync).
+As of the Users & Roles screen, the Admin "Users & Roles" sidebar item at `/users`
+is a real screen (`apps/admin/src/pages/Users/`) instead of the old "coming soon"
+placeholder. It has a **People** tab (three role-count cards for Admin / Manager /
+Rep, a plain-language banner that "a role is what a person can do, their pin is where
+they can do it", and a team table of name, email, role, and the org-tree spot each
+person is pinned to with a sentence explaining what that pin lets them see) and a
+**Roles** tab (a read-only capability matrix of Full / Scoped / None per role).
+Admins can add a person (name, email, role, which node to pin to, and a starting
+password the admin sets), change a person's role in the table, and move or remove a
+pin; managers and reps see it read-only (the same pattern as the Catalog). A small
+new backend brick powers it, with no database change (the people, pin, and company
+tables all already existed): a new `api/app/users.py` router with `GET /users` (the
+team list, branch-scoped through the same scope-follows-pin guard, so a pinned person
+shows up when pinned at or under your spot, people with no pin show only to a caller
+at the company root, and a caller with no pin sees nobody), admin-only `POST /users`
+(add a person and pin them in one step, the password stored only as a scrambled
+one-way Argon2 hash, a duplicate email refused with a 409, a node outside your branch
+refused with a 404), and admin-only `PATCH /users/{id}` (change a role and/or
+move-or-remove the pin, with a "you cannot remove the last admin" safety guard). The
+pin is one row in the existing `assignments` table. Deliberately deferred and noted
+honestly: real emailed invite links (needs an email system; for now the admin sets a
+starting password), enable/disable a person (there is no status column yet),
+manager-scoped invites (admin-only for now), and custom roles.
+
+As of the Settings screen, the Admin "Settings" sidebar item at `/settings` is a real
+screen (`apps/admin/src/pages/Settings/`) instead of the old "coming soon"
+placeholder. Two things are real and saved in this first version: the **company name**
+(editable) and a **payroll on/off switch** that genuinely controls whether the Payroll
+screen and its backend actions are available. Five more panels are shown honestly as
+"coming soon" rather than faked: pay-period defaults, work model, store chain logos,
+the audit log, and data & security. Managers and reps see the screen read-only. A
+small new backend brick powers it, again with no database change (the company table
+already had the name, code, and payroll switch): a new `api/app/tenants.py` router with
+`GET /tenants` (this company's settings, readable by any signed-in person) and
+admin-only `PATCH /tenants` (update the name and/or the payroll switch). The company
+code is permanent and cannot be edited. Deferred (the honest "coming soon" panels): the
+pay-period defaults, work model, store logos, a unified company audit feed, and the
+data & security panel. Both new routers (`users.py` and `tenants.py`) are registered in
+`api/app/main.py`, and the shared scope guard in `api/app/scope.py` gained a users
+section (list / get / create / update_user) and a tenant section (get / update_tenant)
+plus a `LastAdminError`.
+
+With the Users & Roles and Settings screens shipped, **all the Admin web sidebar
+screens are complete**: W1 (dashboard + shell), W3 (catalog), W4 (surveys), W5
+(responses), W6 (payroll), W7 (hierarchy), plus Users & Roles and Settings. The
+current green baseline is 230 backend tests + 213 frontend tests, build clean. What is
+next per the roadmap: the setup wizard (it needs the Users brick just built plus
+on-screen hierarchy editing, meaning node add/rename/delete endpoints), then the
+Manager web app and Phase 5 (the Field mobile app + offline sync).
 
 As of W5 (the responses sub-feature inside the Surveys screen), the Surveys list
 now shows a response count badge on each survey row, and clicking it opens two
@@ -233,7 +277,7 @@ On the frontend (`apps/admin/src/pages/Surveys/`):
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W7 it has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, and the Hierarchy screen wired to `/nodes` and `/org-levels`, on top of the login screen. All Admin web screens are now complete. Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. It has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, the Hierarchy screen wired to `/nodes` and `/org-levels`, the Users & Roles screen wired to `/users`, and the Settings screen wired to `/tenants`, on top of the login screen. All Admin web sidebar screens are now complete. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |

@@ -7,13 +7,17 @@ backend waiter; it never touches the database directly.
 
 It has a working **login screen**, the **app shell** (the persistent left sidebar
 and a per-page top bar that frame every screen), a small shared **UI kit**
-(reusable building blocks like buttons and cards), and six real screens: the
+(reusable building blocks like buttons and cards), and the real screens: the
 **Analytics dashboard** (the landing screen at `/`), the **Catalog** (the
 company's product list at `/catalog`), the **Surveys** area (build, publish, and
 assign checklists at `/surveys`), the **Payroll** screen (pay periods, hours
-table, approve/seal/reopen, audit log, CSV download at `/payroll`), and the
+table, approve/seal/reopen, audit log, CSV download at `/payroll`), the
 **Hierarchy** screen (the org tree, expand/collapse, store detail panel at
-`/hierarchy`). All Admin web screens are now complete.
+`/hierarchy`), the **Users & Roles** screen (the team list, role-count cards, a
+capability matrix, and admin-only add-a-person / change-a-role / move-a-pin at
+`/users`), and the **Settings** screen (the company name and a payroll on/off
+switch, the rest shown as "coming soon", at `/settings`). All Admin web sidebar
+screens are now complete.
 
 To see it: `pnpm dev:admin`, then open the address it prints (usually
 http://localhost:5173). To run its automated checks: `pnpm test:admin`.
@@ -279,6 +283,55 @@ All of the kit is checked together by `ui/ui.test.tsx`.
   `StoreDetailModal.tsx`, plus tests and CSS. Deferred (shown as greyed "soon"):
   coverage mode (managers/reps overlay), add/rename/delete nodes, bulk import,
   export.
+- `pages/Users/`: the Users & Roles screen, at `/users`. A People tab with three
+  role-count cards (Admin / Manager / Rep), a plain-language banner ("a role is what
+  a person can do, their pin is where they can do it"), and a team table; a Roles tab
+  with a read-only capability matrix (Full / Scoped / None per role). Admins can add
+  a person, change a role in the table, and move or remove a pin; managers and reps
+  see it read-only. Backed by the new `GET /users` (branch-scoped team list),
+  admin-only `POST /users` (add and pin a person), and admin-only `PATCH /users/{id}`
+  (change role and/or move-or-remove the pin) endpoints. The folder contains:
+  - `Users.tsx` + `Users.module.css`: the screen itself. Reads who is signed in,
+    shows the two tabs (People and Roles), the role-count cards, the banner, and the
+    team table, and (for admins) the Add-user button.
+  - `useUsers.ts`: the data layer. Fetches the team list from the backend (`/users`)
+    and the org nodes (`/nodes`), and holds the add-user, change-role, and move-pin
+    write calls plus the small pure helpers (such as the role counts).
+  - `pinOptions.ts`: builds the list of org-tree spots an admin can pin a person to,
+    turning the raw node list into a tidy indented set of choices.
+  - `RolesReference.tsx`: the Roles tab, the read-only capability matrix showing
+    what each role (Admin / Manager / Rep) can do (Full / Scoped / None).
+  - `AddUserModal.tsx`: the add-a-person pop-up form (name, email, role, which node
+    to pin to, and a starting password the admin sets). Refuses a duplicate email and
+    an out-of-branch node with the backend's message.
+  - `MovePinModal.tsx`: the pop-up that moves a person to a different org spot or
+    removes their pin entirely.
+  - `UserTable.tsx`: the team table (one row per person: name, email, role, and the
+    pinned spot with a sentence explaining what that pin lets them see).
+  - `RoleSelect.tsx`: the small inline dropdown in a table row that lets an admin
+    change a person's role on the spot.
+  (Each `.tsx` above has its own `.module.css`, and each is checked by a matching
+  test file.) Deferred and noted honestly: real emailed invite links (for now the
+  admin sets a starting password), enable/disable a person (no status column yet),
+  manager-scoped invites (admin-only for now), and custom roles.
+- `pages/Settings/`: the Settings screen, at `/settings`. The company name and a
+  payroll on/off switch are real and saved (the switch genuinely turns the Payroll
+  screen and its backend actions on or off); five more panels are shown honestly as
+  "coming soon". Managers and reps see it read-only. Backed by the new `GET /tenants`
+  (read this company's settings) and admin-only `PATCH /tenants` (edit the name and/or
+  the payroll switch) endpoints. The folder contains:
+  - `Settings.tsx` + `Settings.module.css`: the screen itself, which lays out the
+    company panel, the payroll panel, and the coming-soon panels, and reads who is
+    signed in to decide editable vs read-only.
+  - `useSettings.ts`: the data layer. Fetches this company's settings from the
+    backend (`/tenants`) and holds the save call (`PATCH /tenants`).
+  - `CompanyPanel.tsx`: the editable company-name panel (the company code is shown
+    but cannot be edited).
+  - `PayrollPanel.tsx`: the payroll on/off switch panel.
+  - `ComingSoonPanel.tsx`: the reusable panel that honestly marks a not-yet-built
+    setting (pay-period defaults, work model, store chain logos, audit log, data &
+    security) as "coming soon".
+  (Each panel has its own `.module.css` and a matching test file.)
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
   for any menu items whose screens we have not built yet.
 A `.module.css` file is styling that applies ONLY to its own screen, so two

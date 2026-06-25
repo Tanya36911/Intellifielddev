@@ -132,10 +132,46 @@ and `api/app/scope.py` with a test). New files in
 `apps/admin/src/pages/Hierarchy/`. Deferred (shown as greyed "soon"): coverage
 mode, add/rename/delete nodes, bulk import, export.
 
-**The Admin web-screens track is now complete.** W1, W3, W4, W5, W6, and W7 are
-all shipped and green (198 backend tests + 196 frontend tests, build clean). The
-next tracks are the **Manager web app** (reuses the same backend, scoped to a
-manager's branch) and **Phase 5** (the Field mobile app + offline sync).
+**Users & Roles (DONE).** The Admin "Users & Roles" sidebar item at `/users` is
+now a real screen (was "coming soon"). A **People** tab (three role-count cards for
+Admin / Manager / Rep, a plain-language banner that "a role is what a person can do,
+their pin is where they can do it", and a team table of name, email, role, and the
+pinned org node with an inheritance sentence) and a **Roles** tab (a read-only
+capability matrix of Full / Scoped / None per role). Admins can add a person (name,
+email, role, which node to pin to, and a starting password the admin sets), change a
+role in the table, and move or remove a pin; managers and reps see it read-only.
+Backend brick (no migration; the users + assignments tables already existed):
+`GET /users` (the team list, branch-scoped through the existing scope-follows-pin
+guard: a pinned user is visible when pinned at or under the caller's node, unpinned
+users are visible only to a caller at the company root, an unpinned caller sees none),
+admin-only `POST /users` (add and pin, the password stored only as an Argon2 hash, a
+duplicate email is a 409, a node out of scope is a 404), and admin-only
+`PATCH /users/{id}` (change role and/or move-or-remove the pin, with a "cannot remove
+the last admin" guard); the pin is one row in the existing `assignments` table. New
+files in `apps/admin/src/pages/Users/`. Deferred and recorded honestly: real emailed
+invite links (needs an email system; v1 has the admin set a starting password),
+enable/disable a user (no status column yet), manager-scoped invites (admin-only in
+v1), and custom roles.
+
+**Settings (DONE).** The Admin "Settings" sidebar item at `/settings` is now a real
+screen (was "coming soon"). Real and saved in v1: the company name (editable) and a
+payroll on/off switch (it genuinely controls whether the Payroll screen and its
+backend actions are available). Shown honestly as "coming soon" (not faked):
+pay-period defaults, work model, store chain logos, the audit log, and data &
+security. Managers and reps see it read-only. Backend brick (no migration; the
+tenants table already had name, code, payroll_enabled): `GET /tenants` (this
+company's config, any signed-in user) and admin-only `PATCH /tenants` (update the
+name and/or payroll_enabled; the company code is permanent and not editable). New
+files in `apps/admin/src/pages/Settings/`. Deferred: pay-period defaults, work model,
+store logos, a unified company audit feed, and the data & security panel.
+
+**The Admin web-screens track is now complete.** W1, W3, W4, W5, W6, W7, plus Users
+& Roles and Settings are all shipped and green (230 backend tests + 213 frontend
+tests, build clean). The next step is the **setup wizard** (it needs the Users brick
+just built plus on-screen hierarchy editing, meaning node add/rename/delete
+endpoints), after which the larger tracks are the **Manager web app** (reuses the
+same backend, scoped to a manager's branch) and **Phase 5** (the Field mobile app +
+offline sync).
 
 ## Small backend bricks to slot in just-in-time
 
@@ -143,12 +179,21 @@ A few screens need a small, quick backend addition first (each one is the same
 proven pattern as every backend phase so far, a migration plus a few endpoints
 plus tests). We add each only when its screen comes up, so we are never blocked:
 
-- **Users / team screen** needs a list-and-invite endpoint (`GET /users`,
-  `POST /users`).
-- **Settings screen** (payroll on/off, cutoff) needs a read/update company-config
-  endpoint (`GET` / `PATCH /tenants`).
+- **Users / team screen** needed a list-and-invite endpoint (`GET /users`,
+  `POST /users`). **BUILT** (2026-06-25): `GET /users` (branch-scoped team list),
+  admin-only `POST /users` (add and pin a person, the password stored as an Argon2
+  hash), and admin-only `PATCH /users/{id}` (change role and/or move-or-remove the
+  pin, with a "cannot remove the last admin" guard), all in `api/app/users.py`
+  (registered in `main.py`), with the scope work in `api/app/scope.py` and tests in
+  `api/tests/test_users.py`. No migration was needed.
+- **Settings screen** (payroll on/off, cutoff) needed a read/update company-config
+  endpoint (`GET` / `PATCH /tenants`). **BUILT** (2026-06-25): `GET /tenants` (this
+  company's config, any signed-in user) and admin-only `PATCH /tenants` (update the
+  name and/or the payroll switch; the company code is permanent), in
+  `api/app/tenants.py` (registered in `main.py`), with the scope work in
+  `api/app/scope.py` and tests in `api/tests/test_tenants.py`. No migration was needed.
 - **Editing the org tree** (add, rename, move a store) needs node add/edit
-  endpoints.
+  endpoints. **Still to build** (this is the brick the setup wizard waits on, next).
 - **Shelf photos** in responses need object storage, which is **5-BE-c** in the
   Field track.
 

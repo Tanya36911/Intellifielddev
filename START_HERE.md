@@ -191,13 +191,49 @@ level names, tenant-scoped). New files in apps/admin/src/pages/Hierarchy/.
 Deferred (greyed "soon" on screen): coverage mode, add/rename/delete nodes, bulk
 import, export.
 
-**The six demo-order Admin screens are DONE** (W1 dashboard, W3 catalog, W4 surveys,
-W5 responses, W6 payroll, W7 hierarchy). Current green baseline: 198 backend tests
-+ 196 frontend tests, build clean. Still to build in the Admin app: **Users & Roles**
-and **Settings** (the two remaining sidebar items, each needs a small backend brick
-first, GET/POST /users and GET/PATCH /tenants), then the **setup wizard**. What is
-next: build Users & Roles + Settings. The **Manager web app** and **Phase 5** (the
-Field mobile app + offline sync) are the larger tracks after that.
+**Users & Roles screen DONE:** the Admin "Users & Roles" sidebar item at `/users`
+is now a real screen (was "coming soon"). It has two tabs. The **People** tab shows
+three role-count cards (Admin / Manager / Rep), a plain-language banner ("a role is
+what a person can do, their pin is where they can do it"), and a team table (name,
+email, role, and the spot on the org tree they are pinned to, with a sentence
+explaining what that pin lets them see). The **Roles** tab shows a read-only
+capability matrix (Full / Scoped / None for each role). Admins can add a person
+(name, email, role, which org node to pin them to, and a starting password the admin
+sets), change someone's role right in the table, and move or remove a pin. Managers
+and reps see the screen read-only (the same pattern as the Catalog). The new backend
+brick (no database change, the people and pin tables already existed): `GET /users`
+returns the team list, branch-scoped by the same "see only your branch" rule (a
+pinned person shows up when they are pinned at or under your spot; people with no pin
+show only to someone at the company root; a caller with no pin sees nobody),
+admin-only `POST /users` adds a person and pins them (the password is stored only as
+a scrambled one-way hash, a duplicate email is refused, a node outside your branch is
+refused), and admin-only `PATCH /users/{id}` changes a role and/or moves-or-removes a
+pin (with a "you cannot remove the last admin" safety guard). New files in
+`apps/admin/src/pages/Users/`. Deferred, recorded honestly: real emailed invite links
+(needs an email system; for now the admin sets a starting password), enable/disable a
+person (there is no status column yet), manager-scoped invites (admin-only for now),
+and custom roles.
+
+**Settings screen DONE:** the Admin "Settings" sidebar item at `/settings` is now a
+real screen (was "coming soon"). Two things are real and saved in this first version:
+the **company name** (editable) and a **payroll on/off switch** (it genuinely
+controls whether the Payroll screen and its backend actions are available). Five more
+panels are shown honestly as "coming soon" (not faked): pay-period defaults, work
+model, store chain logos, the audit log, and data & security. Managers and reps see
+the screen read-only. The new backend brick (no database change, the company table
+already had the name, code, and payroll switch): `GET /tenants` returns this
+company's settings (any signed-in person can read), and admin-only `PATCH /tenants`
+updates the name and/or the payroll switch. The company code is permanent and cannot
+be edited. New files in `apps/admin/src/pages/Settings/`. Deferred (the honest
+"coming soon" panels above) the pay-period defaults, work model, store logos, a
+unified company audit feed, and the data & security panel.
+
+**ALL the Admin sidebar screens are now DONE** (W1 dashboard, W3 catalog, W4 surveys,
+W5 responses, W6 payroll, W7 hierarchy, plus Users & Roles and Settings). Current
+green baseline: 230 backend tests + 213 frontend tests, build clean. What is next:
+the **setup wizard** (it needs the Users brick we just built plus on-screen hierarchy
+editing, meaning add/rename/delete-node endpoints). The **Manager web app** and
+**Phase 5** (the Field mobile app + offline sync) are the larger tracks after that.
 
 ---
 
@@ -297,6 +333,8 @@ intelli-app/
 │   │   ├── analytics.py  Read-only reports (compliance, out-of-stock, trend)
 │   │   ├── payroll.py   Pay periods, hours, the seal/reopen lock, audit log
 │   │   ├── exports.py   Data exports (responses, payroll, compliance) as CSV or JSON (Phase 4d)
+│   │   ├── users.py     GET/POST /users + PATCH /users/{id} (the team list, add a person, change role/pin)
+│   │   ├── tenants.py   GET/PATCH /tenants (this company's settings: name + payroll on/off switch)
 │   │   └── seed.py      Creates the demo companies, tree, users, products, surveys, responses
 │   └── tests/           Backend test robot (pytest), incl. the isolation gate
 │
@@ -347,22 +385,26 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > Where we are: the whole backend is done (Phases 0-4d: login, org hierarchy +
 > the scope-follows-pin guard, catalog, surveys with frozen versions, responses
 > with live pass/fail, analytics, payroll, export), plus Phase 5-BE-a (idempotency
-> keys). We then pivoted to screens-first (see ROADMAP.md). ALL ADMIN WEB SCREENS
-> ARE NOW COMPLETE: W1 (app shell + Analytics dashboard), W3 (Catalog at /catalog),
-> W4 (Surveys area at /surveys), W5 (Responses modals from Surveys), W6 (Payroll
-> screen at /payroll: pay-period selector, hours table, approve/reject, seal/reopen
-> with audit log, CSV download; frontend only, all backend endpoints existed),
-> W7 (Hierarchy screen at /hierarchy: read-only org tree, expand/collapse, search,
-> chain filter, store detail panel; plus the new small GET /org-levels endpoint,
-> tenant-scoped). Baseline is green: 198 backend tests + 196 frontend tests, build
-> clean. Everything is committed to main but NOT pushed yet (pushing auto-deploys to
-> the dev server, so ask me before pushing).
+> keys). We then pivoted to screens-first (see ROADMAP.md). ALL ADMIN WEB SIDEBAR
+> SCREENS ARE NOW COMPLETE: W1 (app shell + Analytics dashboard), W3 (Catalog at
+> /catalog), W4 (Surveys area at /surveys), W5 (Responses modals from Surveys), W6
+> (Payroll screen at /payroll: pay-period selector, hours table, approve/reject,
+> seal/reopen with audit log, CSV download; frontend only, all backend endpoints
+> existed), W7 (Hierarchy screen at /hierarchy: read-only org tree, expand/collapse,
+> search, chain filter, store detail panel; plus the new small GET /org-levels
+> endpoint, tenant-scoped), Users & Roles (at /users: People tab with role-count
+> cards and a team table, Roles tab with a read-only capability matrix; admins can
+> add a person, change a role, and move or remove a pin; new GET /users + admin-only
+> POST /users + PATCH /users/{id}, no migration), and Settings (at /settings: the
+> company name and a real payroll on/off switch are editable and saved, the rest
+> shown honestly as "coming soon"; new GET /tenants + admin-only PATCH /tenants, no
+> migration). Baseline is green: 230 backend tests + 213 frontend tests, build clean.
+> Everything is committed to main but NOT pushed yet (pushing auto-deploys to the dev
+> server, so ask me before pushing).
 >
-> What's next: the two remaining Admin sidebar screens, Users & Roles and Settings
-> (both currently coming-soon), unless I say otherwise. Each needs a small backend
-> brick first (Users: GET/POST /users; Settings: GET/PATCH /tenants), then the
-> screen. After those, the setup wizard (needs the Users brick + on-screen hierarchy
-> editing), then the Manager web app and Phase 5 (the Field mobile app + offline sync).
+> What's next: the setup wizard, unless I say otherwise. It needs the Users brick we
+> just built plus on-screen hierarchy editing (node add/rename/delete endpoints).
+> After that, the Manager web app and Phase 5 (the Field mobile app + offline sync).
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser
@@ -428,15 +470,31 @@ project memory, so a new chat in this folder already knows them.)
   panel. Backed by GET /nodes plus the new GET /org-levels endpoint
   (tenant-scoped level names, added to api/app/hierarchy.py + api/app/scope.py
   with a test). New files in apps/admin/src/pages/Hierarchy/.
-- **The six demo-order Admin screens are DONE** (W1, W3, W4, W5, W6, W7). Current
-  green baseline: 198 backend tests + 196 frontend tests, build clean. Still to build
-  in the Admin app: Users & Roles and Settings (the two remaining sidebar items),
-  then the setup wizard.
-- **NEXT (see [ROADMAP.md](ROADMAP.md)): Users & Roles and Settings.** Each needs a
-  small backend brick first (Users: GET/POST /users; Settings: GET/PATCH /tenants),
-  then the screen. After those: the setup wizard (needs the Users brick + on-screen
-  hierarchy editing, i.e. node-write endpoints), then the Manager web app and Phase 5
-  (the Field mobile app + offline sync).
+- Users & Roles (the Admin team screen): DONE. A real screen at /users (was "coming
+  soon"). A People tab with three role-count cards (Admin / Manager / Rep), a
+  plain-language banner, and a team table (name, email, role, pinned spot). A Roles
+  tab with a read-only capability matrix. Admins can add a person (name, email, role,
+  pin, and a starting password), change a role in the table, and move or remove a
+  pin; managers and reps see it read-only. New backend brick (no migration): GET
+  /users (branch-scoped team list), admin-only POST /users (add + pin, password
+  stored as a one-way hash, duplicate email refused, out-of-branch node refused), and
+  admin-only PATCH /users/{id} (change role and/or move-or-remove pin, with a "cannot
+  remove the last admin" guard). New files in apps/admin/src/pages/Users/. Deferred:
+  emailed invite links, enable/disable a person, manager-scoped invites, custom roles.
+- Settings (the Admin company-settings screen): DONE. A real screen at /settings (was
+  "coming soon"). The company name and a payroll on/off switch are real and saved (the
+  switch genuinely turns the Payroll screen and its backend on or off); five more
+  panels (pay-period defaults, work model, store chain logos, audit log, data &
+  security) are shown honestly as "coming soon". Managers and reps see it read-only.
+  New backend brick (no migration): GET /tenants (read this company's settings) and
+  admin-only PATCH /tenants (edit the name and/or the payroll switch; the company code
+  is permanent). New files in apps/admin/src/pages/Settings/.
+- **ALL the Admin sidebar screens are DONE** (W1, W3, W4, W5, W6, W7, plus Users &
+  Roles and Settings). Current green baseline: 230 backend tests + 213 frontend tests,
+  build clean.
+- **NEXT (see [ROADMAP.md](ROADMAP.md)): the setup wizard.** It needs the Users brick
+  we just built plus on-screen hierarchy editing (node add/rename/delete endpoints).
+  After that: the Manager web app and Phase 5 (the Field mobile app + offline sync).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password
