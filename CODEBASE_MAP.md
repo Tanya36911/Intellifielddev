@@ -140,6 +140,46 @@ per store; drag-and-drop reorder, the version-diff panel, the phone preview, the
 pre-assign store-count estimate, and survey templates are deferred. 104 frontend
 automated checks, all green. Backend: 192 tests (190 prior plus 2 new), all green.
 
+As of W6 (the Payroll screen), the Admin app has a new **Payroll** sidebar item
+at `/payroll`. You pick a pay period from a dropdown, and the screen shows a table
+of every rep's hours for that period (store time, reset time, drive time, miles,
+and approval status). Managers can approve or reject individual entries. Admins
+can **seal** the period, which locks every entry; after sealing the screen shows a
+padlock icon and a per-rep Reopen button. To reopen one rep's entry an admin must
+type a reason, which is written into a permanent **audit log**. A **Download CSV**
+button calls the existing export endpoint. Role-gating is strict: reps are
+redirected away from this screen entirely (no view at all), managers can approve,
+and only admins can seal, reopen, and read the audit log. If a company has payroll
+switched off, the screen shows a graceful "payroll not enabled" message instead of
+a table. The screen is purely a frontend addition: all the backend endpoints it
+calls (`/pay-periods`, `/time-entries` plus approve/reject/seal/reopen, `/audit`,
+and `/export/payroll`) already existed from Phase 4c/4d. New files:
+`apps/admin/src/pages/Payroll/` (`Payroll.tsx`, `usePayroll.ts`,
+`ReopenModal.tsx`, plus tests and CSS). Deliberately deferred: per-rep hour
+drill-in and inline editing.
+
+As of W7 (the Hierarchy screen), the Admin "Hierarchy" sidebar item at `/hierarchy`
+is now a real screen instead of the old "coming soon" placeholder. It shows the
+company's org tree in a read-only, expand/collapse view. Each row has a colour dot
+and the level name (Region, District, or Store, from the company's own level
+definitions), a chain badge on stores, the store code, and child counts. A search
+box filters the tree by name or code. A chain filter narrows by chain. Clicking a
+store opens a detail panel showing the store's full management path and its
+attributes. The tree itself is powered by the existing `GET /nodes` endpoint. A
+small new read-only endpoint was also added: `GET /org-levels`, which returns the
+company's level names (like Region, District, Store) scoped to the caller's
+tenant. It lives in `api/app/hierarchy.py` and `api/app/scope.py`, with a test.
+New files: `apps/admin/src/pages/Hierarchy/` (`Hierarchy.tsx`, `useHierarchy.ts`,
+`TreeNode.tsx`, `StoreDetailModal.tsx`, plus tests and CSS). Deliberately deferred
+(shown as greyed "soon" labels on screen): coverage mode (managers/reps overlay),
+adding/renaming/deleting nodes, bulk import, and export.
+
+With W6 and W7 shipped, **all the Admin web screens in the roadmap are complete**:
+W1 (dashboard + shell), W3 (catalog), W4 (surveys), W5 (responses), W6 (payroll),
+and W7 (hierarchy). The current green baseline is 198 backend tests + 196 frontend
+tests, build clean. What is next per the roadmap: the Manager web app and/or
+Phase 5 (the Field mobile app + offline sync).
+
 As of W5 (the responses sub-feature inside the Surveys screen), the Surveys list
 now shows a response count badge on each survey row, and clicking it opens two
 layered pop-ups: a list of all submitted responses for that survey, and a detail
@@ -193,7 +233,7 @@ On the frontend (`apps/admin/src/pages/Surveys/`):
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W4 it has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, and the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, on top of the login screen. Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. As of W7 it has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, and the Hierarchy screen wired to `/nodes` and `/org-levels`, on top of the login screen. All Admin web screens are now complete. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |

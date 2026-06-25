@@ -41,7 +41,8 @@ fast-follow, never the headline.
   - [x] **W1** app shell + Analytics dashboard (the old W2 analytics is folded into
     W1: the shell ships with the real dashboard as its first screen, not a stub Home);
     [x] **W3** catalog; [x] **W4** survey builder + assignments; [x] **W5** responses
-    + detail; [ ] **W6** payroll (next); [ ] **W7** org hierarchy (view).
+    + detail; [x] **W6** payroll; [x] **W7** org hierarchy (view).
+  - ALL ADMIN WEB SCREENS COMPLETE as of 2026-06-25.
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
   first. Split into a backend sync-contract track and a mobile track.
@@ -299,6 +300,34 @@ fast-follow, never the headline.
   0%/empty look). Reviewed by two 3-reviewer adversarial passes (spec, then code). Gate GREEN: 190
   backend tests + 54 frontend checks, tsc + vite build clean. Numbers appear on screen only after a
   fresh seed (the dev DB must be reseeded; the seed is idempotent so it will not overwrite old rows).
+- 2026-06-25: W7 COMPLETE - the Hierarchy screen. The Admin "Hierarchy" sidebar
+  item at /hierarchy is now a real screen (was a "coming soon" placeholder). It
+  shows the company's org tree in a read-only expand/collapse view. Each row has a
+  colour dot, the level name (Region/District/Store), a chain badge on stores, the
+  store code, and child counts. A search box and a chain filter narrow the tree.
+  Clicking a store opens a detail panel with the store's full management path and
+  attributes. Backed by the existing GET /nodes plus a new small read-only endpoint
+  GET /org-levels (returns the company's level names, tenant-scoped; added to
+  api/app/hierarchy.py and api/app/scope.py with a test). New files in
+  apps/admin/src/pages/Hierarchy/: Hierarchy.tsx, useHierarchy.ts, TreeNode.tsx,
+  StoreDetailModal.tsx, plus tests and CSS. Deferred (greyed "soon"): coverage mode
+  (managers/reps overlay), add/rename/delete nodes, bulk import, export. Gate GREEN:
+  198 backend tests + 196 frontend tests, build clean. ALL ADMIN WEB SCREENS NOW
+  COMPLETE (W1, W3, W4, W5, W6, W7). Next tracks: Manager web app and/or Phase 5
+  (Field mobile app + offline sync).
+- 2026-06-25: W6 COMPLETE - the Payroll screen. A new Admin sidebar item at
+  /payroll. Select a pay period; an hours table shows each rep's store/reset/drive
+  minutes, miles, and approval status. Managers can approve or reject individual
+  entries. Admins can SEAL the period (locks all entries; the screen then shows a
+  padlock and a per-rep Reopen button). To reopen one rep an admin must type a
+  reason, which is written to the permanent audit log. A Download CSV button exports
+  the period. Role-gating is strict: reps are redirected away entirely (no view),
+  managers approve, admins seal/reopen/read-audit. If a company has payroll switched
+  off the screen shows a graceful "payroll not enabled" state. Frontend-only addition:
+  all backend endpoints already existed (/pay-periods, /time-entries +
+  approve/reject/seal/reopen, /audit, /export/payroll from Phase 4c/4d). New files
+  in apps/admin/src/pages/Payroll/: Payroll.tsx, usePayroll.ts, ReopenModal.tsx,
+  plus tests and CSS. Deferred: per-rep hour drill-in, inline editing.
 - 2026-06-25: W5 COMPLETE - the Responses feature (list + detail). Responses are NOT a sidebar item
   (prototype parity): they open as modals from the Surveys screen (each survey row has a "N responses"
   button -> a per-survey responses list -> a single response's detail with the live verdict and the

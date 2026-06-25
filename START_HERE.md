@@ -162,15 +162,39 @@ reorder, version-diff panel, phone preview, pre-assign store-count estimate,
 survey templates, and the AI "describe it and draft a survey" feature (a later
 fast-follow).
 
-**What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we are
-building the **Admin web screens** over the backend that already exists, so
-stakeholders can finally see the product on a screen. W1 (the app shell + the
-Analytics dashboard), W3 (the Catalog), W4 (the Survey builder + assignments), and
-W5 (Responses, the list + detail that open from the Surveys screen) are all **done**
-(above). The next steps are the rest of the screens, in demo
-order: payroll, and the org tree. The rest of Phase 5 (the Field mobile
-app + offline sync) is **resequenced to after the web screens**, because it is the
-long, hard, last push.
+**W5 (Responses, list + detail) DONE:** Responses are NOT a sidebar item
+(prototype parity). They open as modals from the Surveys screen: each survey row
+has a "N responses" button that opens a per-survey responses list, which opens a
+single response's detail with the live verdict and the per-shade facings grid. One
+small read-only enrichment to the existing /responses endpoint; no new tables. 196
+backend checks + 133 frontend checks, green.
+
+**W6 (Payroll screen) DONE:** a new Admin sidebar item at `/payroll`. Select a pay
+period; a table shows each rep's store/reset/drive hours and miles, with approval
+status. Managers approve or reject individual entries. Admins seal the period
+(locks everything; the screen then shows a padlock and a per-rep Reopen button).
+Reopening one rep requires a typed reason, written to the permanent audit log.
+A Download CSV button exports the period. Role-gating is strict: reps are
+redirected away entirely, managers can approve, admins can seal/reopen/read-audit.
+If a company has payroll switched off the screen shows a graceful "payroll not
+enabled" message. Frontend only: all backend endpoints already existed (from Phase
+4c/4d). New files in apps/admin/src/pages/Payroll/. Deferred: per-rep hour
+drill-in, inline editing.
+
+**W7 (Hierarchy screen) DONE:** the Admin "Hierarchy" sidebar item at `/hierarchy`
+is now a real screen (was "coming soon"). A read-only org tree: expand/collapse, a
+colour dot and level name per row, a chain badge on stores, the store code, and
+child counts. A search box and chain filter narrow the view. Clicking a store opens
+a detail panel with its management path and attributes. Backed by the existing
+`GET /nodes` plus a new small read-only `GET /org-levels` endpoint (the company's
+level names, tenant-scoped). New files in apps/admin/src/pages/Hierarchy/.
+Deferred (greyed "soon" on screen): coverage mode, add/rename/delete nodes, bulk
+import, export.
+
+**ALL ADMIN WEB SCREENS ARE NOW COMPLETE** (W1 dashboard, W3 catalog, W4 surveys,
+W5 responses, W6 payroll, W7 hierarchy). Current green baseline: 198 backend tests
++ 196 frontend tests, build clean. What is next per the roadmap: the **Manager web
+app** and/or **Phase 5** (the Field mobile app + offline sync).
 
 ---
 
@@ -320,31 +344,22 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > Where we are: the whole backend is done (Phases 0-4d: login, org hierarchy +
 > the scope-follows-pin guard, catalog, surveys with frozen versions, responses
 > with live pass/fail, analytics, payroll, export), plus Phase 5-BE-a (idempotency
-> keys). We then pivoted to screens-first (see ROADMAP.md). W1 is DONE: the Admin
-> app shell (sidebar + top bar) plus the Analytics dashboard as the landing screen,
-> wired to a new branch-scoped GET /analytics/dashboard endpoint, with the demo
-> seed enriched. W3 is also DONE: the Catalog screen at /catalog, the company
-> product list in List and Gallery views with search, status filter, stat tiles,
-> and admin-only add/edit. W4 is also DONE: the Surveys area at /surveys, with a
-> by-hand builder (six question types, pass rules, per-product questions), publish
-> (freezes the version forever), and assign (point the published version at org
-> nodes with a deadline). Two additive backend changes only (no migration, no new
-> endpoint). W5 is also DONE: Responses (list + detail) that open as modals from the
-> Surveys screen (each survey row has a "N responses" button -> a per-survey list ->
-> a response detail with live pass/fail and the per-shade facings grid); responses
-> are NOT a sidebar item; one small read-only /responses enrichment, no new tables.
-> Baseline is green: 196 backend checks + 133 frontend checks, and the app builds.
-> Everything is committed to main but NOT pushed yet (pushing auto-deploys to the
-> dev server, so ask me before pushing).
+> keys). We then pivoted to screens-first (see ROADMAP.md). ALL ADMIN WEB SCREENS
+> ARE NOW COMPLETE: W1 (app shell + Analytics dashboard), W3 (Catalog at /catalog),
+> W4 (Surveys area at /surveys), W5 (Responses modals from Surveys), W6 (Payroll
+> screen at /payroll: pay-period selector, hours table, approve/reject, seal/reopen
+> with audit log, CSV download; frontend only, all backend endpoints existed),
+> W7 (Hierarchy screen at /hierarchy: read-only org tree, expand/collapse, search,
+> chain filter, store detail panel; plus the new small GET /org-levels endpoint,
+> tenant-scoped). Baseline is green: 198 backend tests + 196 frontend tests, build
+> clean. Everything is committed to main but NOT pushed yet (pushing auto-deploys to
+> the dev server, so ask me before pushing).
 >
-> What's next: W6, Payroll, per ROADMAP.md, unless I say otherwise. Open a pay
-> period, see logged hours, approve them, seal the period, read the audit log, with
-> a Download CSV. Backed by the existing /pay-periods, /time-entries (+ approve/
-> reject/seal/reopen), /audit, and /export/payroll endpoints (gated by a per-company
-> payroll switch). Port from ../hi-fi-intelli/project/apps/manager/screens/dm-payroll.jsx.
-> After W6 the plan order is W7 hierarchy (view); the setup wizard and on-screen
-> hierarchy editing are later and need small Users (GET/POST /users) and node-write
-> backend bricks first.
+> What's next: the Manager web app (reuses most Admin screens + the same backend,
+> scoped to a manager's branch) and/or Phase 5 (the Field mobile app + offline
+> sync), per ROADMAP.md, unless I say otherwise. On-screen hierarchy editing and the
+> setup wizard still need small backend bricks first (Users GET/POST /users;
+> node-write endpoints).
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser
@@ -394,15 +409,28 @@ project memory, so a new chat in this folder already knows them.)
   The list shows status chip, version chip, and Assigned indicator with three stat
   tiles. Two additive backend changes only (no migration, no new endpoint). 104
   frontend checks, green; 192 backend checks, green.
-- Phases 1, 2, 3a, 3b, 4a, 4b, 4c, and 4d complete (Phase 4 done), Phase 5's
-  first piece (5-BE-a idempotency keys), W1 (the Admin dashboard + shell), W3
-  (the Admin Catalog), and W4 (the Admin Surveys area). 104 frontend checks,
-  green; 192 backend checks, green.
-- **NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)): build the rest
-  of the Admin web screens over the existing backend, so stakeholders see results.**
-  W1 (shell + dashboard), W3 (Catalog), and W4 (Surveys) are done; next in order
-  are responses (W5), payroll (W6), and the org tree (W7). The Field mobile app +
-  offline sync (the rest of Phase 5) is resequenced to after the web screens.
+- W5 (the Admin Responses feature): DONE. Responses open as modals from the
+  Surveys screen (each survey row has a "N responses" button). One small read-only
+  enrichment to the existing /responses endpoint; no new tables. 196 backend
+  checks + 133 frontend checks, green.
+- W6 (the Admin Payroll screen): DONE. A new sidebar item at /payroll. Select a
+  pay period; see each rep's hours, approve or reject, seal the period, reopen one
+  rep with a typed reason (written to the audit log), and download CSV. Reps are
+  redirected away entirely; managers approve; admins seal/reopen/read-audit.
+  Frontend only: all backend endpoints already existed. New files in
+  apps/admin/src/pages/Payroll/.
+- W7 (the Admin Hierarchy screen): DONE. A real org-tree screen at /hierarchy
+  (was "coming soon"). Read-only expand/collapse tree: colour dot, level name,
+  chain badge, store code, child counts; search and chain filter; store detail
+  panel. Backed by GET /nodes plus the new GET /org-levels endpoint
+  (tenant-scoped level names, added to api/app/hierarchy.py + api/app/scope.py
+  with a test). New files in apps/admin/src/pages/Hierarchy/.
+- **ALL ADMIN WEB SCREENS ARE NOW COMPLETE** (W1, W3, W4, W5, W6, W7). Current
+  green baseline: 198 backend tests + 196 frontend tests, build clean.
+- **NEXT (see [ROADMAP.md](ROADMAP.md)): the Manager web app and/or Phase 5
+  (the Field mobile app + offline sync).** On-screen hierarchy editing and the
+  setup wizard still need small backend bricks first (Users GET/POST /users;
+  node-write endpoints).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

@@ -108,15 +108,34 @@ parity), they open as modals from the Surveys screen (each survey row shows a
 response's detail with the live verdict and the per-shade facings grid). Shelf
 photos shown as "coming soon" placeholders (plug in later with 5-BE-c).
 
-**W6: Payroll.** Open a pay period, see logged hours, approve them, seal the
-period, and read the audit log, with a Download (CSV) button. Backend:
-`/pay-periods`, `/time-entries` (+ approve/reject/seal/reopen), `/audit`,
-`/export/payroll` (all exist). After this: the operational payroll flow and the
-seal/reopen lock on screen.
+**W6: Payroll (DONE).** A new Admin sidebar item at `/payroll`. Select a pay
+period and see a table of every rep's hours (store/reset/drive minutes, miles,
+approval status). Managers approve or reject individual entries. Admins seal the
+period (locks all entries; the screen then shows a padlock and a per-rep Reopen
+button). Reopening one rep requires a typed reason, written to the permanent audit
+log. A Download CSV button exports the period. Role-gating: reps are redirected
+away entirely, managers approve, admins seal/reopen/read-audit. If payroll is
+switched off for the company the screen shows a graceful "payroll not enabled"
+state. Frontend-only: all backend endpoints already existed (`/pay-periods`,
+`/time-entries` + approve/reject/seal/reopen, `/audit`, `/export/payroll`). New
+files in `apps/admin/src/pages/Payroll/`. Deferred: per-rep hour drill-in, inline
+editing.
 
-**W7: The org hierarchy (view).** The org tree with drill into a store. Backend:
-`/nodes` (exists for viewing). After this: the company structure visualized.
-Editing the tree on screen needs a small backend addition (see below).
+**W7: The org hierarchy view (DONE).** The Admin "Hierarchy" sidebar item at
+`/hierarchy` is now a real screen. A read-only org tree: expand/collapse, a colour
+dot and the level name per row, a chain badge on stores, the store code, and child
+counts. A search box and a chain filter narrow the view. Clicking a store opens a
+detail panel with the store's management path and attributes. Backed by the
+existing `GET /nodes` plus a new small read-only `GET /org-levels` endpoint
+(returns the company's level names, tenant-scoped; added to `api/app/hierarchy.py`
+and `api/app/scope.py` with a test). New files in
+`apps/admin/src/pages/Hierarchy/`. Deferred (shown as greyed "soon"): coverage
+mode, add/rename/delete nodes, bulk import, export.
+
+**The Admin web-screens track is now complete.** W1, W3, W4, W5, W6, and W7 are
+all shipped and green (198 backend tests + 196 frontend tests, build clean). The
+next tracks are the **Manager web app** (reuses the same backend, scoped to a
+manager's branch) and **Phase 5** (the Field mobile app + offline sync).
 
 ## Small backend bricks to slot in just-in-time
 

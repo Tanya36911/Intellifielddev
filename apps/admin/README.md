@@ -5,12 +5,15 @@ browser. It is built with **React** (a tool for making web screens) and
 **Vite** (a tool that builds and serves those screens fast). It talks to the
 backend waiter; it never touches the database directly.
 
-So far it has a working **login screen**, the **app shell** (the persistent left
-sidebar and a per-page top bar that frame every screen), a small shared **UI kit**
-(reusable building blocks like buttons and cards), and three real screens: the
+It has a working **login screen**, the **app shell** (the persistent left sidebar
+and a per-page top bar that frame every screen), a small shared **UI kit**
+(reusable building blocks like buttons and cards), and six real screens: the
 **Analytics dashboard** (the landing screen at `/`), the **Catalog** (the
-company's product list at `/catalog`), and the **Surveys** area (build, publish,
-and assign checklists at `/surveys`). More Admin screens get added on top in later steps.
+company's product list at `/catalog`), the **Surveys** area (build, publish, and
+assign checklists at `/surveys`), the **Payroll** screen (pay periods, hours
+table, approve/seal/reopen, audit log, CSV download at `/payroll`), and the
+**Hierarchy** screen (the org tree, expand/collapse, store detail panel at
+`/hierarchy`). All Admin web screens are now complete.
 
 To see it: `pnpm dev:admin`, then open the address it prints (usually
 http://localhost:5173). To run its automated checks: `pnpm test:admin`.
@@ -250,8 +253,34 @@ All of the kit is checked together by `ui/ui.test.tsx`.
     number questions show a color-dot grid: green cell for pass, red cell for fail,
     with the count and a check or X icon. Photo questions show a placeholder.
     Checked by `ResponseDetailModal.test.tsx`.
+- `pages/Payroll/`: the Payroll screen, added in W6, at `/payroll`. Shows a pay
+  period selector and a table of each rep's hours (store/reset/drive minutes,
+  miles, approval status) for the selected period. Managers can approve or reject
+  individual entries. Admins can seal the period (locks all entries; a padlock icon
+  appears plus a per-rep Reopen button) or reopen one rep's entry by typing a
+  reason (written to the audit log). A Download CSV button exports the period.
+  Role-gating: reps are redirected away entirely, managers approve, admins
+  seal/reopen/read-audit. If a company has payroll switched off, the screen shows a
+  graceful "payroll not enabled" state. The screen calls the existing backend
+  endpoints: `/pay-periods`, `/time-entries` (plus approve/reject/seal/reopen),
+  `/audit`, and `/export/payroll`. No new backend endpoints were added. The folder
+  contains `Payroll.tsx`, `usePayroll.ts`, `ReopenModal.tsx`, plus tests and CSS.
+  Deferred: per-rep hour drill-in, inline editing.
+- `pages/Hierarchy/`: the Hierarchy screen, added in W7, at `/hierarchy`. Shows
+  the company's org tree in a read-only expand/collapse view. Each row has a colour
+  dot, the level name (Region/District/Store from the company's own level
+  definitions), a chain badge on stores, the store code, and child counts. A search
+  box filters by name or code; a chain filter narrows by chain. Clicking a store
+  opens a detail panel with the store's full management path and its attributes.
+  Backed by the existing `GET /nodes` endpoint plus a new small read-only
+  `GET /org-levels` endpoint (returns the company's level names, tenant-scoped;
+  added to `api/app/hierarchy.py` and `api/app/scope.py` with a test). The folder
+  contains `Hierarchy.tsx`, `useHierarchy.ts`, `TreeNode.tsx`,
+  `StoreDetailModal.tsx`, plus tests and CSS. Deferred (shown as greyed "soon"):
+  coverage mode (managers/reps overlay), add/rename/delete nodes, bulk import,
+  export.
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
-  for the menu items whose screens we have not built yet.
+  for any menu items whose screens we have not built yet.
 A `.module.css` file is styling that applies ONLY to its own screen, so two
 screens can use the same names without clashing.
 
