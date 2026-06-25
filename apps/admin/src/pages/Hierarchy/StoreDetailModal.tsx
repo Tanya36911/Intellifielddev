@@ -1,18 +1,5 @@
 import { Modal } from '../../ui'
-import { getAncestors, getLevelName, isLocked, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
-
-// Level dot colours
-const LEVEL_COLORS: Record<number, string> = {
-  0: '#1B4F8A',
-  1: '#0ea5e9',
-  2: '#16a34a',
-}
-const STORE_COLOR = '#d97706'
-
-function dotColor(level_order: number, locked: boolean): string {
-  if (locked) return STORE_COLOR
-  return LEVEL_COLORS[level_order] ?? '#71717a'
-}
+import { getAncestors, getLevelName, isLocked, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
 
 export default function StoreDetailModal({
   open,
@@ -46,7 +33,7 @@ export default function StoreDetailModal({
         {allInPath.map((n, i) => {
           const locked = isLocked(n.level_order, levels)
           const levelName = getLevelName(n.level_order, levels)
-          const color = dotColor(n.level_order, locked)
+          const color = levelColor(n.level_order, locked)
           const isStoreSelf = n.id === node.id
           return (
             <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 9, paddingLeft: i * 16, paddingTop: 4, paddingBottom: 4 }}>

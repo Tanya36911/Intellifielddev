@@ -137,6 +137,21 @@ export function filterNodes(nodes: OrgNode[], query: string, chain: string): Set
   return keep
 }
 
+// --- colour helpers ---
+
+const LEVEL_COLORS: Record<number, string> = {
+  0: '#1B4F8A',
+  1: '#0ea5e9',
+  2: '#16a34a',
+}
+const STORE_COLOR = '#d97706'
+
+/** Returns the dot colour for a node given its level order and locked status. */
+export function levelColor(level_order: number, locked: boolean): string {
+  if (locked) return STORE_COLOR
+  return LEVEL_COLORS[level_order] ?? '#71717a'
+}
+
 export function uniqueChains(nodes: OrgNode[]): string[] {
   const chains = new Set<string>()
   for (const n of nodes) {

@@ -1,19 +1,6 @@
 import { Icon } from '../../ui'
-import { getLevelName, isLocked, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
+import { getLevelName, isLocked, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
 import styles from './TreeNode.module.css'
-
-// Level dot colours matching the mockup palette
-const LEVEL_COLORS: Record<number, string> = {
-  0: '#1B4F8A',
-  1: '#0ea5e9',
-  2: '#16a34a',
-}
-const STORE_COLOR = '#d97706'
-
-function levelColor(level_order: number, locked: boolean): string {
-  if (locked) return STORE_COLOR
-  return LEVEL_COLORS[level_order] ?? '#71717a'
-}
 
 export default function TreeNode({
   id,
