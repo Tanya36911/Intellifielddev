@@ -53,6 +53,10 @@ class RepEntriesNotFoundError(Exception):
     """Tried to reopen a rep who has no entries in the pay period."""
 
 
+class LastAdminError(Exception):
+    """Tried to remove the company's only remaining admin."""
+
+
 class ScopedRepo:
     """The only object allowed to read scoped tables. tenant_id and scope_path
     are baked in; a scope_path of None means the caller sees nothing."""
@@ -152,6 +156,170 @@ class ScopedRepo:
                     ),
                     params,
                 ).mappings().first()
+        return dict(row) if row else None
+
+    # ----- users (company team; branch-scoped visibility; pin via assignments) -----
+
+    _USER_COLS = (
+        "u.id, u.name, u.email, u.role, "
+        "n.id as pinned_node_id, n.name as pinned_node_name, "
+        "n.level_order as pinned_node_level_order"
+    )
+
+    def _root_path(self, conn) -> str | None:
+        return conn.execute(
+            text("select path from nodes where tenant_id = cast(:tid as uuid) "
+                 "and level_order = 0"),
+            {"tid": str(self.tenant_id)},
+        ).scalar()
+
+    def list_users(self) -> list[dict]:
+        if self.scope_path is None:
+            return []
+        with engine.connect() as conn:
+            root = self._root_path(conn)
+            at_root = root is not None and self.scope_path == root
+            # A pinned user is visible when their node sits at/under the caller's
+            # scope. Unpinned users (no node) are visible only to a caller at the
+            # company root, so an admin can find and pin a new unpinned user while
+            # a branch manager does not see company-wide unpinned users.
+            unpinned_clause = "or (n.id is null)" if at_root else ""
+            rows = conn.execute(
+                text(
+                    f"select {self._USER_COLS} from users u "
+                    "left join assignments a on a.user_id = u.id and a.tenant_id = u.tenant_id "
+                    "left join nodes n on n.id = a.node_id "
+                    "where u.tenant_id = cast(:tid as uuid) and ("
+                    "  (n.path like :scope || '%') "
+                    f"  {unpinned_clause} "
+                    ") order by u.name"
+                ),
+                {"tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().all()
+        return [dict(r) for r in rows]
+
+    def get_user(self, user_id) -> dict | None:
+        """A single user in the GET shape, tenant-scoped (used after writes).
+        Not branch-filtered: the writes that call it already enforced scope."""
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    f"select {self._USER_COLS} from users u "
+                    "left join assignments a on a.user_id = u.id and a.tenant_id = u.tenant_id "
+                    "left join nodes n on n.id = a.node_id "
+                    "where u.id = cast(:uid as uuid) and u.tenant_id = cast(:tid as uuid)"
+                ),
+                {"uid": str(user_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+        return dict(row) if row else None
+
+    def create_user(self, name, email, role, password_hash, node_id=None) -> dict:
+        """Create a user and (optionally) pin them. Raises ValueError('node') if
+        node_id is out of the caller's scope/tenant. A duplicate email raises
+        IntegrityError (the router turns it into a 409)."""
+        with engine.begin() as conn:
+            if node_id is not None:
+                if self.scope_path is None:
+                    raise ValueError("node")
+                ok = conn.execute(
+                    text("select 1 from nodes where id = cast(:nid as uuid) "
+                         "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                    {"nid": str(node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+                ).first()
+                if ok is None:
+                    raise ValueError("node")
+            uid = conn.execute(
+                text("insert into users (tenant_id, name, email, role, password_hash) "
+                     "values (cast(:tid as uuid), :name, :email, :role, :ph) returning id"),
+                {"tid": str(self.tenant_id), "name": name, "email": email,
+                 "role": role, "ph": password_hash},
+            ).scalar()
+            if node_id is not None:
+                conn.execute(
+                    text("insert into assignments (tenant_id, user_id, node_id) "
+                         "values (cast(:tid as uuid), cast(:uid as uuid), cast(:nid as uuid))"),
+                    {"tid": str(self.tenant_id), "uid": str(uid), "nid": str(node_id)},
+                )
+        return self.get_user(uid)
+
+    def update_user(self, user_id, fields: dict) -> dict | None:
+        """Change a user's role and/or pin. fields may hold 'role' and/or
+        'node_id' (node_id None means unpin). Returns None if the user is not in
+        the caller's tenant. Raises LastAdminError / ValueError('node')."""
+        with engine.begin() as conn:
+            target = conn.execute(
+                text("select id, role from users where id = cast(:uid as uuid) "
+                     "and tenant_id = cast(:tid as uuid)"),
+                {"uid": str(user_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+            if target is None:
+                return None
+            if "role" in fields and fields["role"] != target["role"]:
+                if target["role"] == "admin" and fields["role"] != "admin":
+                    admins = conn.execute(
+                        text("select count(*) from users where tenant_id = cast(:tid as uuid) "
+                             "and role = 'admin'"),
+                        {"tid": str(self.tenant_id)},
+                    ).scalar()
+                    if admins <= 1:
+                        raise LastAdminError()
+                conn.execute(
+                    text("update users set role = :role where id = cast(:uid as uuid)"),
+                    {"role": fields["role"], "uid": str(user_id)},
+                )
+            if "node_id" in fields:
+                nid = fields["node_id"]
+                if nid is None:
+                    conn.execute(
+                        text("delete from assignments where user_id = cast(:uid as uuid) "
+                             "and tenant_id = cast(:tid as uuid)"),
+                        {"uid": str(user_id), "tid": str(self.tenant_id)},
+                    )
+                else:
+                    if self.scope_path is None:
+                        raise ValueError("node")
+                    ok = conn.execute(
+                        text("select 1 from nodes where id = cast(:nid as uuid) "
+                             "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                        {"nid": str(nid), "tid": str(self.tenant_id), "scope": self.scope_path},
+                    ).first()
+                    if ok is None:
+                        raise ValueError("node")
+                    conn.execute(
+                        text("insert into assignments (tenant_id, user_id, node_id) "
+                             "values (cast(:tid as uuid), cast(:uid as uuid), cast(:nid as uuid)) "
+                             "on conflict (tenant_id, user_id) do update set node_id = excluded.node_id"),
+                        {"tid": str(self.tenant_id), "uid": str(user_id), "nid": str(nid)},
+                    )
+        return self.get_user(user_id)
+
+    # ----- tenant config (this company only; tenant-scoped, not branch-scoped) -----
+
+    _TENANT_COLS = "id, name, code, payroll_enabled"
+
+    def get_tenant(self) -> dict | None:
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(f"select {self._TENANT_COLS} from tenants where id = cast(:tid as uuid)"),
+                {"tid": str(self.tenant_id)},
+            ).mappings().first()
+        return dict(row) if row else None
+
+    def update_tenant(self, fields: dict) -> dict | None:
+        """Update this company's config. Only name and payroll_enabled are
+        writable; any other key is ignored. Always scoped to self.tenant_id."""
+        allowed = {"name", "payroll_enabled"}
+        sets = {k: v for k, v in fields.items() if k in allowed}
+        if not sets:
+            return self.get_tenant()
+        clauses = ", ".join(f"{k} = :{k}" for k in sets)
+        params = {**sets, "tid": str(self.tenant_id)}
+        with engine.begin() as conn:
+            row = conn.execute(
+                text(f"update tenants set {clauses} where id = cast(:tid as uuid) "
+                     f"returning {self._TENANT_COLS}"),
+                params,
+            ).mappings().first()
         return dict(row) if row else None
 
     # ----- surveys (company-wide: filtered by tenant only) -----
