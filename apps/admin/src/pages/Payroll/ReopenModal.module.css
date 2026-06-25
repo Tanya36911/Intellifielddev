@@ -1,0 +1,52 @@
+.warnStrip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--amber-bg);
+  border-radius: var(--r-md);
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--amber-fg);
+  line-height: 1.5;
+}
+
+.warnStrip svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.reasonLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+
+.reasonInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  margin-bottom: 14px;
+}
+
+.reasonInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions > :first-child {
+  flex: 1;
+}
