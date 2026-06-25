@@ -99,6 +99,18 @@ describe('Hierarchy page', () => {
     expect(screen.getByText('CVS Palo Alto')).toBeTruthy()
   })
 
+  it('typing in search auto-expands ancestors so a deep store becomes visible without Expand all', async () => {
+    renderApp(<Hierarchy />, { session: adminSession() })
+    await screen.findByText('Lumen Beauty')
+    // Confirm the deep store is not yet visible (tree is collapsed)
+    expect(screen.queryByText('CVS Palo Alto')).toBeNull()
+    // Type the store name directly into the search box - no Expand all pressed
+    const searchInput = screen.getByPlaceholderText(/find a node/i)
+    fireEvent.change(searchInput, { target: { value: 'CVS Palo Alto' } })
+    // effectiveExpanded should auto-expand ancestors so the match becomes visible
+    await waitFor(() => expect(screen.getByText('CVS Palo Alto')).toBeTruthy())
+  })
+
   it('filters by chain select', async () => {
     renderApp(<Hierarchy />, { session: adminSession() })
     await screen.findByText('Lumen Beauty')
