@@ -7,6 +7,7 @@ import Builder from './pages/Surveys/Builder'
 import AssignPanel from './pages/Surveys/AssignPanel'
 import Payroll from './pages/Payroll/Payroll'
 import ComingSoon from './pages/ComingSoon'
+import Hierarchy from './pages/Hierarchy/Hierarchy'
 import Login from './pages/Login'
 import { selectSession, useAppSelector } from './store'
 
@@ -34,7 +35,7 @@ export default function App() {
         <Route path="/surveys/new" element={<Builder />} />
         <Route path="/surveys/:id/edit" element={<Builder />} />
         <Route path="/surveys/:id/assign" element={<AssignPanel />} />
-        <Route path="/hierarchy" element={<ComingSoon title="Hierarchy" />} />
+        <Route path="/hierarchy" element={<Hierarchy />} />
         <Route path="/users" element={<ComingSoon title="Users & Roles" />} />
         <Route path="/settings" element={<ComingSoon title="Settings" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
