@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Users &amp; Roles mockup</title>
+<style>
+/* ---- Tokens: same deep-ocean palette as W3/W5/W7 ---- */
+:root{
+  --accent:#1B4F8A; --accent-hover:#174274; --accent-fg:#fff; --accent-subtle:#e8edf3; --accent-ring:rgba(27,79,138,.16);
+  --bg:#fafafa; --bg-elev:#f4f4f5; --surface:#fff; --surface-2:#fafafa; --surface-hover:#f4f4f5;
+  --border:#e9e9ec; --border-strong:#dcdce0; --border-faint:#f1f1f3;
+  --text:#18181b; --text-2:#52525b; --text-3:#8a8a93; --text-4:#b4b4bb;
+  --green:#16a34a; --green-bg:#ecfdf3; --green-fg:#157f3c;
+  --amber:#d97706; --amber-bg:#fffaeb; --amber-fg:#b45309;
+  --red:#dc2626; --red-bg:#fef3f2; --red-fg:#b42318;
+  --violet:#7c3aed; --violet-bg:#f5f0ff; --violet-fg:#6d28d9;
+  --blue:#2563eb; --blue-bg:#eff4ff; --blue-fg:#1d4ed8;
+  --shadow-xs:0 1px 2px rgba(24,24,27,.04);
+  --shadow-pop:0 12px 40px rgba(24,24,27,.14),0 2px 8px rgba(24,24,27,.06);
+  --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-full:999px;
+  --sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sidebar-w:248px; --topbar-h:56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:var(--mono)} .mut{color:var(--text-3)}
+.hint{font-size:12.5px;color:var(--text-3);line-height:1.5}
+.label{font-size:12.5px;font-weight:600;color:var(--text-2)}
+
+/* ---- layout ---- */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.companycard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px}
+.companycard .sq{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#c9a0e0,#9b6bd1)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;font-size:13.5px;font-weight:600}
+.nav a.active{background:var(--accent-subtle);color:var(--accent)}
+.nav a svg{width:16px;height:16px;flex-shrink:0}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-4);padding:14px 10px 6px}
+.footprint{margin-top:auto;display:flex;gap:14px;padding:12px 10px;border-top:1px solid var(--border)}
+.footprint b{font-size:17px;font-weight:700;display:block}
+.footprint span{font-size:10.5px;color:var(--text-3)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:var(--topbar-h);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 22px}
+.topbar .ttl{font-size:15.5px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text-3)}
+.topbar .sp{flex:1}
+.page{padding:22px;max-width:1100px;width:100%;margin:0 auto}
+
+/* ---- segmented ---- */
+.segmented{display:inline-flex;background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px}
+.segmented button{border:none;background:transparent;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);padding:5px 12px;border-radius:var(--r-xs);cursor:pointer}
+.segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-xs)}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;height:36px;padding:0 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-hover)} .btn svg{width:15px;height:15px}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px;border-radius:var(--r-xs)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:var(--shadow-xs)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled,.btn.disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+.btn.icon{width:32px;padding:0;height:32px}
+
+/* ---- inputs ---- */
+.input{height:36px;padding:0 11px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:13.5px;font-family:inherit;outline:none;width:100%}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.input::placeholder{color:var(--text-4)}
+select.input{appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a8a93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+/* ---- card / chip ---- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xs)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:var(--r-full);font-size:11.5px;font-weight:600;background:var(--bg-elev);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.chip.green{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip.amber{background:var(--amber-bg);color:var(--amber-fg);border-color:transparent}
+.chip.violet{background:var(--violet-bg);color:var(--violet-fg);border-color:transparent}
+.chip.blue{background:var(--blue-bg);color:var(--blue-fg);border-color:transparent}
+.chip.green2{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+
+/* ---- role summary cards ---- */
+.rolecards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+
+/* ---- explainer banner ---- */
+.banner{display:flex;align-items:flex-start;gap:11px;padding:14px 16px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface);margin-bottom:16px}
+.banner .ic{width:30px;height:30px;border-radius:8px;background:var(--accent-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+
+/* ---- table ---- */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);padding:11px 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.tbl td{padding:13px 16px;border-bottom:1px solid var(--border-faint);font-size:13.5px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.avatar{width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+
+/* role chip dropdown */
+.rolesel{position:relative;display:inline-block}
+.rolebtn{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:var(--r-full);font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent}
+.rolebtn.violet{background:var(--violet-bg);color:var(--violet-fg)}
+.rolebtn.blue{background:var(--blue-bg);color:var(--blue-fg)}
+.rolebtn.green2{background:var(--green-bg);color:var(--green-fg)}
+.rolemenu{position:absolute;top:30px;left:0;z-index:40;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-pop);padding:5px;width:160px;display:none}
+.rolemenu.open{display:block}
+.rolemenu button{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border:none;background:transparent;border-radius:var(--r-xs);cursor:pointer;font-family:inherit}
+.rolemenu button:hover{background:var(--surface-hover)}
+
+.pincell{display:flex;align-items:center;gap:7px}
+.pinedit{font-size:11.5px;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:none}
+.pinedit:hover{text-decoration:underline}
+
+/* ---- capability matrix ---- */
+.capcell-full{display:inline-flex;align-items:center;gap:4px}
+.matrix-note{display:flex;align-items:center;gap:18px;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap;font-size:11.5px;color:var(--text-3)}
+
+/* dashed coming-soon */
+.soonrow{margin-top:16px;display:flex;align-items:center;gap:13px;padding:14px 16px;border:1px dashed var(--border-strong);border-radius:var(--r-lg);background:var(--surface-2)}
+.soonrow .ic{width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-3)}
+
+/* ---- modal ---- */
+.overlay{position:fixed;inset:0;background:rgba(9,9,12,.42);z-index:8000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);width:520px;max-width:100%;max-height:90vh;box-shadow:var(--shadow-pop);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.modalhead{padding:18px 22px;border-bottom:1px solid var(--border)}
+.modalbody{overflow-y:auto;padding:20px 22px}
+.modalfoot{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.rolepick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rolepick button{padding:10px 11px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);cursor:pointer;text-align:left;font-family:inherit}
+.rolepick button.sel{border-color:var(--accent);background:var(--accent-subtle)}
+.inheritbox{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--accent-subtle);border-radius:var(--r-md)}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#18181b;color:#fff;padding:11px 18px;border-radius:var(--r-full);font-size:13px;font-weight:600;box-shadow:var(--shadow-pop);opacity:0;pointer-events:none;transition:.25s;z-index:9000}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.callout{margin:18px auto 0;max-width:1100px;padding:0 22px 22px}
+.callout .box{background:#fffdf5;border:1px solid #f0e2b8;border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;color:#6b5a1f;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">I</div>
+      <div><div style="font-weight:800;font-size:15px">Intelli</div><div class="hint" style="font-size:10.5px">Field Execution</div></div>
+    </div>
+    <div class="companycard">
+      <div class="sq"></div>
+      <div><div style="font-weight:700;font-size:13px">Lumen Beauty</div><div class="hint" style="font-size:10.5px">Company</div></div>
+    </div>
+    <nav class="nav">
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>Analytics</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Surveys</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Catalog</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.9 2.5 2-1 2-2.5 2a2.5 2 0 0 1-2.5-1.5"/><path d="M12 6v1.5M12 16.5V18"/></svg>Payroll</a>
+      <div class="navgroup">Organization</div>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 2v4"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19a3.5 3.5 0 0 1 11 0"/><path d="M3 22h18"/></svg>Hierarchy</a>
+      <a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users &amp; Roles</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    </nav>
+    <div class="footprint">
+      <div><b>8</b><span>Nodes</span></div>
+      <div><b>3</b><span>Stores</span></div>
+      <div><b>2</b><span>Reps</span></div>
+    </div>
+  </aside>
+
+  <!-- main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="ttl">Users &amp; Roles</div>
+        <div class="sub">Lumen Beauty. 4 users: 1 admin, 1 manager, 2 reps.</div>
+      </div>
+      <div class="sp"></div>
+      <div class="segmented">
+        <button id="tabPeople" class="active" onclick="setTab('people')">People</button>
+        <button id="tabRoles" onclick="setTab('roles')">Roles</button>
+      </div>
+      <button id="inviteBtn" class="btn sm primary" onclick="openInvite()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add user
+      </button>
+    </div>
+
+    <div class="page">
+
+      <!-- ============ PEOPLE TAB ============ -->
+      <div id="peopleView">
+
+        <!-- role summary -->
+        <div class="rolecards">
+          <div class="card" style="padding:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span class="chip violet">Admin</span>
+              <span class="mono" style="font-size:18px;font-weight:700;margin-left:auto">1</span>
+            </div>
+            <div class="hint">Owns the company. Configures hierarchy, surveys, payroll, users.</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:var(--text-3)">Sees: everything in the company</div>
+          </div>
+          <div class="card" style="padding:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span class="chip blue">Manager</span>
+              <span class="mono" style="font-size:18px;font-weight:700;margin-left:auto">1</span>
+            </div>
+            <div class="hint">Oversees a branch. Assigns surveys, reviews compliance, approves payroll.</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:var(--text-3)">Sees: their node and everything below it</div>
+          </div>
+          <div class="card" style="padding:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span class="chip green2">Rep</span>
+              <span class="mono" style="font-size:18px;font-weight:700;margin-left:auto">2</span>
+            </div>
+            <div class="hint">Field user. Completes assigned surveys at their stores.</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:var(--text-3)">Sees: stores in their node only</div>
+          </div>
+        </div>
+
+        <!-- explainer -->
+        <div class="banner">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.55">
+            <strong style="color:var(--text)">A role is <em style="font-style:normal;color:var(--accent)">what</em> a person can do. Their pin is <em style="font-style:normal;color:var(--accent)">where</em> they can do it.</strong>
+            Pin someone to a node and they automatically see that node and everything beneath it, never a sibling branch and never another company. This is the same security rule the backend enforces on every request.
+          </div>
+        </div>
+
+        <!-- users table -->
+        <div class="card" style="overflow:visible">
+          <table class="tbl">
+            <thead><tr><th>User</th><th>Role</th><th>Pinned node &rarr; inherits</th><th>Status</th><th style="width:44px"></th></tr></thead>
+            <tbody id="userRows"></tbody>
+          </table>
+          <div style="padding:11px 16px;border-top:1px solid var(--border);display:flex;align-items:center">
+            <span class="hint">Showing all 4 users</span>
+            <span class="hint" style="margin-left:auto">1 Admin, 1 Manager, 2 Reps</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ ROLES TAB ============ -->
+      <div id="rolesView" style="display:none">
+        <div class="banner">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg></div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            Intelli has <strong style="color:var(--text)">three fixed roles</strong>. A role decides what someone can do; their pin decides where. An admin pins at the company root and sees everything. A manager pins at any branch and is scoped to it (including reps and managers pinned below them). A rep pins at the level above Store. This reference is read-only.
+          </div>
+        </div>
+
+        <div class="card" style="overflow:hidden">
+          <table class="tbl">
+            <thead><tr>
+              <th style="width:42%">Capability</th>
+              <th style="text-align:center"><span class="chip violet">Admin</span></th>
+              <th style="text-align:center"><span class="chip blue">Manager</span></th>
+              <th style="text-align:center"><span class="chip green2">Rep</span></th>
+            </tr></thead>
+            <tbody id="capRows"></tbody>
+          </table>
+          <div class="matrix-note">
+            <span style="display:flex;align-items:center;gap:6px"><span class="chip green" style="height:19px">Full</span> across the whole company</span>
+            <span style="display:flex;align-items:center;gap:6px"><span class="chip amber" style="height:19px">Scoped</span> only within their pinned node</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--text-4);font-weight:600">None</span> no access</span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Built-in roles are read-only</span>
+          </div>
+        </div>
+
+        <div class="soonrow">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div style="flex:1"><div style="font-weight:600;font-size:13.5px">Custom roles</div><div class="hint">Define your own capability sets on the same scoping model.</div></div>
+          <span class="chip">Coming soon</span>
+        </div>
+      </div>
+
+    </div><!-- .page -->
+  </div><!-- .main -->
+</div><!-- .app -->
+
+<!-- ============ INVITE / ADD MODAL ============ -->
+<div class="overlay" id="inviteOverlay" onclick="if(event.target===this)closeInvite()">
+  <div class="modal">
+    <div class="modalhead">
+      <h3 style="font-size:16px">Add a user</h3>
+      <p class="hint" style="margin-top:3px">Create their login now. You set a starting password and share it with them. (Email invites come later.)</p>
+    </div>
+    <div class="modalbody">
+      <div class="label" style="margin-bottom:6px">Full name <span style="color:var(--red)">*</span></div>
+      <input class="input" id="invName" placeholder="Jordan Lee" style="margin-bottom:16px" oninput="syncInvite()" />
+
+      <div class="label" style="margin-bottom:6px">Email <span style="color:var(--red)">*</span></div>
+      <input class="input" id="invEmail" placeholder="jordan@lumenbeauty.com" style="margin-bottom:16px" oninput="syncInvite()" />
+
+      <div class="label" style="margin-bottom:8px">Role</div>
+      <div class="rolepick" id="invRoles" style="margin-bottom:16px">
+        <button data-role="admin" onclick="pickRole('admin')"><span class="chip violet">Admin</span><div class="hint" style="font-size:11px;margin-top:7px;line-height:1.4">Whole company</div></button>
+        <button data-role="manager" onclick="pickRole('manager')"><span class="chip blue">Manager</span><div class="hint" style="font-size:11px;margin-top:7px;line-height:1.4">A branch + below</div></button>
+        <button data-role="rep" class="sel" onclick="pickRole('rep')"><span class="chip green2">Rep</span><div class="hint" style="font-size:11px;margin-top:7px;line-height:1.4">Stores in node</div></button>
+      </div>
+
+      <div class="label" style="margin-bottom:6px">Pin to node <span style="color:var(--red)">*</span></div>
+      <select class="input" id="invNode" style="margin-bottom:16px" onchange="syncInvite()">
+        <option value="">Select a node...</option>
+        <option value="Lumen Beauty|Company">Lumen Beauty (Company)</option>
+        <option value="West|Region">&nbsp;&nbsp;West (Region)</option>
+        <option value="Bay Area|District">&nbsp;&nbsp;&nbsp;&nbsp;Bay Area (District)</option>
+        <option value="Central|Region">&nbsp;&nbsp;Central (Region)</option>
+        <option value="Chicago|District">&nbsp;&nbsp;&nbsp;&nbsp;Chicago (District)</option>
+      </select>
+
+      <div class="label" style="margin-bottom:6px">Starting password <span style="color:var(--red)">*</span></div>
+      <input class="input" id="invPass" placeholder="At least 8 characters" style="margin-bottom:8px" oninput="syncInvite()" />
+      <div class="hint" style="margin-bottom:16px">They use this to log in the first time. Tell them to change it. Stored safely (one-way scramble), never as plain text.</div>
+
+      <div class="inheritbox">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M12 2v4"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19a3.5 3.5 0 0 1 11 0"/></svg>
+        <div style="font-size:12.5px;color:var(--text-2)" id="inheritPreview">Pick a role and a node to see what this person will be able to see.</div>
+      </div>
+    </div>
+    <div class="modalfoot">
+      <span id="invHint" class="hint" style="margin-right:auto;font-size:11.5px">Fill name, email, node and password to add.</span>
+      <button class="btn sm" onclick="closeInvite()">Cancel</button>
+      <button class="btn sm primary" id="invSave" disabled onclick="doInvite()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add user
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOVE-PIN MODAL ============ -->
+<div class="overlay" id="pinOverlay" onclick="if(event.target===this)closePin()">
+  <div class="modal" style="width:440px">
+    <div class="modalhead">
+      <h3 style="font-size:16px">Move pin</h3>
+      <p class="hint" style="margin-top:3px" id="pinWho">Change which node this person is pinned to.</p>
+    </div>
+    <div class="modalbody">
+      <div class="label" style="margin-bottom:6px">Pinned node</div>
+      <select class="input" id="pinNode" onchange="syncPinPreview()">
+        <option value="|none">No pin (sees nothing)</option>
+        <option value="Lumen Beauty|Company">Lumen Beauty (Company)</option>
+        <option value="West|Region">&nbsp;&nbsp;West (Region)</option>
+        <option value="Bay Area|District">&nbsp;&nbsp;&nbsp;&nbsp;Bay Area (District)</option>
+        <option value="Central|Region">&nbsp;&nbsp;Central (Region)</option>
+        <option value="Chicago|District">&nbsp;&nbsp;&nbsp;&nbsp;Chicago (District)</option>
+      </select>
+      <div class="inheritbox" style="margin-top:16px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M12 2v4"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19a3.5 3.5 0 0 1 11 0"/></svg>
+        <div style="font-size:12.5px;color:var(--text-2)" id="pinPreview">Pick a node.</div>
+      </div>
+    </div>
+    <div class="modalfoot">
+      <button class="btn sm" onclick="closePin()">Cancel</button>
+      <button class="btn sm primary" onclick="savePin()">Save pin</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- callout -->
+<div class="callout">
+  <div class="box">
+    <b>Mockup for approval (Users &amp; Roles).</b> Live data comes from a new small backend brick: <span class="mono">GET /users</span> (the team, branch-scoped through the same scope-follows-pin guard), admin-only <span class="mono">POST /users</span> (add a user, reusing the existing Argon2 password scramble), and admin-only <span class="mono">PATCH /users/{id}</span> (change role / move pin). The 4 people shown are the real demo seed (Dana, Sarah, Marcus, Newbie). Try it: switch People/Roles tabs, click a role chip to change a role, click "Change" on a pin, or click "Add user". <b>Deferred and shown honestly:</b> real email invites (needs an email system), enable/disable a user (no status column yet), and custom roles.
+  </div>
+</div>
+
+<script>
+/* ===== Real Lumen seed data ===== */
+const ROLE_META = {
+  admin:   {label:'Admin',   cls:'violet'},
+  manager: {label:'Manager', cls:'blue'},
+  rep:     {label:'Rep',     cls:'green2'},
+};
+const AV = {admin:'#7c3aed', manager:'#2563eb', rep:'#16a34a', rep2:'#0891b2', none:'#64748b'};
+
+let USERS = [
+  {id:'u1', name:'Dana Whitfield', email:'dana@lumenbeauty.com',   role:'admin',   node:'Lumen Beauty', level:'Company',  av:'#4f46e5'},
+  {id:'u2', name:'Sarah Mitchell', email:'sarah@lumenbeauty.com',  role:'manager', node:'Central',      level:'Region',   av:'#2563eb'},
+  {id:'u3', name:'Marcus Bell',    email:'marcus@lumenbeauty.com', role:'rep',     node:'Bay Area',     level:'District', av:'#0891b2'},
+  {id:'u4', name:'Newbie NoPin',   email:'newbie@lumenbeauty.com', role:'rep',     node:'',             level:'',         av:'#64748b'},
+];
+
+function initials(name){ return name.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase(); }
+
+function inheritText(role, level){
+  if (!level) return 'No pin yet, so this person sees nothing until you pin them.';
+  if (role === 'admin' || level === 'Company') return 'Sees the entire company: every region, district and store.';
+  if (level === 'Region')   return 'Sees all districts and stores in this region.';
+  if (level === 'District') return 'Sees all stores in this district.';
+  return 'Scoped to this node and everything below it.';
+}
+
+function renderUsers(){
+  const tb = document.getElementById('userRows');
+  tb.innerHTML = USERS.map(u => {
+    const m = ROLE_META[u.role];
+    const pin = u.node
+      ? `<div class="pincell"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M12 2v4"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19a3.5 3.5 0 0 1 11 0"/></svg>
+           <span style="font-weight:600">${u.node}</span><span class="chip" style="height:18px;font-size:10px">${u.level}</span>
+           <a class="pinedit" onclick="openPin('${u.id}')">Change</a></div>
+           <div class="hint" style="margin-top:3px;font-size:11.5px">&darr; ${inheritText(u.role,u.level)}</div>`
+      : `<div class="pincell"><span class="chip amber" style="height:20px">No pin</span><a class="pinedit" onclick="openPin('${u.id}')">Set pin</a></div>
+         <div class="hint" style="margin-top:3px;font-size:11.5px">&darr; ${inheritText(u.role,u.level)}</div>`;
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar" style="background:${u.av}">${initials(u.name)}</div>
+        <div><div style="font-weight:600">${u.name}</div><div class="hint mono" style="font-size:11.5px">${u.email}</div></div>
+      </div></td>
+      <td>
+        <div class="rolesel">
+          <button class="rolebtn ${m.cls}" onclick="toggleRoleMenu('${u.id}')">${m.label}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="opacity:.6"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="rolemenu" id="rm-${u.id}">
+            ${Object.keys(ROLE_META).map(r=>`<button onclick="setRole('${u.id}','${r}')"><span class="chip ${ROLE_META[r].cls}" style="height:20px">${ROLE_META[r].label}</span>${r===u.role?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" style="margin-left:auto"><path d="M20 6 9 17l-5-5"/></svg>':''}</button>`).join('')}
+          </div>
+        </div>
+      </td>
+      <td style="max-width:340px">${pin}</td>
+      <td><span class="chip green"><span class="dot"></span>Active</span></td>
+      <td><button class="btn icon sm ghost" title="Enable/disable coming soon" onclick="toast('Enable/disable is coming soon')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---- capability matrix (honest: only built / near-built capabilities) ---- */
+const CAPS = [
+  {cap:'Build &amp; edit hierarchy', note:'Add, rename, move, delete nodes', admin:'Full', manager:'None', rep:'None'},
+  {cap:'Add &amp; manage users', note:'Add users, set role + pin', admin:'Full', manager:'Scoped', rep:'None'},
+  {cap:'Create &amp; version surveys', note:'Build forms, publish versions', admin:'Full', manager:'None', rep:'None'},
+  {cap:'Assign surveys', note:'Push surveys to nodes / stores', admin:'Full', manager:'Scoped', rep:'None'},
+  {cap:'Approve payroll', note:'Review &amp; seal pay periods', admin:'Full', manager:'Scoped', rep:'None'},
+  {cap:'Complete surveys', note:'Answer assigned surveys in-store', admin:'None', manager:'Scoped', rep:'Full'},
+  {cap:'View reports', note:'Compliance, completion, responses', admin:'Full', manager:'Scoped', rep:'Scoped'},
+];
+function capCell(v){
+  if (v==='Full') return '<span class="chip green" style="height:22px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>Full</span>';
+  if (v==='Scoped') return '<span class="chip amber" style="height:22px">Scoped</span>';
+  return '<span style="color:var(--text-4);font-weight:600;font-size:12.5px">None</span>';
+}
+function renderCaps(){
+  document.getElementById('capRows').innerHTML = CAPS.map(r=>`<tr>
+    <td><div style="font-weight:600;font-size:13.5px">${r.cap}</div><div class="hint" style="font-size:11.5px">${r.note}</div></td>
+    <td style="text-align:center">${capCell(r.admin)}</td>
+    <td style="text-align:center">${capCell(r.manager)}</td>
+    <td style="text-align:center">${capCell(r.rep)}</td>
+  </tr>`).join('');
+}
+
+/* ---- tabs ---- */
+function setTab(t){
+  document.getElementById('peopleView').style.display = t==='people'?'':'none';
+  document.getElementById('rolesView').style.display = t==='roles'?'':'none';
+  document.getElementById('tabPeople').classList.toggle('active', t==='people');
+  document.getElementById('tabRoles').classList.toggle('active', t==='roles');
+  document.getElementById('inviteBtn').style.display = t==='people'?'':'none';
+}
+
+/* ---- role dropdown ---- */
+function toggleRoleMenu(id){
+  document.querySelectorAll('.rolemenu').forEach(m=>{ if(m.id!=='rm-'+id) m.classList.remove('open'); });
+  document.getElementById('rm-'+id).classList.toggle('open');
+}
+function setRole(id, role){
+  USERS = USERS.map(u=>u.id===id?{...u, role}:u);
+  renderUsers();
+  toast(ROLE_META[role].label + ' role set');
+}
+document.addEventListener('click', e=>{ if(!e.target.closest('.rolesel')) document.querySelectorAll('.rolemenu').forEach(m=>m.classList.remove('open')); });
+
+/* ---- invite ---- */
+let invRole = 'rep';
+function openInvite(){ document.getElementById('inviteOverlay').classList.add('open'); syncInvite(); }
+function closeInvite(){ document.getElementById('inviteOverlay').classList.remove('open'); }
+function pickRole(r){ invRole=r; document.querySelectorAll('#invRoles button').forEach(b=>b.classList.toggle('sel', b.dataset.role===r)); syncInvite(); }
+function syncInvite(){
+  const name=document.getElementById('invName').value.trim();
+  const email=document.getElementById('invEmail').value.trim();
+  const nodeVal=document.getElementById('invNode').value;
+  const pass=document.getElementById('invPass').value;
+  const [node,level]=nodeVal?nodeVal.split('|'):['',''];
+  const ok = name && email && node && pass.length>=8;
+  document.getElementById('invSave').disabled=!ok;
+  document.getElementById('invHint').style.display = ok?'none':'';
+  document.getElementById('inheritPreview').innerHTML = node
+    ? `Pinned to <strong>${node}</strong> as <strong>${ROLE_META[invRole].label}</strong> &rarr; ${inheritText(invRole, level).toLowerCase()}`
+    : 'Pick a role and a node to see what this person will be able to see.';
+}
+function doInvite(){
+  const name=document.getElementById('invName').value.trim();
+  const email=document.getElementById('invEmail').value.trim();
+  const [node,level]=document.getElementById('invNode').value.split('|');
+  USERS=[...USERS,{id:'u'+Date.now(),name,email,role:invRole,node,level,av:AV[invRole]||'#64748b'}];
+  renderUsers();
+  closeInvite();
+  toast('User added: '+name);
+  document.getElementById('invName').value='';document.getElementById('invEmail').value='';document.getElementById('invPass').value='';document.getElementById('invNode').value='';pickRole('rep');
+}
+
+/* ---- move pin ---- */
+let pinUserId=null;
+function openPin(id){
+  pinUserId=id;
+  const u=USERS.find(x=>x.id===id);
+  document.getElementById('pinWho').textContent='Change which node '+u.name+' is pinned to.';
+  document.getElementById('pinNode').value = u.node?`${u.node}|${u.level}`:'|none';
+  syncPinPreview();
+  document.getElementById('pinOverlay').classList.add('open');
+}
+function closePin(){ document.getElementById('pinOverlay').classList.remove('open'); }
+function syncPinPreview(){
+  const u=USERS.find(x=>x.id===pinUserId);
+  const [node,level]=document.getElementById('pinNode').value.split('|');
+  document.getElementById('pinPreview').innerHTML = node
+    ? `<strong>${node}</strong> &rarr; ${inheritText(u.role, level).toLowerCase()}`
+    : 'No pin: this person will see nothing until pinned.';
+}
+function savePin(){
+  const [node,levelRaw]=document.getElementById('pinNode').value.split('|');
+  const level = node?levelRaw:'';
+  USERS=USERS.map(u=>u.id===pinUserId?{...u,node,level}:u);
+  renderUsers(); closePin(); toast(node?('Pin moved to '+node):'Pin removed');
+}
+
+/* ---- toast ---- */
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+
+renderUsers(); renderCaps();
+</script>
+</body>
+</html>

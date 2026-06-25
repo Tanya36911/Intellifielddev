@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Settings mockup</title>
+<style>
+:root{
+  --accent:#1B4F8A; --accent-hover:#174274; --accent-fg:#fff; --accent-subtle:#e8edf3; --accent-ring:rgba(27,79,138,.16);
+  --bg:#fafafa; --bg-elev:#f4f4f5; --surface:#fff; --surface-2:#fafafa; --surface-hover:#f4f4f5;
+  --border:#e9e9ec; --border-strong:#dcdce0; --border-faint:#f1f1f3;
+  --text:#18181b; --text-2:#52525b; --text-3:#8a8a93; --text-4:#b4b4bb;
+  --green:#16a34a; --green-bg:#ecfdf3; --green-fg:#157f3c;
+  --amber:#d97706; --amber-bg:#fffaeb; --amber-fg:#b45309;
+  --red:#dc2626; --red-bg:#fef3f2; --red-fg:#b42318;
+  --shadow-xs:0 1px 2px rgba(24,24,27,.04);
+  --shadow-pop:0 12px 40px rgba(24,24,27,.14),0 2px 8px rgba(24,24,27,.06);
+  --r-xs:5px; --r-sm:7px; --r-md:9px; --r-lg:12px; --r-xl:16px; --r-full:999px;
+  --sans:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --sidebar-w:248px; --topbar-h:56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.45}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:var(--mono)} .mut{color:var(--text-3)}
+.hint{font-size:12.5px;color:var(--text-3);line-height:1.5}
+.label{font-size:12.5px;font-weight:600;color:var(--text-2)}
+
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.companycard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:8px}
+.companycard .sq{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#c9a0e0,#9b6bd1)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;font-size:13.5px;font-weight:600}
+.nav a.active{background:var(--accent-subtle);color:var(--accent)}
+.nav a svg{width:16px;height:16px;flex-shrink:0}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-4);padding:14px 10px 6px}
+.footprint{margin-top:auto;display:flex;gap:14px;padding:12px 10px;border-top:1px solid var(--border)}
+.footprint b{font-size:17px;font-weight:700;display:block}
+.footprint span{font-size:10.5px;color:var(--text-3)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:var(--topbar-h);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 22px}
+.topbar .ttl{font-size:15.5px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text-3)}
+.topbar .sp{flex:1}
+.page{padding:22px;max-width:1000px;width:100%;margin:0 auto}
+
+.btn{display:inline-flex;align-items:center;gap:7px;justify-content:center;height:36px;padding:0 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-hover)} .btn svg{width:15px;height:15px}
+.btn.sm{height:32px;padding:0 12px;font-size:12.5px}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:var(--shadow-xs)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn:disabled,.btn.disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+
+.input{height:38px;padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;font-family:inherit;outline:none;width:100%}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.input:disabled{background:var(--surface-2);color:var(--text-3)}
+.input::placeholder{color:var(--text-4)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xs)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:var(--r-full);font-size:11.5px;font-weight:600;background:var(--bg-elev);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.chip.green{background:var(--green-bg);color:var(--green-fg);border-color:transparent}
+.chip .dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+
+/* layout: section nav + content */
+.settings{display:grid;grid-template-columns:210px 1fr;gap:24px;align-items:start}
+.secnav{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px}
+.secnav button{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r-sm);border:none;background:transparent;color:var(--text-2);font-weight:500;font-size:13.5px;cursor:pointer;text-align:left;font-family:inherit;width:100%}
+.secnav button.active{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow-xs);border:1px solid var(--border)}
+.secnav button svg{width:16px;height:16px;flex-shrink:0;color:var(--text-3)}
+.secnav button.active svg{color:var(--accent)}
+.secnav button .soon{margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-4);border:1px solid var(--border);border-radius:var(--r-full);padding:1px 7px}
+.secnav .divider{height:1px;background:var(--border);margin:8px 6px}
+
+.panelhead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+
+/* toggle switch */
+.switch{width:44px;height:25px;border-radius:99px;background:var(--border-strong);border:none;position:relative;cursor:pointer;transition:.18s;flex-shrink:0}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:99px;background:#fff;transition:.18s;box-shadow:var(--shadow-xs)}
+.switch.on{background:var(--green)}
+.switch.on::after{left:22px}
+
+.fieldrow{margin-bottom:20px}
+.fieldrow:last-child{margin-bottom:0}
+
+/* greyed coming-soon sub-card */
+.soonbox{border:1px dashed var(--border-strong);border-radius:var(--r-md);background:var(--surface-2);padding:16px;opacity:.85}
+.soongrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+
+/* coming-soon full panel */
+.soonpanel{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px 24px;color:var(--text-3)}
+.soonpanel .ic{width:48px;height:48px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--text-3)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#18181b;color:#fff;padding:11px 18px;border-radius:var(--r-full);font-size:13px;font-weight:600;box-shadow:var(--shadow-pop);opacity:0;pointer-events:none;transition:.25s;z-index:9000}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.callout{margin:18px auto 0;max-width:1000px;padding:0 22px 22px}
+.callout .box{background:#fffdf5;border:1px solid #f0e2b8;border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;color:#6b5a1f;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">I</div>
+      <div><div style="font-weight:800;font-size:15px">Intelli</div><div class="hint" style="font-size:10.5px">Field Execution</div></div>
+    </div>
+    <div class="companycard">
+      <div class="sq"></div>
+      <div><div style="font-weight:700;font-size:13px">Lumen Beauty</div><div class="hint" style="font-size:10.5px">Company</div></div>
+    </div>
+    <nav class="nav">
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>Analytics</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Surveys</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Catalog</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.9 2.5 2-1 2-2.5 2a2.5 2 0 0 1-2.5-1.5"/><path d="M12 6v1.5M12 16.5V18"/></svg>Payroll</a>
+      <div class="navgroup">Organization</div>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 2v4"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19a3.5 3.5 0 0 1 11 0"/><path d="M3 22h18"/></svg>Hierarchy</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users &amp; Roles</a>
+      <a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    </nav>
+    <div class="footprint">
+      <div><b>8</b><span>Nodes</span></div>
+      <div><b>3</b><span>Stores</span></div>
+      <div><b>2</b><span>Reps</span></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="ttl">Settings</div>
+        <div class="sub">Company configuration</div>
+      </div>
+      <div class="sp"></div>
+      <button class="btn sm primary" id="saveBtn" disabled onclick="doSave()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg> Save changes
+      </button>
+    </div>
+
+    <div class="page">
+      <div class="settings">
+
+        <!-- section nav -->
+        <div class="secnav">
+          <button class="active" id="s-company" onclick="setSection('company')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>Company
+          </button>
+          <button id="s-payroll" onclick="setSection('payroll')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.9 2.5 2-1 2-2.5 2a2.5 2 0 0 1-2.5-1.5"/></svg>Payroll
+          </button>
+          <div class="divider"></div>
+          <button id="s-workmodel" onclick="setSection('workmodel')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/></svg>Work model <span class="soon">soon</span>
+          </button>
+          <button id="s-logos" onclick="setSection('logos')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg>Store logos <span class="soon">soon</span>
+          </button>
+          <button id="s-audit" onclick="setSection('audit')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6 2.3L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Audit log <span class="soon">soon</span>
+          </button>
+          <button id="s-security" onclick="setSection('security')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>Data &amp; security <span class="soon">soon</span>
+          </button>
+        </div>
+
+        <!-- content -->
+        <div>
+
+          <!-- ===== COMPANY (real) ===== -->
+          <div class="panel" id="p-company">
+            <div class="card" style="padding:22px">
+              <div class="panelhead">
+                <div><h3 style="font-size:16px">Company</h3><p class="hint" style="margin-top:4px">Your company's basic details. Shown across the app and on the sign-in sidebar.</p></div>
+              </div>
+              <div class="fieldrow">
+                <div class="label" style="margin-bottom:7px">Company name</div>
+                <input class="input" id="coName" value="Lumen Beauty" style="max-width:380px" oninput="markDirty()" />
+                <div class="hint" style="margin-top:6px">This is what your team sees in the sidebar and reports.</div>
+              </div>
+              <div class="fieldrow">
+                <div class="label" style="margin-bottom:7px">Company code</div>
+                <input class="input mono" value="lumen" disabled style="max-width:200px" />
+                <div class="hint" style="margin-top:6px">A short permanent ID used internally. Cannot be changed.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== PAYROLL (toggle real, period config = soon) ===== -->
+          <div class="panel" id="p-payroll" style="display:none">
+            <div class="card" style="padding:22px">
+              <div class="panelhead">
+                <div>
+                  <div style="display:flex;align-items:center;gap:9px"><h3 style="font-size:16px">Payroll module</h3><span class="chip green" id="payChip"><span class="dot"></span>On</span></div>
+                  <p class="hint" style="margin-top:4px" id="payDesc">Reps log field-time, which rolls up into pay periods with a review-and-approve flow before payout. This switch controls the Payroll screen in the sidebar.</p>
+                </div>
+                <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;flex-shrink:0">
+                  <span id="payLbl">Enabled</span>
+                  <button class="switch on" id="paySwitch" onclick="togglePay()"></button>
+                </label>
+              </div>
+
+              <div id="payOnNote" style="display:flex;align-items:flex-start;gap:11px;padding:13px 15px;background:var(--accent-subtle);border-radius:var(--r-md);margin-bottom:18px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <div style="font-size:12.5px;color:var(--text-2)">Payroll is <strong>on</strong>, so the Payroll screen is available and the approve / seal / reopen flow is active. Turning it off hides that screen for everyone.</div>
+              </div>
+              <div id="payOffNote" style="display:none;align-items:flex-start;gap:11px;padding:13px 15px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:18px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <div style="font-size:12.5px;color:var(--text-2)">Payroll is <strong>off</strong>. The Payroll screen is hidden and the backend refuses payroll actions for this company.</div>
+              </div>
+
+              <!-- period defaults: coming soon -->
+              <div class="soonbox">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <span class="label" style="color:var(--text-2)">Pay-period defaults</span>
+                  <span class="chip" style="margin-left:auto">Coming soon</span>
+                </div>
+                <div class="hint" style="margin-top:4px">Default period length, cutoff day/time and timezone for new pay periods. Stored once we add "create a pay period" to the screen.</div>
+                <div class="soongrid">
+                  <div><div class="label" style="margin-bottom:6px;color:var(--text-3)">Period length</div><input class="input" value="Bi-weekly" disabled /></div>
+                  <div><div class="label" style="margin-bottom:6px;color:var(--text-3)">Cutoff time</div><input class="input" value="23:59" disabled /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== SOON PANELS ===== -->
+          <div class="panel" id="p-workmodel" style="display:none">
+            <div class="card"><div class="soonpanel">
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/></svg></div>
+              <h3 style="font-size:15px;color:var(--text)">Work model</h3>
+              <p class="hint" style="max-width:420px;margin-top:6px">Choose how rep days are planned: assigned routes, flexible self-select, or per-team. This reshapes the manager and field apps, so it lands with the Manager / Field tracks.</p>
+              <span class="chip" style="margin-top:14px">Coming soon</span>
+            </div></div>
+          </div>
+          <div class="panel" id="p-logos" style="display:none">
+            <div class="card"><div class="soonpanel">
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/></svg></div>
+              <h3 style="font-size:15px;color:var(--text)">Store chain logos</h3>
+              <p class="hint" style="max-width:420px;margin-top:6px">Upload each retail chain's logo (CVS, Walmart, ...) so reps recognise a store at a glance. Needs image storage, which arrives with shelf photos (5-BE-c).</p>
+              <span class="chip" style="margin-top:14px">Coming soon</span>
+            </div></div>
+          </div>
+          <div class="panel" id="p-audit" style="display:none">
+            <div class="card"><div class="soonpanel">
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6 2.3L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg></div>
+              <h3 style="font-size:15px;color:var(--text)">Audit log</h3>
+              <p class="hint" style="max-width:440px;margin-top:6px">A company-wide, append-only history of sensitive changes (payroll reopens, permission changes, hierarchy edits). The payroll part already exists on the Payroll screen; a unified company feed is a fast-follow.</p>
+              <span class="chip" style="margin-top:14px">Coming soon</span>
+            </div></div>
+          </div>
+          <div class="panel" id="p-security" style="display:none">
+            <div class="card"><div class="soonpanel">
+              <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg></div>
+              <h3 style="font-size:15px;color:var(--text)">Data &amp; security</h3>
+              <p class="hint" style="max-width:440px;margin-top:6px">A read-only summary of how your data is isolated: company-scoped on every query, node-scoped access, encryption, immutable audit trail. Display-only panel, planned as a fast-follow.</p>
+              <span class="chip" style="margin-top:14px">Coming soon</span>
+            </div></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="callout">
+  <div class="box">
+    <b>Mockup for approval (Settings, lean &amp; honest).</b> Only two things are real and saved in v1, via a small backend brick: <span class="mono">GET /tenants</span> (this company's config) and admin-only <span class="mono">PATCH /tenants</span>. <b>Real:</b> the company name (editable) and the payroll on/off switch (it genuinely controls the Payroll screen we built). <b>Shown honestly as "coming soon":</b> pay-period defaults, work model, store logos, audit log, and data &amp; security. No database change is needed for v1. Try it: edit the company name or flip the payroll switch and the Save button lights up; click the greyed sections to see their placeholders.
+  </div>
+</div>
+
+<script>
+let dirty=false, payOn=true, curSection='company';
+const SECTIONS=['company','payroll','workmodel','logos','audit','security'];
+const REAL={company:true,payroll:true};
+
+function setSection(s){
+  curSection=s;
+  SECTIONS.forEach(x=>{
+    document.getElementById('p-'+x).style.display = x===s?'':'none';
+    document.getElementById('s-'+x).classList.toggle('active', x===s);
+  });
+}
+function markDirty(){ dirty=true; document.getElementById('saveBtn').disabled=false; }
+function togglePay(){
+  payOn=!payOn;
+  document.getElementById('paySwitch').classList.toggle('on', payOn);
+  document.getElementById('payChip').innerHTML = payOn?'<span class="dot"></span>On':'Off';
+  document.getElementById('payChip').className = 'chip'+(payOn?' green':'');
+  document.getElementById('payLbl').textContent = payOn?'Enabled':'Disabled';
+  document.getElementById('payOnNote').style.display = payOn?'flex':'none';
+  document.getElementById('payOffNote').style.display = payOn?'none':'flex';
+  markDirty();
+}
+function doSave(){
+  dirty=false; document.getElementById('saveBtn').disabled=true;
+  toast('Settings saved');
+}
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+</script>
+</body>
+</html>
