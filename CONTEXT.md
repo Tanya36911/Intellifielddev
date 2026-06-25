@@ -40,8 +40,8 @@ fast-follow, never the headline.
   backend brick first (users, tenant settings, node-edit).
   - [x] **W1** app shell + Analytics dashboard (the old W2 analytics is folded into
     W1: the shell ships with the real dashboard as its first screen, not a stub Home);
-    [x] **W3** catalog; [x] **W4** survey builder + assignments; [ ] **W5** responses
-    + detail (next); [ ] **W6** payroll; [ ] **W7** org hierarchy (view).
+    [x] **W3** catalog; [x] **W4** survey builder + assignments; [x] **W5** responses
+    + detail; [ ] **W6** payroll (next); [ ] **W7** org hierarchy (view).
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
   first. Split into a backend sync-contract track and a mobile track.
@@ -299,3 +299,16 @@ fast-follow, never the headline.
   0%/empty look). Reviewed by two 3-reviewer adversarial passes (spec, then code). Gate GREEN: 190
   backend tests + 54 frontend checks, tsc + vite build clean. Numbers appear on screen only after a
   fresh seed (the dev DB must be reseeded; the seed is idempotent so it will not overwrite old rows).
+- 2026-06-25: W5 COMPLETE - the Responses feature (list + detail). Responses are NOT a sidebar item
+  (prototype parity): they open as modals from the Surveys screen (each survey row has a "N responses"
+  button -> a per-survey responses list -> a single response's detail with the live verdict and the
+  per-shade facings grid). Backend: a small read-only enrichment to GET /responses and /responses/{id}
+  (added store_name, survey_name, survey_version_number, rep_name, survey_id, and per-response
+  scored/passed counts via additive joins; branch-scoping unchanged; no new tables). Frontend in
+  apps/admin/src/pages/Surveys/: useResponses hook + pure helpers, ResponsesListModal,
+  ResponseDetailModal (renders the backend's per-item and per-question verdicts, never re-scores;
+  reuses useSurveys + useCatalog for question/SKU display), wired into SurveyList. Shelf photos
+  deferred (5-BE-c, placeholders). Built test-first on a w5-responses branch (the new per-screen git
+  workflow); review caught and fixed a re-scoring bug, a name-collision response-bucketing bug, and
+  the partial/% list display, then merged to main. Gate GREEN: 196 backend + 133 frontend, build
+  clean. W6 (payroll) next.

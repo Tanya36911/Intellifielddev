@@ -165,9 +165,10 @@ fast-follow).
 **What's NEXT (plan revamped 2026-06-18, see [ROADMAP.md](ROADMAP.md)):** we are
 building the **Admin web screens** over the backend that already exists, so
 stakeholders can finally see the product on a screen. W1 (the app shell + the
-Analytics dashboard), W3 (the Catalog), and W4 (the Survey builder + assignments)
-are all **done** (above). The next steps are the rest of the screens, in demo
-order: responses, payroll, and the org tree. The rest of Phase 5 (the Field mobile
+Analytics dashboard), W3 (the Catalog), W4 (the Survey builder + assignments), and
+W5 (Responses, the list + detail that open from the Surveys screen) are all **done**
+(above). The next steps are the rest of the screens, in demo
+order: payroll, and the org tree. The rest of Phase 5 (the Field mobile
 app + offline sync) is **resequenced to after the web screens**, because it is the
 long, hard, last push.
 
@@ -328,16 +329,22 @@ When you start a new session, **open Claude Code with the `intelli-app` folder**
 > by-hand builder (six question types, pass rules, per-product questions), publish
 > (freezes the version forever), and assign (point the published version at org
 > nodes with a deadline). Two additive backend changes only (no migration, no new
-> endpoint). Baseline is green: 192 backend checks + 104 frontend checks, and the
-> app builds. Everything is committed to main but NOT pushed yet (pushing
-> auto-deploys to the dev server, so ask me before pushing).
+> endpoint). W5 is also DONE: Responses (list + detail) that open as modals from the
+> Surveys screen (each survey row has a "N responses" button -> a per-survey list ->
+> a response detail with live pass/fail and the per-shade facings grid); responses
+> are NOT a sidebar item; one small read-only /responses enrichment, no new tables.
+> Baseline is green: 196 backend checks + 133 frontend checks, and the app builds.
+> Everything is committed to main but NOT pushed yet (pushing auto-deploys to the
+> dev server, so ask me before pushing).
 >
-> What's next: W5, Responses + response detail, per ROADMAP.md, unless I say
-> otherwise. Show what reps submitted with live pass/fail and the per-product
-> reason something failed. Backed by the existing /responses and /responses/{id}
-> endpoints. After W5 the plan order is W6 payroll, then W7 hierarchy (view);
-> the setup wizard and on-screen hierarchy editing are later and need small Users
-> (GET/POST /users) and node-write backend bricks first.
+> What's next: W6, Payroll, per ROADMAP.md, unless I say otherwise. Open a pay
+> period, see logged hours, approve them, seal the period, read the audit log, with
+> a Download CSV. Backed by the existing /pay-periods, /time-entries (+ approve/
+> reject/seal/reopen), /audit, and /export/payroll endpoints (gated by a per-company
+> payroll switch). Port from ../hi-fi-intelli/project/apps/manager/screens/dm-payroll.jsx.
+> After W6 the plan order is W7 hierarchy (view); the setup wizard and on-screen
+> hierarchy editing are later and need small Users (GET/POST /users) and node-write
+> backend bricks first.
 >
 > My name is Tanya. Always address me as Tanya, explain everything in plain
 > non-coder terms, design and let me approve before building (show me a browser

@@ -99,11 +99,14 @@ survey templates, and the AI draft feature (a later fast-follow). Gate: 192
 backend tests + 104 frontend checks, all green. After this: self-serve
 configurability is on screen, the headline selling point.
 
-**W5: Responses + the response detail.** See what reps submitted, with live
+**W5: Responses + the response detail (DONE).** See what reps submitted, with live
 pass/fail and the per-product reason something failed. Backend: `/responses`,
-`/responses/{id}` (exist). After this: the field data flowing in and being scored.
-(Shelf photos plug in later with 5-BE-c, the photo storage; shown as placeholders
-until then.)
+`/responses/{id}` (exist; W5 added a small read-only name + scored/passed count
+enrichment, no new tables). Delivered: responses are NOT a sidebar item (prototype
+parity), they open as modals from the Surveys screen (each survey row shows a
+"N responses" button that opens a per-survey responses list, which opens a single
+response's detail with the live verdict and the per-shade facings grid). Shelf
+photos shown as "coming soon" placeholders (plug in later with 5-BE-c).
 
 **W6: Payroll.** Open a pay period, see logged hours, approve them, seal the
 period, and read the audit log, with a Download (CSV) button. Backend:
