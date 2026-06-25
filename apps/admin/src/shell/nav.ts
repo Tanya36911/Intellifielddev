@@ -19,6 +19,6 @@ export const NAV: NavItem[] = [
   { id: 'catalog', label: 'Catalog', icon: 'grid', group: 'main', path: '/catalog' },
   { id: 'payroll', label: 'Payroll', icon: 'dollar', group: 'main', path: '/payroll' },
   { id: 'hierarchy', label: 'Hierarchy', icon: 'tree', group: 'org', path: '/hierarchy' },
-  { id: 'users', label: 'Users & Roles', icon: 'users', group: 'org', path: '/users', comingSoon: true },
-  { id: 'settings', label: 'Settings', icon: 'settings', group: 'org', path: '/settings', comingSoon: true },
+  { id: 'users', label: 'Users & Roles', icon: 'users', group: 'org', path: '/users' },
+  { id: 'settings', label: 'Settings', icon: 'settings', group: 'org', path: '/settings' },
 ]
