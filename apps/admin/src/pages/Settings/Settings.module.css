@@ -1,0 +1,35 @@
+.topbar { height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 12px; padding: 0 22px; }
+.title { font-size: 15.5px; font-weight: 700; }
+.sub { font-size: 12px; color: var(--text-3); }
+.sp { flex: 1; }
+.page { padding: 22px; max-width: 1000px; width: 100%; margin: 0 auto; }
+.layout { display: grid; grid-template-columns: 210px 1fr; gap: 24px; align-items: start; }
+.secnav { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; }
+.secBtn { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: var(--r-sm); border: none; background: transparent; color: var(--text-2); font-weight: 500; font-size: 13.5px; cursor: pointer; text-align: left; width: 100%; font-family: inherit; }
+.secBtnActive { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: var(--r-sm); font-size: 13.5px; cursor: pointer; text-align: left; width: 100%; font-family: inherit; background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-xs); border: 1px solid var(--border); }
+.secBtn svg, .secBtnActive svg { color: var(--text-3); flex-shrink: 0; }
+.secBtnActive svg { color: var(--accent); }
+.secSoon { margin-left: auto; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-4); border: 1px solid var(--border); border-radius: var(--r-full); padding: 1px 7px; }
+.secDivider { height: 1px; background: var(--border); margin: 8px 6px; }
+.panel { padding: 22px; }
+.panelHead { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.panelTitle { font-size: 16px; }
+.panelSub { font-size: 12.5px; color: var(--text-3); margin-top: 4px; line-height: 1.5; }
+.nameInput { max-width: 380px; }
+.codeInput { max-width: 200px; font-family: var(--mono); }
+.fieldHint { font-size: 12px; color: var(--text-3); margin-top: 6px; line-height: 1.5; }
+.spacer { height: 18px; }
+.payrollHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.payrollTitleRow { display: flex; align-items: center; gap: 9px; }
+.noteOn, .noteOff { display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; border-radius: var(--r-md); margin-bottom: 18px; font-size: 12.5px; color: var(--text-2); }
+.noteOn { background: var(--accent-subtle); }
+.noteOn svg { color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+.noteOff { background: var(--surface-2); border: 1px solid var(--border); }
+.noteOff svg { color: var(--text-3); flex-shrink: 0; margin-top: 1px; }
+.soonBox { border: 1px dashed var(--border-strong); border-radius: var(--r-md); background: var(--surface-2); padding: 16px; }
+.soonBoxHead { display: flex; align-items: center; gap: 9px; }
+.soonBoxLabel { font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-right: auto; }
+.soonPanel { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 56px 24px; color: var(--text-3); }
+.soonIcon { width: 48px; height: 48px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.soonTitle { font-size: 15px; color: var(--text); }
+.soonBody { font-size: 12.5px; max-width: 440px; margin-top: 6px; line-height: 1.5; }
