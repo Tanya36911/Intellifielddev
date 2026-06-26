@@ -81,11 +81,11 @@ export async function apiGet<T = unknown>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-// Authenticated write (POST/PATCH). Mirrors apiGet's token + error handling:
+// Authenticated write (POST/PATCH/PUT). Mirrors apiGet's token + error handling:
 // ApiError(0) when unreachable, ApiError(status) on a non-2xx with the backend's
-// detail when present.
+// detail when present. PUT is used by the setup wizard for PUT /org-levels.
 export async function apiSend<T = unknown>(
-  method: 'POST' | 'PATCH',
+  method: 'POST' | 'PATCH' | 'PUT',
   path: string,
   body: unknown,
 ): Promise<T> {
