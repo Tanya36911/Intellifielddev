@@ -205,6 +205,42 @@ class ScopedRepo:
                          {"id": str(node_id)})
         return None
 
+    # ----- org levels (set the company's level structure; admin-only at router) -----
+
+    def _non_root_node_count(self, conn) -> int:
+        return conn.execute(
+            text("select count(*) from nodes where tenant_id = cast(:tid as uuid) "
+                 "and parent_id is not null"),
+            {"tid": str(self.tenant_id)},
+        ).scalar()
+
+    def set_org_levels(self, names: list[str]) -> list[dict] | None:
+        """Replace the company's org level definitions with an ordered top-to-
+        bottom list. Returns the new levels, or None (re-map blocked) when the
+        company already has real nodes and the NUMBER of levels would change
+        (which would leave existing nodes at an undefined level)."""
+        with engine.begin() as conn:
+            current = conn.execute(
+                text("select count(*) from org_level_definitions "
+                     "where tenant_id = cast(:tid as uuid)"),
+                {"tid": str(self.tenant_id)},
+            ).scalar()
+            if self._non_root_node_count(conn) > 0 and len(names) != current:
+                return None
+            conn.execute(
+                text("delete from org_level_definitions where tenant_id = cast(:tid as uuid)"),
+                {"tid": str(self.tenant_id)},
+            )
+            n = len(names)
+            for i, name in enumerate(names):
+                conn.execute(
+                    text("insert into org_level_definitions (tenant_id, level_order, name, locked) "
+                         "values (cast(:tid as uuid), :lo, :name, :locked)"),
+                    {"tid": str(self.tenant_id), "lo": i, "name": name,
+                     "locked": (i == 0 or i == n - 1)},
+                )
+        return self.list_org_levels()
+
     # ----- catalog (company-wide: filtered by tenant only, not by path) -----
 
     _SKU_COLS = "id, line, variant, upc, color, status, reference_images, created_at"

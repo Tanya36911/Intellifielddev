@@ -5,12 +5,23 @@ setup wizard and the editable Hierarchy screen need."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .scope import ScopedRepo, get_scoped_repo
 from .security import require_admin
 
 router = APIRouter(tags=["hierarchy"])
+
+
+class OrgLevelsSet(BaseModel):
+    levels: list[str] = Field(min_length=2, max_length=7)
+
+    @field_validator("levels")
+    @classmethod
+    def _names_nonempty(cls, v):
+        if any(not s or not s.strip() for s in v):
+            raise ValueError("level names must be non-empty")
+        return [s.strip() for s in v]
 
 
 class NodeCreate(BaseModel):
@@ -51,6 +62,21 @@ def list_org_levels(repo: ScopedRepo = Depends(get_scoped_repo)) -> dict:
     """The company's org level names (Company, Region, ... Store), in order, so a
     screen can label a node's numeric level_order. Tenant-scoped (company-wide)."""
     levels = repo.list_org_levels()
+    return {"levels": levels, "count": len(levels)}
+
+
+@router.put("/org-levels")
+def set_org_levels(
+    body: OrgLevelsSet,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    levels = repo.set_org_levels(body.levels)
+    if levels is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Remove the nodes below the root before changing the number of levels",
+        )
     return {"levels": levels, "count": len(levels)}
 
 
