@@ -58,12 +58,12 @@ describe('Hierarchy page', () => {
     await waitFor(() => expect(screen.getByText('West Region')).toBeTruthy())
   })
 
-  it('shows deferred Edit and Export buttons as disabled', async () => {
+  it('shows an enabled Edit toggle for admins and a still-deferred Export button', async () => {
     renderApp(<Hierarchy />, { session: adminSession() })
     await screen.findByText('Hierarchy')
     const editBtn = screen.getByRole('button', { name: /edit/i })
     expect(editBtn).toBeTruthy()
-    expect(editBtn).toBeDisabled()
+    expect(editBtn).not.toBeDisabled()
     const exportBtn = screen.getByRole('button', { name: /export/i })
     expect(exportBtn).toBeDisabled()
   })

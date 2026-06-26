@@ -11,6 +11,10 @@ export default function TreeNode({
   onSelectStore,
   depth,
   keepIds,
+  editMode = false,
+  onAddChild,
+  onRename,
+  onDelete,
 }: {
   id: string
   idx: TreeIndex
@@ -20,6 +24,12 @@ export default function TreeNode({
   onSelectStore: (node: OrgNode) => void
   depth: number
   keepIds: Set<string> | null
+  // Edit-mode props (admin only). When editMode is off these are unused and the
+  // row renders exactly as the read-only version.
+  editMode?: boolean
+  onAddChild?: (parent: OrgNode) => void
+  onRename?: (node: OrgNode) => void
+  onDelete?: (node: OrgNode) => void
 }) {
   const node = idx.byId[id]
   if (!node) return null
@@ -99,6 +109,42 @@ export default function TreeNode({
         {!isStore && rawKids.length > 0 && (
           <span className={styles.childCount}>{rawKids.length}</span>
         )}
+
+        {/* edit-mode row actions (admin only). A store is a leaf, so it gets no
+            add-child button. The backend remains the real guard. */}
+        {editMode && (
+          <span className={styles.actions}>
+            {!isStore && (
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => onAddChild?.(node)}
+                aria-label={`Add child under ${node.name}`}
+                title="Add child"
+              >
+                <Icon name="plus" size={13} />
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.actionBtn}
+              onClick={() => onRename?.(node)}
+              aria-label={`Rename ${node.name}`}
+              title="Rename"
+            >
+              <Icon name="edit" size={13} />
+            </button>
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${styles.actionDanger}`}
+              onClick={() => onDelete?.(node)}
+              aria-label={`Delete ${node.name}`}
+              title="Delete"
+            >
+              <Icon name="trash" size={13} />
+            </button>
+          </span>
+        )}
       </div>
 
       {/* render children when expanded */}
@@ -113,6 +159,10 @@ export default function TreeNode({
           onSelectStore={onSelectStore}
           depth={depth + 1}
           keepIds={keepIds}
+          editMode={editMode}
+          onAddChild={onAddChild}
+          onRename={onRename}
+          onDelete={onDelete}
         />
       ))}
     </div>

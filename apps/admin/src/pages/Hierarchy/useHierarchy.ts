@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiGet } from '../../lib/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { apiDelete, apiGet, apiSend } from '../../lib/api'
 
 // --- types ---
 
@@ -58,6 +58,15 @@ export function getLevelName(level_order: number, levels: OrgLevel[]): string {
 export function isLocked(level_order: number, levels: OrgLevel[]): boolean {
   const found = levels.find(l => l.level_order === level_order)
   return found ? found.locked : false
+}
+
+/**
+ * The level name of the child you would add under a parent at the given level
+ * order (parent level + 1). Used for the "New <Level> under <Parent>" label.
+ * Falls back to a generic "Level N" name when the child level is unknown.
+ */
+export function levelChildName(parentLevelOrder: number, levels: OrgLevel[]): string {
+  return getLevelName(parentLevelOrder + 1, levels)
 }
 
 export function hierarchyStats(
@@ -181,4 +190,46 @@ export function useHierarchy() {
     isLoading: nodesQ.isLoading || levelsQ.isLoading,
     isError: nodesQ.isError || levelsQ.isError,
   }
+}
+
+// --- edit mutations (admin only; the backend is the real guard) ---
+
+// Shared attributes a node can carry. Chain and address only apply to stores
+// (the locked bottom level); the others are accepted by the backend for any node.
+export type NodeAttrs = {
+  chain?: string | null
+  address?: string | null
+  lat?: number | null
+  lng?: number | null
+  tz?: string | null
+}
+
+// Add a child node. The backend derives the new level (parent + 1) and the code.
+export type CreateNodeInput = { parent_id: string; name: string } & NodeAttrs
+// Rename / re-attribute a node. No parent, level, or code edits.
+export type UpdateNodeInput = { name?: string } & NodeAttrs
+
+export function useCreateNode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateNodeInput) => apiSend<OrgNode>('POST', '/nodes', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['nodes'] }),
+  })
+}
+
+export function useUpdateNode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateNodeInput }) =>
+      apiSend<OrgNode>('PATCH', `/nodes/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['nodes'] }),
+  })
+}
+
+export function useDeleteNode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => apiDelete<{ ok: true }>(`/nodes/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['nodes'] }),
+  })
 }

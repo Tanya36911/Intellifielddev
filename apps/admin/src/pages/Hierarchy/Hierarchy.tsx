@@ -4,14 +4,17 @@ import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import {
   useHierarchy,
+  useDeleteNode,
   buildTreeIndex,
   filterNodes,
   hierarchyStats,
   uniqueChains,
   type OrgNode,
 } from './useHierarchy'
+import { ApiError } from '../../lib/api'
 import TreeNode from './TreeNode'
 import StoreDetailModal from './StoreDetailModal'
+import NodeFormModal from './NodeFormModal'
 import styles from './Hierarchy.module.css'
 
 // Level dot colours for the legend
@@ -39,13 +42,37 @@ function StatTile({ icon, value, label }: { icon: 'tree' | 'globe' | 'building' 
 export default function Hierarchy() {
   const session = useAppSelector(selectSession)
   const company = session?.user.company_name ?? 'Your company'
+  const isAdmin = session?.user.role === 'admin'
 
   const { nodes, levels, isLoading } = useHierarchy()
+  const deleteNode = useDeleteNode()
 
   const [query, setQuery] = useState('')
   const [chain, setChain] = useState('All')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [selectedStore, setSelectedStore] = useState<OrgNode | null>(null)
+  const [editMode, setEditMode] = useState(false)
+  // The add/rename modal: which mode, and the node it acts on (parent in add mode,
+  // the target node in rename mode).
+  const [formState, setFormState] = useState<{ mode: 'add' | 'rename'; node: OrgNode } | null>(null)
+
+  function openAddChild(parent: OrgNode) {
+    setFormState({ mode: 'add', node: parent })
+  }
+  function openRename(node: OrgNode) {
+    setFormState({ mode: 'rename', node })
+  }
+  async function handleDelete(node: OrgNode) {
+    if (!window.confirm(`Delete "${node.name}"? This cannot be undone.`)) return
+    try {
+      await deleteNode.mutateAsync(node.id)
+    } catch (e) {
+      // A 409 carries the backend's reason (not empty: has children, pinned users,
+      // assigned surveys, or responses). Surface it; fall back for other errors.
+      const msg = e instanceof ApiError ? e.message : 'Could not delete this node. Try again.'
+      window.alert(msg)
+    }
+  }
 
   const idx = useMemo(() => buildTreeIndex(nodes), [nodes])
   const stats = useMemo(() => hierarchyStats(nodes, levels), [nodes, levels])
@@ -93,10 +120,16 @@ export default function Hierarchy() {
   return (
     <>
       <Topbar title="Hierarchy" subtitle={subtitle}>
-        <Button size="sm" disabled title="Coming soon">
-          <Icon name="edit" size={13} /> Edit
-          <span style={{ fontSize: 9, border: '1px solid var(--border)', borderRadius: 99, padding: '0 6px', marginLeft: 2 }}>soon</span>
-        </Button>
+        {isAdmin && (
+          <Button
+            size="sm"
+            variant={editMode ? 'primary' : 'default'}
+            onClick={() => setEditMode(v => !v)}
+            title={editMode ? 'Done editing' : 'Edit hierarchy'}
+          >
+            <Icon name={editMode ? 'check' : 'edit'} size={13} /> {editMode ? 'Done' : 'Edit'}
+          </Button>
+        )}
         <Button size="sm" disabled title="Coming soon">
           <Icon name="download" size={13} /> Export
           <span style={{ fontSize: 9, border: '1px solid var(--border)', borderRadius: 99, padding: '0 6px', marginLeft: 2 }}>soon</span>
@@ -190,6 +223,10 @@ export default function Hierarchy() {
                 onSelectStore={setSelectedStore}
                 depth={0}
                 keepIds={keepIds}
+                editMode={editMode}
+                onAddChild={openAddChild}
+                onRename={openRename}
+                onDelete={handleDelete}
               />
             ))}
           </Card>
@@ -203,6 +240,14 @@ export default function Hierarchy() {
         idx={idx}
         levels={levels}
         onClose={() => setSelectedStore(null)}
+      />
+
+      <NodeFormModal
+        open={formState !== null}
+        mode={formState?.mode ?? 'add'}
+        node={formState?.node ?? null}
+        levels={levels}
+        onClose={() => setFormState(null)}
       />
     </>
   )
