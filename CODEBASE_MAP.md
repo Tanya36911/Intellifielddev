@@ -246,11 +246,26 @@ honestly: moving a node to a new parent (a later piece), editing the org levels
 themselves (that comes with the wizard), and bulk CSV import/export (still greyed
 "soon" on the screen).
 
-The current green baseline is 249 backend tests + 221 frontend tests, build clean.
-What is next per the roadmap: the setup wizard UI (slice 2), a 5-step guided flow
-(pick a hierarchy template, name your levels, payroll, build the tree, invite
-people) that adds org-level editing on top of the editable hierarchy, then the
-Manager web app and Phase 5 (the Field mobile app + offline sync).
+As of the setup wizard (2026-06-26), the Admin app has a fullscreen, admin-only,
+**5-step Setup Wizard** at `/setup` (`apps/admin/src/pages/Setup/`), reached from a
+new **Setup** item in the sidebar. This was slice 2 (the UI) on top of the editable
+hierarchy and the set-org-levels brick finished earlier the same day, so the whole
+setup-wizard feature is now done. The five steps: (1) choose a starting point (pick a
+hierarchy template, switched off on a company that is already set up); (2) name your
+levels (rename-only once real stores exist, full add/remove/reorder on a fresh
+company), saved via `PUT /org-levels`; (3) payroll on/off, saved via `PATCH /tenants`;
+(4) build the tree, adding org spots via `POST /nodes`; (5) invite people, adding and
+pinning team members via `POST /users` with a starting password. The wizard saves as
+you go, and Finish or Exit returns to the dashboard. It is admin-only (the route
+redirects non-admins, the Setup nav item is hidden from them, and the backend still
+guards every call). No new backend was needed: it reuses the existing `PUT /org-levels`,
+`PATCH /tenants`, `POST /nodes`, and `POST /users` endpoints. With the setup wizard
+done, the **Admin web app is feature-complete** for this roadmap.
+
+The current green baseline is 249 backend tests + 247 frontend tests, build clean.
+What is next per the roadmap: with the Admin web app feature-complete, the next tracks
+are the Manager web app (reuses the same backend, scoped to a manager's branch) and
+Phase 5 (the Field mobile app + offline sync).
 
 As of W5 (the responses sub-feature inside the Surveys screen), the Surveys list
 now shows a response count badge on each survey row, and clicking it opens two
@@ -305,7 +320,7 @@ On the frontend (`apps/admin/src/pages/Surveys/`):
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. It has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, the Hierarchy screen wired to `/nodes` and `/org-levels` (now with an admin-only Edit mode that adds/renames/deletes nodes via `POST`/`PATCH`/`DELETE /nodes`), the Users & Roles screen wired to `/users`, and the Settings screen wired to `/tenants`, on top of the login screen. All Admin web sidebar screens are now complete and the Hierarchy screen is editable. Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. It has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, the Hierarchy screen wired to `/nodes` and `/org-levels` (now with an admin-only Edit mode that adds/renames/deletes nodes via `POST`/`PATCH`/`DELETE /nodes`), the Users & Roles screen wired to `/users`, the Settings screen wired to `/tenants`, and the fullscreen 5-step Setup Wizard at `/setup` (which reuses `PUT /org-levels`, `PATCH /tenants`, `POST /nodes`, and `POST /users`), on top of the login screen. All Admin web sidebar screens are complete, the Hierarchy screen is editable, and with the setup wizard done the Admin web app is feature-complete. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |

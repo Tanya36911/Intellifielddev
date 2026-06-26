@@ -160,6 +160,40 @@ GREEN: 243 backend tests + 221 frontend tests, admin build clean (previous basel
 `docs/superpowers/specs/2026-06-26-editable-hierarchy-design.md`. Next: the setup
 wizard UI (slice 2), below.
 
+**Setup wizard slice 2: the wizard UI (DONE, 2026-06-26).** With this slice the
+**whole setup wizard feature is done**, and the Admin web app is feature-complete for
+this roadmap. A fullscreen, admin-only, **5-step Setup Wizard** lives at `/setup`,
+reached from a new **Setup** item in the sidebar (organization group). It walks an
+admin through configuring the company by assembling the bricks built earlier the same
+day: (1) **Choose a starting point** (pick a hierarchy template, a starting level
+structure; on a company that is already set up, templates are disabled with a note
+that they apply to new companies only); (2) **Name your levels** (rename, and on a
+fresh company add / remove / reorder, the org levels, saved via `PUT /org-levels`; on
+a company that already has stores it shows the company's REAL current level names in
+rename-only mode, since changing the number of levels would strand existing stores,
+with a clear note); (3) **Payroll** (turn the payroll module on or off, saved via
+`PATCH /tenants`; the detailed pay-period settings are shown as "coming soon", same as
+the Settings screen); (4) **Build the tree** (add org nodes, regions / districts /
+stores, via `POST /nodes`; CSV import and system sync are "coming soon"); (5) **Invite
+people** (add users and pin them to a node via `POST /users`, the admin setting a
+starting password; real emailed invites are "coming soon"). The wizard saves as you
+go, and Finish or Exit returns to the dashboard. It is admin-only: the route redirects
+non-admins, the Setup nav item is hidden from them, and the backend still guards every
+call. No new backend was needed (it reuses `PUT /org-levels`, `PATCH /tenants`,
+`POST /nodes`, and `POST /users`). New files in `apps/admin/src/pages/Setup/`
+(`SetupWizard.tsx`, `useSetup.ts`, `StepTemplate` / `StepLevels` / `StepPayroll` /
+`StepTree` / `StepInvite`, CSS, tests); `apps/admin/src/lib/api.ts` `apiSend` now also
+allows PUT; `apps/admin/src/App.tsx` has a `/setup` route outside the app shell
+(fullscreen, like login); `apps/admin/src/shell/nav.ts` has the admin-only Setup item;
+`apps/admin/src/shell/Sidebar.tsx` hides admin-only items from non-admins. An
+adversarial review caught and fixed three things first (step 2 now seeds from the
+company's real saved levels, the payroll switch can no longer fire overlapping saves,
+and store-level nodes are no longer offered as parents when adding to the tree). Spec
+in `docs/superpowers/specs/2026-06-26-setup-wizard-design.md`. Gate GREEN: 249 backend
+tests + 247 frontend tests, admin build clean (previous baseline 249 backend + 221
+frontend). With the setup wizard done, the Admin web app is feature-complete; next are
+the Manager web app and Phase 5.
+
 **Users & Roles (DONE).** The Admin "Users & Roles" sidebar item at `/users` is
 now a real screen (was "coming soon"). A **People** tab (three role-count cards for
 Admin / Manager / Rep, a plain-language banner that "a role is what a person can do,
@@ -193,16 +227,13 @@ name and/or payroll_enabled; the company code is permanent and not editable). Ne
 files in `apps/admin/src/pages/Settings/`. Deferred: pay-period defaults, work model,
 store logos, a unified company audit feed, and the data & security panel.
 
-**The Admin web-screens track is now complete**, and the Hierarchy screen is now
-**editable** (setup-wizard slice 1). W1, W3, W4, W5, W6, W7, plus Users & Roles and
-Settings are all shipped, and the editable hierarchy landed on top of W7. Current
-green baseline: 243 backend tests + 221 frontend tests, build clean. With the
-editable hierarchy and the Users brick both in place, the next step is the **setup
-wizard UI (slice 2)**: a 5-step guided flow (pick a hierarchy template, name your
-levels, payroll, build the tree, invite people) that adds org-level editing on top
-of the editable hierarchy. After that, the larger tracks are the **Manager web app**
-(reuses the same backend, scoped to a manager's branch) and **Phase 5** (the Field
-mobile app + offline sync).
+**The Admin web app is now feature-complete.** W1, W3, W4, W5, W6, W7, plus Users &
+Roles and Settings are all shipped, the editable hierarchy landed on top of W7, and
+the **Setup wizard is done** (both slices: the editable hierarchy and the fullscreen
+5-step wizard UI at `/setup`). Current green baseline: 249 backend tests + 247
+frontend tests, build clean. With the Admin web app feature-complete, the larger
+tracks from here are the **Manager web app** (reuses the same backend, scoped to a
+manager's branch) and **Phase 5** (the Field mobile app + offline sync).
 
 ## Small backend bricks to slot in just-in-time
 
@@ -241,8 +272,8 @@ plus tests). We add each only when its screen comes up, so we are never blocked:
   locked), with a re-map guard that refuses changing the NUMBER of levels once real
   nodes exist (rename/reorder labels stays allowed), while a fresh company can set
   any 2 to 7 levels. In `api/app/hierarchy.py` + `ScopedRepo.set_org_levels`, no
-  migration. With this, every backend piece the setup wizard needs exists; only the
-  wizard UI (slice 2) remains.
+  migration. With this, every backend piece the setup wizard needs exists. The wizard
+  UI (slice 2) was then built on 2026-06-26 (above), so the setup wizard is now DONE.
 - **Shelf photos** in responses need object storage, which is **5-BE-c** in the
   Field track.
 

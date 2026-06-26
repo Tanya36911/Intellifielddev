@@ -16,9 +16,11 @@ table, approve/seal/reopen, audit log, CSV download at `/payroll`), the
 admin-only Edit mode to add/rename/delete nodes at `/hierarchy`), the
 **Users & Roles** screen (the team list, role-count cards, a
 capability matrix, and admin-only add-a-person / change-a-role / move-a-pin at
-`/users`), and the **Settings** screen (the company name and a payroll on/off
-switch, the rest shown as "coming soon", at `/settings`). All Admin web sidebar
-screens are now complete, and the Hierarchy screen is editable for admins.
+`/users`), the **Settings** screen (the company name and a payroll on/off
+switch, the rest shown as "coming soon", at `/settings`), and the fullscreen,
+admin-only **Setup wizard** (a 5-step guided company-setup flow at `/setup`). All
+Admin web sidebar screens are now complete, the Hierarchy screen is editable for
+admins, and with the setup wizard done the Admin web app is feature-complete.
 
 To see it: `pnpm dev:admin`, then open the address it prints (usually
 http://localhost:5173). To run its automated checks: `pnpm test:admin`.
@@ -59,7 +61,9 @@ Decides which screen shows for which web address. `/login` shows the login
 screen; `/` shows the **dashboard** (inside the app shell); the not-yet-built
 screens show a "coming soon" page. The "doorman" rule lives here: if you are not
 signed in and try to open a screen, it sends you to `/login`; if you are already
-signed in and open `/login`, it sends you to `/`.
+signed in and open `/login`, it sends you to `/`. Added with the setup wizard: a
+`/setup` route that lives OUTSIDE the app shell (it is fullscreen, like the login
+screen), and it is admin-only (a non-admin who opens it is redirected away).
 
 ### index.css  (the baseline look)
 A few global style rules: the background color, the body font, and pointing
@@ -74,7 +78,9 @@ wristband back), `health` (is the backend awake?), and (added in W1) `apiGet`
 wristband) and `downloadCsv` (ask the backend for a spreadsheet file and save it
 to your computer, also with the wristband attached). Added in W3: `apiSend`
 (the write helper, used for POST and PATCH requests that save or update
-something, like adding or editing a product). Added with the editable Hierarchy
+something, like adding or editing a product; as of the setup wizard, `apiSend`
+also allows PUT, used by the wizard's "name your levels" step to save the level
+structure via `PUT /org-levels`). Added with the editable Hierarchy
 (2026-06-26): `apiDelete` (the delete helper, used to remove something, like
 deleting an empty org node), again with the login wristband attached. Every screen
 goes through this file, so the backend's address is written in exactly one place.
@@ -110,13 +116,17 @@ shown inside it.
   the org tree), the navigation menu (with the not-yet-built screens shown as
   "coming soon" placeholders), your footprint of Nodes/Stores/Reps, and the user
   card with Sign out. The web version deliberately leaves out a few prototype
-  bits (no tenant switcher, no "Synced" control; the setup-wizard menu item and
-  the notifications bell are "coming soon"). Checked by `Sidebar.test.tsx`.
+  bits (no tenant switcher, no "Synced" control; the notifications bell is
+  "coming soon"). As of the setup wizard, the sidebar **hides admin-only menu
+  items from non-admins** (so a manager or rep does not see the Setup item).
+  Checked by `Sidebar.test.tsx`.
 - `shell/Topbar.tsx` + `Topbar.module.css`: the slim bar across the top of each
   page (the page's title and per-page controls). Checked by `Topbar.test.tsx`.
 - `shell/nav.ts`: the plain list of menu items (their names, icons, web
   addresses, and whether each is built yet or still "coming soon"). Keeping the
-  menu in one list means the sidebar and the route map agree.
+  menu in one list means the sidebar and the route map agree. As of the setup
+  wizard it includes the admin-only **Setup** item (in the organization group),
+  which the sidebar hides from non-admins.
 
 ### ui/  (the shared UI kit, added in W1 and extended in W3)
 Small reusable building blocks ported from the prototype, so every screen looks
@@ -350,6 +360,41 @@ All of the kit is checked together by `ui/ui.test.tsx`.
     setting (pay-period defaults, work model, store chain logos, audit log, data &
     security) as "coming soon".
   (Each panel has its own `.module.css` and a matching test file.)
+- `pages/Setup/`: the Setup wizard, added 2026-06-26, at `/setup`. A fullscreen,
+  admin-only, 5-step guided flow that walks an admin through setting up their company
+  by reusing the building blocks already shipped. It saves as you go, and Finish or
+  Exit returns to the dashboard. It is admin-only (the route redirects non-admins, the
+  Setup nav item is hidden from them, and the backend still guards every save). No new
+  backend was needed: it reuses `PUT /org-levels`, `PATCH /tenants`, `POST /nodes`, and
+  `POST /users`. The folder contains:
+  - `SetupWizard.tsx` + CSS: the wizard shell. It frames the five steps, the
+    step indicator, the Back / Next / Finish / Exit controls, and reads who is signed
+    in to enforce admin-only.
+  - `useSetup.ts`: the data layer. Loads the company's current org levels, tree,
+    settings, and team, and holds the save calls each step uses (`PUT /org-levels`,
+    `PATCH /tenants`, `POST /nodes`, `POST /users`).
+  - `StepTemplate.tsx`: step 1, choose a starting point (pick a hierarchy template, a
+    ready-made level structure). On a company that is already set up, templates are
+    switched off with a note that they are for brand-new companies only.
+  - `StepLevels.tsx`: step 2, name your levels. Renames the org levels (and, on a fresh
+    company, adds / removes / reorders them), saved via `PUT /org-levels`. On a company
+    that already has stores it shows the company's REAL current level names in
+    rename-only mode (it will not change the number of levels, which would strand
+    existing stores), with a clear note.
+  - `StepPayroll.tsx`: step 3, turn the payroll module on or off (saved via
+    `PATCH /tenants`). The detailed pay-period settings are shown as "coming soon",
+    same as the Settings screen.
+  - `StepTree.tsx`: step 4, build the tree, adding org spots (regions, districts,
+    stores) via `POST /nodes`. CSV import and system sync are shown as "coming soon".
+    A store (the bottom of the tree) is never offered as a parent when adding a spot.
+  - `StepInvite.tsx`: step 5, invite people, adding team members and pinning each to a
+    spot via `POST /users` (the admin sets a starting password). Real emailed invites
+    are shown as "coming soon".
+  (Each step has its CSS and a matching test file.) An adversarial review caught and
+  fixed three issues before this shipped: step 2 now seeds from the company's real
+  saved level names (it had been showing the template's placeholder names on an
+  already-set-up company), the payroll on/off switch can no longer fire two saves at
+  once, and store-level nodes are no longer offered as parents in step 4.
 - `pages/ComingSoon.tsx` + `ComingSoon.module.css`: the friendly placeholder shown
   for any menu items whose screens we have not built yet.
 A `.module.css` file is styling that applies ONLY to its own screen, so two

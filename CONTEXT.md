@@ -46,12 +46,16 @@ fast-follow, never the headline.
     name + payroll on/off at /settings).
   - ALL ADMIN WEB SIDEBAR SCREENS COMPLETE as of 2026-06-25 (the six demo-order
     screens plus Users & Roles and Settings).
-  - [~] **Setup wizard** is being built in two slices. **Slice 1 (editable
-    hierarchy) DONE** (2026-06-26): the Hierarchy screen at /hierarchy now has an
-    admin-only Edit mode (add a child node, rename a node, delete an empty node),
-    backed by new POST/PATCH/DELETE /nodes endpoints. NEXT: slice 2, the 5-step
-    setup wizard UI (pick a hierarchy template, name your levels, payroll, build
-    the tree, invite people), which adds org-level editing on top of slice 1.
+  - [x] **Setup wizard DONE** (2026-06-26, built in two slices). **Slice 1 (editable
+    hierarchy)**: the Hierarchy screen at /hierarchy gained an admin-only Edit mode
+    (add a child node, rename a node, delete an empty node), backed by new
+    POST/PATCH/DELETE /nodes endpoints. **Slice 2 (the wizard UI)**: a fullscreen,
+    admin-only, 5-step Setup Wizard at /setup (pick a hierarchy template, name your
+    levels, payroll on/off, build the tree, invite people), reached from a new
+    admin-only Setup item in the sidebar; it reuses PUT /org-levels, PATCH /tenants,
+    POST /nodes, and POST /users (no new backend). With the setup wizard done, the
+    **Admin web app is feature-complete** for this roadmap. NEXT: the Manager web app
+    and/or Phase 5.
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
   first. Split into a backend sync-contract track and a mobile track.
@@ -432,3 +436,34 @@ fast-follow, never the headline.
   221 frontend, build clean. Committed locally but NOT pushed. With this, every backend piece the wizard
   needs exists (nodes, org-levels, users, tenant/payroll config); the only thing left is the wizard UI
   itself (slice 2), which is a fullscreen 5-step flow that assembles these.
+- 2026-06-26: SETUP WIZARD COMPLETE (slice 2, the UI) - with it the whole setup wizard feature is done,
+  and the Admin web app is feature-complete for this roadmap. A fullscreen, admin-only, 5-step Setup
+  Wizard lives at /setup, reached from a new "Setup" item in the sidebar (organization group). It walks
+  an admin through configuring the company by assembling the bricks built earlier the same day: (1) Choose
+  a starting point (pick a hierarchy template, a starting level structure; on a company that is already set
+  up, templates are disabled with a note that they apply to new companies only); (2) Name your levels
+  (rename, and on a fresh company add/remove/reorder, the org levels, saved via PUT /org-levels; on a
+  company that already has stores it shows the company's REAL current level names in rename-only mode,
+  since changing the number of levels would strand existing stores, with a clear note); (3) Payroll (turn
+  the payroll module on or off, saved via PATCH /tenants; the detailed pay-period settings are shown as
+  "coming soon", same as the Settings screen); (4) Build the tree (add org nodes, regions/districts/stores,
+  via POST /nodes; CSV import and system sync are "coming soon"); (5) Invite people (add users and pin them
+  to a node via POST /users, the admin setting a starting password; real emailed invites are "coming
+  soon"). The wizard saves as you go, and Finish or Exit returns to the dashboard. It is admin-only: the
+  route redirects non-admins, the Setup nav item is hidden from them, and the backend still guards every
+  call. No new backend was needed (it reuses PUT /org-levels, PATCH /tenants, POST /nodes, POST /users).
+  Frontend: a new folder apps/admin/src/pages/Setup/ (SetupWizard.tsx, useSetup.ts, StepTemplate/StepLevels/
+  StepPayroll/StepTree/StepInvite, CSS, tests); apps/admin/src/lib/api.ts apiSend now also allows PUT;
+  apps/admin/src/App.tsx has a /setup route outside the app shell (fullscreen, like login);
+  apps/admin/src/shell/nav.ts has the admin-only Setup item; apps/admin/src/shell/Sidebar.tsx hides
+  admin-only items from non-admins. An adversarial review caught and fixed three things before this was
+  finalized: step 2 now seeds from the company's real saved levels (it had been showing template
+  placeholder names on an already-populated company), the payroll on/off switch can no longer fire
+  overlapping saves, and store-level nodes are no longer offered as parents when adding to the tree. Built
+  brainstorm -> per-slice specs -> test-first bricks (in the main folder) -> a worktree/main UI build -> an
+  adversarial review; specs in docs/superpowers/specs/2026-06-26-editable-hierarchy-design.md,
+  2026-06-26-org-levels-brick-design.md, and 2026-06-26-setup-wizard-design.md. Gate GREEN: 249 backend
+  tests + 247 frontend tests, admin build clean (previous baseline 249 backend + 221 frontend). Committed
+  locally but NOT pushed yet. NEXT: the Admin app is feature-complete, so the next tracks are the Manager
+  web app (reuses the same backend, scoped to a manager's branch) and Phase 5 (the Field mobile app +
+  offline sync).

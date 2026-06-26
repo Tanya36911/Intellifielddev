@@ -210,6 +210,38 @@ helper. Deferred and noted honestly: moving a node to a new parent (a later
 piece), editing the org levels themselves (that comes with the wizard), and bulk
 CSV import/export (still greyed "soon" on the screen).
 
+**Setup wizard DONE (2026-06-26):** this was slice 2 (the screen) on top of the
+editable hierarchy and the set-org-levels brick finished earlier the same day, so
+the **whole setup wizard is now done**. It is a fullscreen, admin-only, **5-step
+guided flow** at `/setup`, reached from a new **Setup** item in the sidebar. It walks
+an admin through setting up their company by snapping together the building blocks we
+made earlier:
+1. **Choose a starting point**: pick a hierarchy template (a ready-made level
+   structure). On a company that is already set up, the templates are switched off
+   with a note that they are for brand-new companies only.
+2. **Name your levels**: rename your org levels (and, on a brand-new company, add,
+   remove, or reorder them), saved through the level-setting endpoint. On a company
+   that already has stores it shows your REAL current level names in rename-only mode
+   (it will not let you change the number of levels, because that would strand stores
+   you already have), with a clear note saying so.
+3. **Payroll**: turn the payroll feature on or off (the same switch as in Settings);
+   the detailed pay-period settings are shown as "coming soon".
+4. **Build the tree**: add org spots (regions, districts, stores). Bulk CSV import and
+   system sync are shown as "coming soon".
+5. **Invite people**: add team members and pin each one to a spot on the tree (the
+   admin sets a starting password). Real emailed invites are shown as "coming soon".
+
+The wizard **saves as you go**, and Finish or Exit returns you to the dashboard. It is
+admin-only from every angle: the address bounces non-admins away, the Setup menu item
+is hidden from them, and the backend still checks every save. No new backend was
+needed (it reuses the level-setting, company-settings, add-node, and add-user
+endpoints we already had). New files in `apps/admin/src/pages/Setup/`. An adversarial
+review caught and fixed three things first: step 2 now starts from your real saved
+level names (it had been showing the template's placeholder names on a company that
+was already set up), the payroll on/off switch can no longer fire two saves at once,
+and a store (the bottom of the tree) is no longer offered as a parent when you add a
+new spot.
+
 **Users & Roles screen DONE:** the Admin "Users & Roles" sidebar item at `/users`
 is now a real screen (was "coming soon"). It has two tabs. The **People** tab shows
 three role-count cards (Admin / Manager / Rep), a plain-language banner ("a role is
@@ -248,14 +280,12 @@ be edited. New files in `apps/admin/src/pages/Settings/`. Deferred (the honest
 unified company audit feed, and the data & security panel.
 
 **ALL the Admin sidebar screens are now DONE** (W1 dashboard, W3 catalog, W4 surveys,
-W5 responses, W6 payroll, W7 hierarchy, plus Users & Roles and Settings), and the
-**Hierarchy screen is now editable for admins** (setup-wizard slice 1, done
-2026-06-26). Current green baseline: 249 backend tests + 221 frontend tests, build
-clean. What is next: the **setup wizard UI** (slice 2): a 5-step guided flow (pick a
-hierarchy template, name your levels, payroll, build the tree, invite people) that
-adds org-level editing on top of the editable hierarchy we just built. The **Manager
-web app** and **Phase 5** (the Field mobile app + offline sync) are the larger tracks
-after that.
+W5 responses, W6 payroll, W7 hierarchy, plus Users & Roles and Settings), the
+**Hierarchy screen is editable for admins**, and the **Setup wizard is complete** (the
+fullscreen 5-step flow at `/setup`), so the **Admin web app is feature-complete** for
+this roadmap. Current green baseline: 249 backend tests + 247 frontend tests, build
+clean. What is next: the **Manager web app** (reuses the same backend, scoped to a
+manager's branch) and **Phase 5** (the Field mobile app + offline sync).
 
 ---
 
@@ -503,6 +533,21 @@ project memory, so a new chat in this folder already knows them.)
   apps/admin/src/pages/Hierarchy/NodeFormModal.tsx plus edit-mode wiring;
   lib/api.ts gained apiDelete. Deferred: moving a node to a new parent, editing
   the org levels themselves (the wizard), and bulk CSV import/export.
+- Setup wizard (the fullscreen 5-step setup flow): DONE (2026-06-26). With it the
+  whole setup wizard feature is done and the Admin web app is feature-complete. An
+  admin-only flow at /setup, reached from a new Setup item in the sidebar: (1) pick a
+  hierarchy template (off on a company that is already set up); (2) name your levels
+  (rename-only once stores exist, full add/remove/reorder on a fresh company), saved
+  via PUT /org-levels; (3) payroll on/off, saved via PATCH /tenants; (4) build the
+  tree, add org spots via POST /nodes; (5) invite people, add and pin team members via
+  POST /users with a starting password. Saves as you go; Finish or Exit returns to the
+  dashboard. Admin-only (the route redirects non-admins, the nav item is hidden, and
+  the backend still guards every call). No new backend (it reuses PUT /org-levels,
+  PATCH /tenants, POST /nodes, POST /users). New files in apps/admin/src/pages/Setup/;
+  lib/api.ts apiSend now also allows PUT; App.tsx has a fullscreen /setup route;
+  shell/nav.ts has the admin-only Setup item; Sidebar.tsx hides admin-only items from
+  non-admins. An adversarial review caught and fixed three issues first (step 2 seeds
+  from real saved levels, no overlapping payroll saves, no store offered as a parent).
 - Users & Roles (the Admin team screen): DONE. A real screen at /users (was "coming
   soon"). A People tab with three role-count cards (Admin / Manager / Rep), a
   plain-language banner, and a team table (name, email, role, pinned spot). A Roles
@@ -523,14 +568,13 @@ project memory, so a new chat in this folder already knows them.)
   admin-only PATCH /tenants (edit the name and/or the payroll switch; the company code
   is permanent). New files in apps/admin/src/pages/Settings/.
 - **ALL the Admin sidebar screens are DONE** (W1, W3, W4, W5, W6, W7, plus Users &
-  Roles and Settings), and the **Hierarchy screen is now editable for admins**
-  (setup-wizard slice 1, done 2026-06-26). Current green baseline: 249 backend tests
-  + 221 frontend tests, build clean.
-- **NEXT (see [ROADMAP.md](ROADMAP.md)): the setup wizard UI (slice 2).** With the
-  editable hierarchy and the Users brick now in place, the next step is the 5-step
-  guided setup wizard (pick a hierarchy template, name your levels, payroll, build
-  the tree, invite people), which adds org-level editing on top of the editable
-  hierarchy. After that: the Manager web app and Phase 5 (the Field mobile app +
+  Roles and Settings), the **Hierarchy screen is editable for admins**, and the
+  **Setup wizard is complete** (the fullscreen 5-step flow at /setup), so the **Admin
+  web app is feature-complete** for this roadmap. Current green baseline: 249 backend
+  tests + 247 frontend tests, build clean.
+- **NEXT (see [ROADMAP.md](ROADMAP.md)): the Manager web app and/or Phase 5.** With the
+  Admin web app feature-complete, the next tracks are the Manager web app (reuses the
+  same backend, scoped to a manager's branch) and Phase 5 (the Field mobile app +
   offline sync).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
