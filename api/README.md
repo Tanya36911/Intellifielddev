@@ -138,12 +138,35 @@ section (list / get / create / update_user, branch-scoped exactly like the org t
 so you only ever see and manage people in your own part of the company) and a tenant
 section (get / update_tenant, for reading and updating this company's settings), plus
 a `LastAdminError` that the users section raises if an update would remove the
-company's last remaining admin.
+company's last remaining admin. As of the editable Hierarchy (2026-06-26) the
+ScopedRepo also gained node-write methods (`get_node`, `create_node`, `update_node`,
+`delete_node`) plus a `_slug_code` helper that turns a node's name into a unique
+internal code; these power the admin-only add/rename/delete-node actions on the
+Hierarchy screen, branch-scoped exactly like the rest of the org tree, and
+`delete_node` refuses (rather than deletes) a node that still has children, anyone
+pinned to it, assigned surveys, or responses.
 
 ### app/hierarchy.py  (the org-tree API)
 Defines `GET /nodes`, which returns the slice of the org tree the caller is
 allowed to see, using the ScopedRepo. This is the live proof the scope guard
-works end to end.
+works end to end. It also defines `GET /org-levels` (the company's level names
+such as Region/District/Store, tenant-scoped, added in W7).
+
+As of the editable Hierarchy (2026-06-26, the first slice toward the setup
+wizard), this file also defines three admin-only, branch-scoped write endpoints
+that let an admin edit the org tree from the Hierarchy screen, all through the
+ScopedRepo and with no database change (the `nodes` table already existed):
+- `POST /nodes` adds a child node under a given parent. The new child's level is
+  set automatically from the parent (one level deeper, so a child of a Region
+  becomes a District), its internal code is auto-generated and made unique from the
+  name, and adding a child below the bottom Store level is refused with a 400 (a
+  store is a leaf).
+- `PATCH /nodes/{id}` renames a node and, for a store, edits its chain and address.
+  The node's parent, level, and code are not editable.
+- `DELETE /nodes/{id}` deletes a node, but only when it is empty (it has no child
+  nodes, nobody is pinned to it, no surveys are assigned to it, and there are no
+  responses). If it is not empty, the delete is refused with a 409 that names the
+  blocker; a node outside the caller's branch is a 404.
 
 ### app/catalog.py  (the product catalog API)
 Defines the product endpoints: `GET /skus` (any signed-in person in the company

@@ -12,12 +12,13 @@ and a per-page top bar that frame every screen), a small shared **UI kit**
 company's product list at `/catalog`), the **Surveys** area (build, publish, and
 assign checklists at `/surveys`), the **Payroll** screen (pay periods, hours
 table, approve/seal/reopen, audit log, CSV download at `/payroll`), the
-**Hierarchy** screen (the org tree, expand/collapse, store detail panel at
-`/hierarchy`), the **Users & Roles** screen (the team list, role-count cards, a
+**Hierarchy** screen (the org tree, expand/collapse, store detail panel, and an
+admin-only Edit mode to add/rename/delete nodes at `/hierarchy`), the
+**Users & Roles** screen (the team list, role-count cards, a
 capability matrix, and admin-only add-a-person / change-a-role / move-a-pin at
 `/users`), and the **Settings** screen (the company name and a payroll on/off
 switch, the rest shown as "coming soon", at `/settings`). All Admin web sidebar
-screens are now complete.
+screens are now complete, and the Hierarchy screen is editable for admins.
 
 To see it: `pnpm dev:admin`, then open the address it prints (usually
 http://localhost:5173). To run its automated checks: `pnpm test:admin`.
@@ -73,10 +74,12 @@ wristband back), `health` (is the backend awake?), and (added in W1) `apiGet`
 wristband) and `downloadCsv` (ask the backend for a spreadsheet file and save it
 to your computer, also with the wristband attached). Added in W3: `apiSend`
 (the write helper, used for POST and PATCH requests that save or update
-something, like adding or editing a product). Every screen goes through
-this file, so the backend's address is written in exactly one place. It also
-turns backend problems into friendly messages ("Invalid email or password", or
-"Can't reach the backend").
+something, like adding or editing a product). Added with the editable Hierarchy
+(2026-06-26): `apiDelete` (the delete helper, used to remove something, like
+deleting an empty org node), again with the login wristband attached. Every screen
+goes through this file, so the backend's address is written in exactly one place.
+It also turns backend problems into friendly messages ("Invalid email or password",
+or "Can't reach the backend").
 Its check: `lib/api.test.ts`.
 
 ### lib/session.ts  (where the login wristband is read)
@@ -271,18 +274,33 @@ All of the kit is checked together by `ui/ui.test.tsx`.
   contains `Payroll.tsx`, `usePayroll.ts`, `ReopenModal.tsx`, plus tests and CSS.
   Deferred: per-rep hour drill-in, inline editing.
 - `pages/Hierarchy/`: the Hierarchy screen, added in W7, at `/hierarchy`. Shows
-  the company's org tree in a read-only expand/collapse view. Each row has a colour
+  the company's org tree in an expand/collapse view. Each row has a colour
   dot, the level name (Region/District/Store from the company's own level
   definitions), a chain badge on stores, the store code, and child counts. A search
   box filters by name or code; a chain filter narrows by chain. Clicking a store
   opens a detail panel with the store's full management path and its attributes.
   Backed by the existing `GET /nodes` endpoint plus a new small read-only
   `GET /org-levels` endpoint (returns the company's level names, tenant-scoped;
-  added to `api/app/hierarchy.py` and `api/app/scope.py` with a test). The folder
-  contains `Hierarchy.tsx`, `useHierarchy.ts`, `TreeNode.tsx`,
-  `StoreDetailModal.tsx`, plus tests and CSS. Deferred (shown as greyed "soon"):
-  coverage mode (managers/reps overlay), add/rename/delete nodes, bulk import,
-  export.
+  added to `api/app/hierarchy.py` and `api/app/scope.py` with a test). As of the
+  editable Hierarchy (2026-06-26, setup-wizard slice 1) the screen has an
+  **admin-only Edit mode**: an admin can add a child node under any node (its level
+  is set automatically from the parent, so a child of a Region becomes a District,
+  and a Store gets no add-child because a store is the bottom of the tree), rename a
+  node (and edit a store's chain and address), and delete a node but only when it is
+  empty (no child nodes, nobody pinned to it, no surveys assigned, no responses;
+  otherwise it refuses and tells you what is blocking the delete). Managers and reps
+  still see the screen read-only. The edit actions call three backend endpoints:
+  `POST /nodes` (add a child), `PATCH /nodes/{id}` (rename and edit store
+  attributes), and `DELETE /nodes/{id}` (delete an empty node), all admin-only and
+  branch-scoped, with no database change. The folder contains `Hierarchy.tsx`,
+  `useHierarchy.ts`, `TreeNode.tsx`, `StoreDetailModal.tsx`, and (added with edit
+  mode) `NodeFormModal.tsx` (the add/rename pop-up form), plus tests and CSS. Edit
+  mode also added new mutation hooks plus an `isBottomLevel` helper and a
+  `levelChildName` helper in `useHierarchy.ts`, edit-mode wiring in `Hierarchy.tsx`
+  and `TreeNode.tsx`, and an `apiDelete` helper in `lib/api.ts`. Deferred (shown as
+  greyed "soon"): coverage mode (managers/reps overlay), moving a node to a new
+  parent (re-parenting), editing the org levels themselves (that comes with the
+  wizard), bulk import, and export.
 - `pages/Users/`: the Users & Roles screen, at `/users`. A People tab with three
   role-count cards (Admin / Manager / Rep), a plain-language banner ("a role is what
   a person can do, their pin is where they can do it"), and a team table; a Roles tab

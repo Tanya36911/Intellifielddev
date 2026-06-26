@@ -218,10 +218,38 @@ plus a `LastAdminError`.
 
 With the Users & Roles and Settings screens shipped, **all the Admin web sidebar
 screens are complete**: W1 (dashboard + shell), W3 (catalog), W4 (surveys), W5
-(responses), W6 (payroll), W7 (hierarchy), plus Users & Roles and Settings. The
-current green baseline is 230 backend tests + 213 frontend tests, build clean. What is
-next per the roadmap: the setup wizard (it needs the Users brick just built plus
-on-screen hierarchy editing, meaning node add/rename/delete endpoints), then the
+(responses), W6 (payroll), W7 (hierarchy), plus Users & Roles and Settings.
+
+As of setup-wizard slice 1 (2026-06-26), the **Hierarchy screen is now editable**
+for admins (it was read-only). This is the first of two slices toward the setup
+wizard: making the org tree editable. The screen at `/hierarchy` gained an
+admin-only Edit mode that can add a child node (its level is set automatically from
+the parent, so a child of a Region becomes a District, and a Store gets no add-child
+because a store is the bottom of the tree), rename a node (and edit a store's chain
+and address), and delete a node but only when it is empty (no child nodes, nobody
+pinned to it, no surveys assigned, no responses; otherwise it refuses and names the
+blocker). Managers and reps still see the screen read-only. Three new backend
+endpoints power it, with no database change (the `nodes` table already existed) and
+all admin-only and branch-scoped through the existing scope guard: `POST /nodes`
+(add a child, the child's level is the parent's plus one, the internal code is
+auto-generated and made unique from the name, and adding below the bottom Store
+level is refused with a 400), `PATCH /nodes/{id}` (rename and edit store attributes;
+the parent, level, and code are not editable), and `DELETE /nodes/{id}` (only when
+empty, else a 409 naming the blocker; a 404 if the node is out of scope). These
+live in `api/app/hierarchy.py` (the router) and `api/app/scope.py` (the ScopedRepo
+gained `get_node`, `create_node`, `update_node`, `delete_node`, and a `_slug_code`
+helper). On the frontend, `apps/admin/src/pages/Hierarchy/` gained a new
+`NodeFormModal.tsx` (the add/rename pop-up) plus edit-mode wiring in `Hierarchy.tsx`
+and `TreeNode.tsx` and new mutation hooks in `useHierarchy.ts`, and
+`apps/admin/src/lib/api.ts` gained an `apiDelete` helper. Deferred and noted
+honestly: moving a node to a new parent (a later piece), editing the org levels
+themselves (that comes with the wizard), and bulk CSV import/export (still greyed
+"soon" on the screen).
+
+The current green baseline is 243 backend tests + 221 frontend tests, build clean.
+What is next per the roadmap: the setup wizard UI (slice 2), a 5-step guided flow
+(pick a hierarchy template, name your levels, payroll, build the tree, invite
+people) that adds org-level editing on top of the editable hierarchy, then the
 Manager web app and Phase 5 (the Field mobile app + offline sync).
 
 As of W5 (the responses sub-feature inside the Surveys screen), the Surveys list
@@ -277,7 +305,7 @@ On the frontend (`apps/admin/src/pages/Surveys/`):
 |--------|------|----------------|
 | `api/` | BACKEND | The waiter. Python code that answers requests and is the only thing allowed to touch the database. Full guide: [api/README.md](api/README.md). |
 | `db/` | DATABASE | The change-history for the pantry's shelves (which tables exist, what columns). Full guide: [db/README.md](db/README.md). |
-| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. It has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, the Hierarchy screen wired to `/nodes` and `/org-levels`, the Users & Roles screen wired to `/users`, and the Settings screen wired to `/tenants`, on top of the login screen. All Admin web sidebar screens are now complete. Full guide: [apps/admin/README.md](apps/admin/README.md). |
+| `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. It has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, the Hierarchy screen wired to `/nodes` and `/org-levels` (now with an admin-only Edit mode that adds/renames/deletes nodes via `POST`/`PATCH`/`DELETE /nodes`), the Users & Roles screen wired to `/users`, and the Settings screen wired to `/tenants`, on top of the login screen. All Admin web sidebar screens are now complete and the Hierarchy screen is editable. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
 | `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |

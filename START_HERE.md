@@ -188,8 +188,27 @@ child counts. A search box and chain filter narrow the view. Clicking a store op
 a detail panel with its management path and attributes. Backed by the existing
 `GET /nodes` plus a new small read-only `GET /org-levels` endpoint (the company's
 level names, tenant-scoped). New files in apps/admin/src/pages/Hierarchy/.
-Deferred (greyed "soon" on screen): coverage mode, add/rename/delete nodes, bulk
-import, export.
+Deferred (greyed "soon" on screen): coverage mode, bulk import, export.
+
+**Setup wizard slice 1 (editable Hierarchy) DONE (2026-06-26):** the Hierarchy
+screen at `/hierarchy` is no longer read-only. It now has an admin-only **Edit
+mode**. This is the first of two slices toward the setup wizard: making the org
+tree editable. In edit mode an admin can **add a child** under any node (the new
+child's level is set automatically from its parent, so a child of a Region becomes
+a District; a Store has no add-child because a store is the bottom of the tree),
+**rename** a node (and edit a store's chain and address), and **delete** a node,
+but only when it is empty (it has no child nodes, nobody is pinned to it, no
+surveys are assigned to it, and there are no responses); otherwise it refuses and
+tells you what is blocking the delete. Managers and reps still see the screen
+read-only, exactly as before. The new backend brick adds no database change (the
+nodes table already existed) and is admin-only and branch-scoped: `POST /nodes`
+(add a child), `PATCH /nodes/{id}` (rename and edit store attributes), and
+`DELETE /nodes/{id}` (only when empty, else it refuses and names the blocker). New
+file `apps/admin/src/pages/Hierarchy/NodeFormModal.tsx` (the add/rename pop-up),
+plus edit-mode wiring across that folder, and `lib/api.ts` gained an `apiDelete`
+helper. Deferred and noted honestly: moving a node to a new parent (a later
+piece), editing the org levels themselves (that comes with the wizard), and bulk
+CSV import/export (still greyed "soon" on the screen).
 
 **Users & Roles screen DONE:** the Admin "Users & Roles" sidebar item at `/users`
 is now a real screen (was "coming soon"). It has two tabs. The **People** tab shows
@@ -229,11 +248,14 @@ be edited. New files in `apps/admin/src/pages/Settings/`. Deferred (the honest
 unified company audit feed, and the data & security panel.
 
 **ALL the Admin sidebar screens are now DONE** (W1 dashboard, W3 catalog, W4 surveys,
-W5 responses, W6 payroll, W7 hierarchy, plus Users & Roles and Settings). Current
-green baseline: 230 backend tests + 213 frontend tests, build clean. What is next:
-the **setup wizard** (it needs the Users brick we just built plus on-screen hierarchy
-editing, meaning add/rename/delete-node endpoints). The **Manager web app** and
-**Phase 5** (the Field mobile app + offline sync) are the larger tracks after that.
+W5 responses, W6 payroll, W7 hierarchy, plus Users & Roles and Settings), and the
+**Hierarchy screen is now editable for admins** (setup-wizard slice 1, done
+2026-06-26). Current green baseline: 243 backend tests + 221 frontend tests, build
+clean. What is next: the **setup wizard UI** (slice 2): a 5-step guided flow (pick a
+hierarchy template, name your levels, payroll, build the tree, invite people) that
+adds org-level editing on top of the editable hierarchy we just built. The **Manager
+web app** and **Phase 5** (the Field mobile app + offline sync) are the larger tracks
+after that.
 
 ---
 
@@ -464,12 +486,23 @@ project memory, so a new chat in this folder already knows them.)
   redirected away entirely; managers approve; admins seal/reopen/read-audit.
   Frontend only: all backend endpoints already existed. New files in
   apps/admin/src/pages/Payroll/.
-- W7 (the Admin Hierarchy screen): DONE. A real org-tree screen at /hierarchy
-  (was "coming soon"). Read-only expand/collapse tree: colour dot, level name,
-  chain badge, store code, child counts; search and chain filter; store detail
-  panel. Backed by GET /nodes plus the new GET /org-levels endpoint
+- W7 (the Admin Hierarchy screen): DONE, and now EDITABLE for admins. A real
+  org-tree screen at /hierarchy (was "coming soon"). Expand/collapse tree: colour
+  dot, level name, chain badge, store code, child counts; search and chain filter;
+  store detail panel. Backed by GET /nodes plus the new GET /org-levels endpoint
   (tenant-scoped level names, added to api/app/hierarchy.py + api/app/scope.py
   with a test). New files in apps/admin/src/pages/Hierarchy/.
+- Setup wizard slice 1 (editable Hierarchy): DONE (2026-06-26). The Hierarchy
+  screen gained an admin-only Edit mode: add a child node (its level set
+  automatically from the parent), rename a node (and edit a store's chain and
+  address), and delete an empty node (refused, naming the blocker, if it has
+  children, anyone pinned to it, assigned surveys, or responses). Managers and reps
+  still see it read-only. New backend brick (no migration): POST /nodes,
+  PATCH /nodes/{id}, DELETE /nodes/{id}, admin-only and branch-scoped, in
+  api/app/hierarchy.py + api/app/scope.py. New file
+  apps/admin/src/pages/Hierarchy/NodeFormModal.tsx plus edit-mode wiring;
+  lib/api.ts gained apiDelete. Deferred: moving a node to a new parent, editing
+  the org levels themselves (the wizard), and bulk CSV import/export.
 - Users & Roles (the Admin team screen): DONE. A real screen at /users (was "coming
   soon"). A People tab with three role-count cards (Admin / Manager / Rep), a
   plain-language banner, and a team table (name, email, role, pinned spot). A Roles
@@ -490,11 +523,15 @@ project memory, so a new chat in this folder already knows them.)
   admin-only PATCH /tenants (edit the name and/or the payroll switch; the company code
   is permanent). New files in apps/admin/src/pages/Settings/.
 - **ALL the Admin sidebar screens are DONE** (W1, W3, W4, W5, W6, W7, plus Users &
-  Roles and Settings). Current green baseline: 230 backend tests + 213 frontend tests,
-  build clean.
-- **NEXT (see [ROADMAP.md](ROADMAP.md)): the setup wizard.** It needs the Users brick
-  we just built plus on-screen hierarchy editing (node add/rename/delete endpoints).
-  After that: the Manager web app and Phase 5 (the Field mobile app + offline sync).
+  Roles and Settings), and the **Hierarchy screen is now editable for admins**
+  (setup-wizard slice 1, done 2026-06-26). Current green baseline: 243 backend tests
+  + 221 frontend tests, build clean.
+- **NEXT (see [ROADMAP.md](ROADMAP.md)): the setup wizard UI (slice 2).** With the
+  editable hierarchy and the Users brick now in place, the next step is the 5-step
+  guided setup wizard (pick a hierarchy template, name your levels, payroll, build
+  the tree, invite people), which adds org-level editing on top of the editable
+  hierarchy. After that: the Manager web app and Phase 5 (the Field mobile app +
+  offline sync).
 - Secrets are now read from a local `.env` file (never committed) through one
   config file; the code has no weak built-in fallbacks. Remaining pre-launch
   step: in production, set a fresh long random `JWT_SECRET` and database password

@@ -45,7 +45,13 @@ fast-follow, never the headline.
     [x] **Users & Roles** (the team screen at /users); [x] **Settings** (company
     name + payroll on/off at /settings).
   - ALL ADMIN WEB SIDEBAR SCREENS COMPLETE as of 2026-06-25 (the six demo-order
-    screens plus Users & Roles and Settings). NEXT: the setup wizard.
+    screens plus Users & Roles and Settings).
+  - [~] **Setup wizard** is being built in two slices. **Slice 1 (editable
+    hierarchy) DONE** (2026-06-26): the Hierarchy screen at /hierarchy now has an
+    admin-only Edit mode (add a child node, rename a node, delete an empty node),
+    backed by new POST/PATCH/DELETE /nodes endpoints. NEXT: slice 2, the 5-step
+    setup wizard UI (pick a hierarchy template, name your levels, payroll, build
+    the tree, invite people), which adds org-level editing on top of slice 1.
 - [~] **Phase 5** - Field app + offline sync. RESEQUENCED (2026-06-18) to AFTER the
   web screens: it is the long, hard, last push, so the visible web screens come
   first. Split into a backend sync-contract track and a mobile track.
@@ -384,3 +390,32 @@ fast-follow, never the headline.
   auto-deploys). ALL ADMIN WEB SIDEBAR SCREENS NOW COMPLETE. NEXT: the setup wizard (needs the Users
   brick plus on-screen hierarchy editing, meaning node add/rename/delete endpoints), then the Manager
   web app and Phase 5 (the Field mobile app + offline sync).
+- 2026-06-26: SETUP WIZARD SLICE 1 (editable hierarchy) COMPLETE - the Hierarchy screen at /hierarchy
+  (previously read-only, W7) now has an admin-only Edit mode. This is slice 1 of 2 toward the setup
+  wizard: making the org hierarchy editable. In edit mode an admin can: add a child node under any node
+  (its level is set automatically from the parent, so a child of a Region becomes a District; Store
+  rows get no add-child because a store is a leaf); rename a node (and edit a store's chain and
+  address); and delete a node, but only when it is empty (no child nodes, nobody pinned to it, no
+  surveys assigned, no responses), otherwise it refuses and names the blocker. Managers and reps still
+  see the screen exactly as before (read-only). Backend brick (no database migration; the nodes table
+  already existed), admin-only and branch-scoped through the existing scope guard: POST /nodes (add a
+  child; the child's level is parent + 1; the internal code is auto-generated and made unique from the
+  name; adding below the locked bottom/Store level is refused with 400), PATCH /nodes/{id} (rename plus
+  edit store attributes; parent, level, and code are not editable), and DELETE /nodes/{id} (allowed
+  only when empty, else 409 naming the blocker; 404 if out of scope). These live in api/app/hierarchy.py
+  (the router) and api/app/scope.py (ScopedRepo gained get_node, create_node, update_node, delete_node,
+  and a _slug_code helper). Frontend, in apps/admin/src/pages/Hierarchy/: a new NodeFormModal.tsx (the
+  add/rename modal), edit-mode wiring in Hierarchy.tsx and TreeNode.tsx, and new mutation hooks plus an
+  isBottomLevel helper and a levelChildName helper in useHierarchy.ts; apps/admin/src/lib/api.ts gained
+  an apiDelete helper. An adversarial review caught and fixed a real bug: the code had detected the
+  Store level by the "locked" flag, but the Company root is also locked, which had hidden the add-child
+  action on the root; it now detects the Store level by the deepest level, which also fixed a latent W7
+  root-rendering glitch. Deferred and recorded honestly: moving/re-parenting a node (a later piece),
+  editing the org LEVELS themselves (the wizard slice), and bulk CSV import/export (still shown as
+  greyed "soon" on the screen). Built brainstorm -> spec -> test-first backend brick (in the main folder)
+  -> worktree-built frontend -> adversarial review; spec in
+  docs/superpowers/specs/2026-06-26-editable-hierarchy-design.md. Gate GREEN: 243 backend tests + 221
+  frontend tests, admin build clean (previous baseline 230 backend + 213 frontend). Committed locally
+  but NOT pushed yet. NEXT: slice 2, the 5-step setup wizard UI (pick a hierarchy template, name your
+  levels, payroll, build the tree, invite people), which adds org-level editing on top of this. After
+  the wizard: the Manager web app and Phase 5 (the Field mobile app + offline sync).

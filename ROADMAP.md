@@ -130,7 +130,35 @@ existing `GET /nodes` plus a new small read-only `GET /org-levels` endpoint
 (returns the company's level names, tenant-scoped; added to `api/app/hierarchy.py`
 and `api/app/scope.py` with a test). New files in
 `apps/admin/src/pages/Hierarchy/`. Deferred (shown as greyed "soon"): coverage
-mode, add/rename/delete nodes, bulk import, export.
+mode, bulk import, export. (Add/rename/delete nodes, originally deferred here, was
+later built as setup-wizard slice 1 on 2026-06-26, below.)
+
+**Setup wizard slice 1: the editable Hierarchy (DONE, 2026-06-26).** The first of
+two slices toward the setup wizard: making the org tree editable. The Hierarchy
+screen at `/hierarchy` (previously read-only) gained an admin-only Edit mode. In
+edit mode an admin can add a child node under any node (its level is set
+automatically from the parent, so a child of a Region becomes a District; a Store
+gets no add-child because a store is a leaf), rename a node (and edit a store's
+chain and address), and delete a node but only when it is empty (no child nodes,
+nobody pinned to it, no surveys assigned, no responses; otherwise it refuses and
+names the blocker). Managers and reps still see the screen read-only. The backend
+brick (no migration; the `nodes` table already existed) is the node add/edit work
+recorded under "Small backend bricks" below: admin-only, branch-scoped
+`POST /nodes`, `PATCH /nodes/{id}`, and `DELETE /nodes/{id}` in
+`api/app/hierarchy.py` plus the scope work in `api/app/scope.py`. New files:
+`apps/admin/src/pages/Hierarchy/NodeFormModal.tsx` (the add/rename pop-up) plus
+edit-mode wiring in `Hierarchy.tsx`, `TreeNode.tsx`, and `useHierarchy.ts`;
+`apps/admin/src/lib/api.ts` gained an `apiDelete` helper. An adversarial review
+caught and fixed a real bug (the Store level had been detected by the "locked"
+flag, but the Company root is also locked, which had hidden the add-child action on
+the root; it now detects the Store level by the deepest level, which also fixed a
+latent W7 root-rendering glitch). Deferred and recorded honestly: moving a node to
+a new parent (re-parenting, a later piece), editing the org LEVELS themselves (the
+wizard slice), and bulk CSV import/export (still greyed "soon" on the screen). Gate
+GREEN: 243 backend tests + 221 frontend tests, admin build clean (previous baseline
+230 backend + 213 frontend). Spec in
+`docs/superpowers/specs/2026-06-26-editable-hierarchy-design.md`. Next: the setup
+wizard UI (slice 2), below.
 
 **Users & Roles (DONE).** The Admin "Users & Roles" sidebar item at `/users` is
 now a real screen (was "coming soon"). A **People** tab (three role-count cards for
@@ -165,13 +193,16 @@ name and/or payroll_enabled; the company code is permanent and not editable). Ne
 files in `apps/admin/src/pages/Settings/`. Deferred: pay-period defaults, work model,
 store logos, a unified company audit feed, and the data & security panel.
 
-**The Admin web-screens track is now complete.** W1, W3, W4, W5, W6, W7, plus Users
-& Roles and Settings are all shipped and green (230 backend tests + 213 frontend
-tests, build clean). The next step is the **setup wizard** (it needs the Users brick
-just built plus on-screen hierarchy editing, meaning node add/rename/delete
-endpoints), after which the larger tracks are the **Manager web app** (reuses the
-same backend, scoped to a manager's branch) and **Phase 5** (the Field mobile app +
-offline sync).
+**The Admin web-screens track is now complete**, and the Hierarchy screen is now
+**editable** (setup-wizard slice 1). W1, W3, W4, W5, W6, W7, plus Users & Roles and
+Settings are all shipped, and the editable hierarchy landed on top of W7. Current
+green baseline: 243 backend tests + 221 frontend tests, build clean. With the
+editable hierarchy and the Users brick both in place, the next step is the **setup
+wizard UI (slice 2)**: a 5-step guided flow (pick a hierarchy template, name your
+levels, payroll, build the tree, invite people) that adds org-level editing on top
+of the editable hierarchy. After that, the larger tracks are the **Manager web app**
+(reuses the same backend, scoped to a manager's branch) and **Phase 5** (the Field
+mobile app + offline sync).
 
 ## Small backend bricks to slot in just-in-time
 
@@ -192,8 +223,19 @@ plus tests). We add each only when its screen comes up, so we are never blocked:
   name and/or the payroll switch; the company code is permanent), in
   `api/app/tenants.py` (registered in `main.py`), with the scope work in
   `api/app/scope.py` and tests in `api/tests/test_tenants.py`. No migration was needed.
-- **Editing the org tree** (add, rename, move a store) needs node add/edit
-  endpoints. **Still to build** (this is the brick the setup wizard waits on, next).
+- **Editing the org tree** (add, rename, delete a node) needed node add/edit
+  endpoints. **BUILT** (2026-06-26, setup-wizard slice 1): `POST /nodes` (add a
+  child; the child's level is the parent's plus one, the internal code is
+  auto-generated and made unique from the name, and adding below the bottom Store
+  level is refused with a 400), `PATCH /nodes/{id}` (rename and edit store
+  attributes; parent, level, and code are not editable), and `DELETE /nodes/{id}`
+  (only when the node is empty, else a 409 naming the blocker; a 404 if out of
+  scope), all admin-only and branch-scoped, in `api/app/hierarchy.py` with the
+  scope work in `api/app/scope.py` (new `get_node` / `create_node` / `update_node`
+  / `delete_node` plus a `_slug_code` helper). No migration was needed (the `nodes`
+  table already existed). Still deferred to later: moving a node to a new parent
+  (re-parenting), and editing the org LEVELS themselves (that comes with the wizard
+  UI).
 - **Shelf photos** in responses need object storage, which is **5-BE-c** in the
   Field track.
 
