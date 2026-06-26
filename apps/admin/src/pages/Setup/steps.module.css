@@ -1,0 +1,444 @@
+/* Shared styles for the wizard step bodies. */
+.head {
+  margin-bottom: 22px;
+}
+.headTitle {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.headSub {
+  font-size: 14px;
+  color: var(--text-3);
+  margin-top: 6px;
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+/* step 1: template cards */
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.templateCard {
+  padding: 18px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  transition: all 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: inherit;
+}
+.templateCardSelected {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  box-shadow: var(--shadow-md);
+}
+.templateTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.templateName {
+  font-weight: 700;
+  font-size: 15px;
+}
+.templateLevels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.templateLevelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.templateLevelName {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.templateDesc {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-faint);
+  line-height: 1.5;
+}
+
+/* step 2: level editor */
+.levelsLayout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+.levelList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-xs);
+}
+.levelTag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-4);
+  width: 16px;
+  font-weight: 600;
+}
+.levelLocked {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.levelLocked svg {
+  color: var(--text-4);
+}
+.levelInput {
+  flex: 1;
+}
+.levelActions {
+  display: flex;
+  gap: 1px;
+}
+.addBtn {
+  align-self: flex-start;
+  border-style: dashed;
+}
+
+.preview {
+  position: sticky;
+  top: 0;
+}
+.previewLevels {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.previewRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.previewName {
+  font-size: 13px;
+  font-weight: 500;
+}
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.confirmBox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.confirmBoxOn {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.confirmBoxOn svg {
+  color: #fff;
+}
+.confirmLabel {
+  font-size: 13px;
+  font-weight: 600;
+}
+.previewHint {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.lockedNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  background: var(--amber-bg);
+}
+.lockedNote svg {
+  color: var(--amber-fg);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.stepError {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--red-fg);
+  background: var(--red-bg);
+  border-radius: var(--r-md);
+  padding: 11px 14px;
+  margin-bottom: 16px;
+}
+
+/* step 3: payroll choice cards */
+.choiceRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.choiceCard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.choiceCardSelected {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.choiceText {
+  text-align: left;
+}
+.choiceTitle {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.choiceSub {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.choiceCheck {
+  margin-left: auto;
+  color: var(--accent);
+}
+
+/* a card body for content panels */
+.panel {
+  padding: 22px;
+}
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.panelTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.panelTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+.panelSub {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.noteOn,
+.noteOff {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.noteOn {
+  background: var(--accent-subtle);
+}
+.noteOn svg {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.noteOff {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.noteOff svg {
+  color: var(--text-3);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.soonBox {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: 16px;
+}
+.soonBoxHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.soonBoxLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-right: auto;
+}
+.fieldHint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* step 4: tree + add form */
+.treeLayout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+.treeList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.treeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: var(--r-sm);
+}
+.treeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+.treeLevelTag {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-4);
+}
+.emptyTree {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.addForm {
+  position: sticky;
+  top: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* step 5: invite form + list */
+.inviteForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.inviteFull {
+  grid-column: 1 / -1;
+}
+.inviteActions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+.listHead {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.listTitle {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.listEmpty {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.personRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--border-faint);
+}
+.personName {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.personEmail {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.personPin {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.personPin svg {
+  color: var(--text-3);
+}
