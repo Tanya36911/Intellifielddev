@@ -22,7 +22,7 @@ const NODES_RESPONSE = {
 
 const LEVELS_RESPONSE = {
   levels: [
-    { level_order: 0, name: 'Company', locked: false },
+    { level_order: 0, name: 'Company', locked: true },
     { level_order: 1, name: 'Region', locked: false },
     { level_order: 2, name: 'District', locked: false },
     { level_order: 3, name: 'Store', locked: true },

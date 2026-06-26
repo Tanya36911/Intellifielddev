@@ -1,5 +1,5 @@
 import { Icon } from '../../ui'
-import { getLevelName, isLocked, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
+import { getLevelName, isBottomLevel, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
 import styles from './TreeNode.module.css'
 
 export default function TreeNode({
@@ -42,10 +42,11 @@ export default function TreeNode({
   const kids = keepIds !== null ? rawKids.filter(k => keepIds.has(k)) : rawKids
 
   const isOpen = expanded[id] ?? false
-  const locked = isLocked(node.level_order, levels)
+  // A store is the deepest level, not any locked level (the Company root is also
+  // locked). This drives the store-link, the square dot, and the add-child gate.
+  const isStore = isBottomLevel(node.level_order, levels)
   const levelName = getLevelName(node.level_order, levels)
-  const isStore = locked
-  const color = levelColor(node.level_order, locked)
+  const color = levelColor(node.level_order, isStore)
   const isBold = node.level_order <= 1
 
   return (
@@ -72,7 +73,7 @@ export default function TreeNode({
 
         {/* level colour dot */}
         <span
-          className={`${styles.lvDot}${locked ? ` ${styles.lvDotSquare}` : ''}`}
+          className={`${styles.lvDot}${isStore ? ` ${styles.lvDotSquare}` : ''}`}
           style={{ background: color }}
         />
 

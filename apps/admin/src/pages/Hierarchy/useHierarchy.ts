@@ -60,6 +60,16 @@ export function isLocked(level_order: number, levels: OrgLevel[]): boolean {
   return found ? found.locked : false
 }
 
+// The store level is the DEEPEST level (highest level_order), not just any
+// "locked" level. Both the Company root and the Store level are locked, so
+// detecting a store by `locked` would wrongly treat the root as a store (which
+// would hide its add-child action and show store fields when renaming it).
+export function isBottomLevel(level_order: number, levels: OrgLevel[]): boolean {
+  if (levels.length === 0) return false
+  const max = Math.max(...levels.map(l => l.level_order))
+  return level_order === max
+}
+
 /**
  * The level name of the child you would add under a parent at the given level
  * order (parent level + 1). Used for the "New <Level> under <Parent>" label.

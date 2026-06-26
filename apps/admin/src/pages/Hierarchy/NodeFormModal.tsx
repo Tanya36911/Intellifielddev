@@ -3,7 +3,7 @@ import { Button, Field, Icon, Input, Modal } from '../../ui'
 import { ApiError } from '../../lib/api'
 import {
   getLevelName,
-  isLocked,
+  isBottomLevel,
   levelChildName,
   type OrgLevel,
   type OrgNode,
@@ -42,7 +42,7 @@ export default function NodeFormModal({
       ? node.level_order + 1
       : node.level_order
     : 0
-  const isStoreLevel = isLocked(effectiveLevelOrder, levels)
+  const isStoreLevel = isBottomLevel(effectiveLevelOrder, levels)
   const childLevelName = node ? levelChildName(node.level_order, levels) : ''
   const ownLevelName = node ? getLevelName(node.level_order, levels) : ''
 
