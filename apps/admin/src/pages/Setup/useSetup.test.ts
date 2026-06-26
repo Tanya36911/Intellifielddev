@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   TEMPLATES,
   templateToDraftLevels,
+  savedLevelsToDraft,
   renameLevel,
   addLevelAfter,
   removeLevel,
@@ -48,6 +49,23 @@ describe('templateToDraftLevels', () => {
 
   it('locks a single entry', () => {
     expect(templateToDraftLevels(['Company']).map((l) => l.locked)).toEqual([true])
+  })
+})
+
+describe('savedLevelsToDraft', () => {
+  it('maps saved levels to drafts ordered by level_order, keeping locked flags', () => {
+    const out = savedLevelsToDraft([
+      { level_order: 2, name: 'District', locked: false },
+      { level_order: 0, name: 'Company', locked: true },
+      { level_order: 3, name: 'Store', locked: true },
+      { level_order: 1, name: 'Region', locked: false },
+    ])
+    expect(out.map((l) => l.name)).toEqual(['Company', 'Region', 'District', 'Store'])
+    expect(out.map((l) => l.locked)).toEqual([true, false, false, true])
+  })
+
+  it('returns an empty list for no saved levels', () => {
+    expect(savedLevelsToDraft([])).toEqual([])
   })
 })
 

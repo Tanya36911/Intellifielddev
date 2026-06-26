@@ -77,7 +77,7 @@ export function StepPayroll({
                 flow. This switch controls the Payroll screen in the sidebar.
               </p>
             </div>
-            <Switch on={enabled} onChange={onToggle} label="Payroll enabled" />
+            <Switch on={enabled} onChange={onToggle} label="Payroll enabled" disabled={saving} />
           </div>
 
           <div className={enabled ? styles.noteOn : styles.noteOff}>

@@ -2,6 +2,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiSend } from '../../lib/api'
 import type { OrgLevel, OrgNode } from '../Hierarchy/useHierarchy'
 
+// Turn the company's real saved levels into the wizard's editable draft shape,
+// ordered by level_order, carrying their saved locked flags. Used to seed step 2
+// for a company that already has org levels (so it sees its actual names, not a
+// template's placeholder names).
+export function savedLevelsToDraft(levels: OrgLevel[]): DraftLevel[] {
+  return [...levels]
+    .sort((a, b) => a.level_order - b.level_order)
+    .map((l) => ({ name: l.name, locked: l.locked }))
+}
+
 // A draft level the wizard edits in step 2. `locked` marks the top (Company) and
 // bottom (Store) levels, which can be renamed but never removed or reordered.
 export type DraftLevel = { name: string; locked: boolean }

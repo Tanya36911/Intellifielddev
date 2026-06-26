@@ -5,12 +5,16 @@ import styles from './steps.module.css'
 
 // Step 1: pick a starting structure. Selecting a template pre-fills step 2's
 // editable level list. Nothing is saved here; it is purely a starting point.
+// On a company that already has a structure, templates do not apply (the saved
+// levels are fixed), so the cards are disabled and a short note explains why.
 export function StepTemplate({
   selected,
   onSelect,
+  structuralAllowed,
 }: {
   selected: string
   onSelect: (id: string) => void
+  structuralAllowed: boolean
 }) {
   return (
     <div>
@@ -18,6 +22,16 @@ export function StepTemplate({
         title="Choose a starting point"
         sub="Pick the structure closest to how your team is organized. You can rename and reshape everything in the next step."
       />
+
+      {!structuralAllowed && (
+        <div className={styles.lockedNote} role="note">
+          <Icon name="lock" size={15} />
+          <span>
+            Your company already has a structure, so templates apply to new companies only.
+          </span>
+        </div>
+      )}
+
       <div className={styles.templateGrid}>
         {TEMPLATES.map((t) => {
           const sel = selected === t.id
@@ -26,6 +40,7 @@ export function StepTemplate({
               key={t.id}
               type="button"
               aria-pressed={sel}
+              disabled={!structuralAllowed}
               onClick={() => onSelect(t.id)}
               className={
                 sel ? `${styles.templateCard} ${styles.templateCardSelected}` : styles.templateCard

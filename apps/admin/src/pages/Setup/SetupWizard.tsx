@@ -9,6 +9,7 @@ import {
   TEMPLATES,
   structuralEditingAllowed,
   templateToDraftLevels,
+  savedLevelsToDraft,
   draftLevelsToNames,
   useSetOrgLevels,
   type DraftLevel,
@@ -38,7 +39,7 @@ export default function SetupWizard() {
 
   const company = session?.user.company_name ?? 'Your company'
 
-  const { nodes } = useHierarchy()
+  const { nodes, levels: savedLevels } = useHierarchy()
   const structuralAllowed = structuralEditingAllowed(nodes)
 
   const tenantQ = useTenant()
@@ -50,8 +51,23 @@ export default function SetupWizard() {
   const [levels, setLevels] = useState<DraftLevel[]>(() =>
     templateToDraftLevels(TEMPLATES[0].levels),
   )
+  // Once the company's real saved levels seed the editable list (or the admin
+  // edits it), we stop overwriting it from the server, so their work is kept.
+  const [levelsSeeded, setLevelsSeeded] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
   const [levelsError, setLevelsError] = useState<string | null>(null)
+
+  // Seed step 2 from the company's REAL saved levels once they load, so a
+  // populated company (like the demo) sees its actual level names instead of a
+  // template's placeholders. A truly fresh company (no saved levels yet) keeps
+  // the template default. We only seed once.
+  useEffect(() => {
+    if (levelsSeeded) return
+    if (savedLevels.length > 0) {
+      setLevels(savedLevelsToDraft(savedLevels))
+      setLevelsSeeded(true)
+    }
+  }, [levelsSeeded, savedLevels])
 
   const [payrollEnabled, setPayrollEnabled] = useState(false)
   const [payrollError, setPayrollError] = useState<string | null>(null)
@@ -66,16 +82,33 @@ export default function SetupWizard() {
     return <Navigate to="/" replace />
   }
 
+  // Editing the levels in step 2 also locks in the seed, so the server effect
+  // never overwrites the admin's in-progress edits.
+  function editLevels(next: DraftLevel[]) {
+    setLevelsSeeded(true)
+    setLevels(next)
+  }
+
   function pickTemplate(id: string) {
     const t = TEMPLATES.find((x) => x.id === id)
     if (!t) return
     setTemplate(id)
-    setLevels(templateToDraftLevels(t.levels))
-    setConfirmed(false)
-    setLevelsError(null)
+    // On a populated company the saved level structure is fixed (the backend
+    // refuses a re-map), so picking a template must NOT change the level count
+    // or structure, only the visual selection. Templates apply to fresh
+    // companies only.
+    if (structuralAllowed) {
+      setLevels(templateToDraftLevels(t.levels))
+      setLevelsSeeded(true)
+      setConfirmed(false)
+      setLevelsError(null)
+    }
   }
 
   async function togglePayroll(next: boolean) {
+    // Ignore toggles while a PATCH is in flight, so overlapping saves cannot
+    // race or roll back to a stale snapshot.
+    if (updateTenant.isPending) return
     setPayrollError(null)
     const previous = payrollEnabled
     setPayrollEnabled(next)
@@ -183,11 +216,17 @@ export default function SetupWizard() {
         <div className={styles.scroll}>
           <div className={styles.inner}>
             <div className={styles.eyebrow}>Step {step} of 5</div>
-            {step === 1 && <StepTemplate selected={template} onSelect={pickTemplate} />}
+            {step === 1 && (
+              <StepTemplate
+                selected={template}
+                onSelect={pickTemplate}
+                structuralAllowed={structuralAllowed}
+              />
+            )}
             {step === 2 && (
               <StepLevels
                 levels={levels}
-                setLevels={setLevels}
+                setLevels={editLevels}
                 confirmed={confirmed}
                 setConfirmed={setConfirmed}
                 structuralAllowed={structuralAllowed}

@@ -30,6 +30,36 @@ describe('Sidebar', () => {
     expect(screen.getByText('Catalog')).toBeTruthy()
   })
 
+  it('shows the admin-only Setup nav item to an admin', () => {
+    renderApp(
+      <Sidebar
+        user={{
+          name: 'Dana Whitfield',
+          role: 'admin',
+          company_name: 'Lumen Beauty',
+          pinned_node_name: 'Lumen Beauty',
+        }}
+        onSignOut={() => {}}
+      />,
+    )
+    expect(screen.getByText('Setup')).toBeTruthy()
+  })
+
+  it('hides the admin-only Setup nav item from a non-admin (rep)', () => {
+    renderApp(
+      <Sidebar
+        user={{
+          name: 'Marcus Bell',
+          role: 'rep',
+          company_name: 'Lumen Beauty',
+          pinned_node_name: 'Bay Area',
+        }}
+        onSignOut={() => {}}
+      />,
+    )
+    expect(screen.queryByText('Setup')).toBeNull()
+  })
+
   it('renders the user name and role and a working sign out', () => {
     const onSignOut = vi.fn()
     renderApp(

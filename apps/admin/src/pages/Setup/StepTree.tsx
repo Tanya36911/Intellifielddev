@@ -21,7 +21,15 @@ export function StepTree() {
   const { nodes, levels, isLoading } = useHierarchy()
   const create = useCreateNode()
 
-  const options = useMemo(() => pinOptions(nodes, levels), [nodes, levels])
+  // Bottom-level (store) nodes can never accept a child, so a POST under one
+  // 400s. Exclude them from the parent choices. While levels are still loading
+  // isBottomLevel returns false for everything, so we keep all nodes (the safe
+  // fallback) rather than wrongly hiding any.
+  const parentNodes = useMemo(
+    () => nodes.filter((n) => !isBottomLevel(n.level_order, levels)),
+    [nodes, levels],
+  )
+  const options = useMemo(() => pinOptions(parentNodes, levels), [parentNodes, levels])
   const [parentId, setParentId] = useState('')
   const [name, setName] = useState('')
   const [chain, setChain] = useState('')

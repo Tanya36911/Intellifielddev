@@ -63,7 +63,7 @@ export function StepLevels({
             const isMiddle = i > 0 && i < levels.length - 1
             return (
               <div key={i} className={styles.levelRow}>
-                <span className={styles.levelTag}>L{i}</span>
+                <span className={styles.levelTag}>L{i + 1}</span>
                 <span
                   style={{
                     width: 9,
