@@ -3,6 +3,7 @@ import {
   buildTreeIndex,
   getLevelName,
   isLocked,
+  levelChildName,
   filterNodes,
   hierarchyStats,
   getAncestors,
@@ -89,6 +90,20 @@ describe('isLocked', () => {
 
   it('returns false for unknown level_order', () => {
     expect(isLocked(99, LEVELS)).toBe(false)
+  })
+})
+
+describe('levelChildName', () => {
+  it('returns the level name one below the parent (the child you are adding)', () => {
+    // Adding under a Company (order 0) makes a Region (order 1)
+    expect(levelChildName(0, LEVELS)).toBe('Region')
+    // Adding under a District (order 2) makes a Store (order 3)
+    expect(levelChildName(2, LEVELS)).toBe('Store')
+  })
+
+  it('falls back to a generic name when the child level is unknown', () => {
+    // No level order 4 exists, so adding under the Store level has no known child
+    expect(levelChildName(3, LEVELS)).toBe('Level 4')
   })
 })
 
