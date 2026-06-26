@@ -1,7 +1,8 @@
 // The sidebar navigation list, ported from the prototype shell.jsx NAV.
 // `path` drives React Router; `comingSoon` flags a not-yet-built screen, which
-// the sidebar shows with a "soon" chip instead of a link. No screen is
-// coming-soon right now (the next one, the setup wizard, will set the flag again).
+// the sidebar shows with a "soon" chip instead of a link. `adminOnly` hides an
+// item from non-admins (the route still redirects them, the backend still
+// guards): used by the Setup wizard.
 import { ICONS } from '../ui'
 
 export type NavItem = {
@@ -12,6 +13,7 @@ export type NavItem = {
   path: string
   badge?: string
   comingSoon?: boolean
+  adminOnly?: boolean
 }
 
 export const NAV: NavItem[] = [
@@ -22,4 +24,5 @@ export const NAV: NavItem[] = [
   { id: 'hierarchy', label: 'Hierarchy', icon: 'tree', group: 'org', path: '/hierarchy' },
   { id: 'users', label: 'Users & Roles', icon: 'users', group: 'org', path: '/users' },
   { id: 'settings', label: 'Settings', icon: 'settings', group: 'org', path: '/settings' },
+  { id: 'setup', label: 'Setup', icon: 'wand', group: 'org', path: '/setup', adminOnly: true },
 ]

@@ -9,6 +9,7 @@ import Payroll from './pages/Payroll/Payroll'
 import Hierarchy from './pages/Hierarchy/Hierarchy'
 import Users from './pages/Users/Users'
 import Settings from './pages/Settings/Settings'
+import SetupWizard from './pages/Setup/SetupWizard'
 import Login from './pages/Login'
 import { selectSession, useAppSelector } from './store'
 
@@ -28,6 +29,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Navigate to="/" replace />} />
+      {/* The setup wizard is fullscreen (outside the shell), like /login. It
+          gates non-admins to the dashboard itself. */}
+      <Route path="/setup" element={<SetupWizard />} />
       <Route element={<Shell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/catalog" element={<Catalog />} />

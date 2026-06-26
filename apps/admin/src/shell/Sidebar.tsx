@@ -47,8 +47,12 @@ export function Sidebar({ user, onSignOut }: { user: SessionUser; onSignOut: () 
     ['Reps', footprint.data ? String(footprint.data.reps) : DASH],
   ]
 
-  const main = NAV.filter((n) => n.group === 'main')
-  const org = NAV.filter((n) => n.group === 'org')
+  // Admin-only items (the Setup wizard) are hidden from non-admins; the route
+  // still redirects them and the backend still guards.
+  const isAdmin = user.role === 'admin'
+  const visible = NAV.filter((n) => !n.adminOnly || isAdmin)
+  const main = visible.filter((n) => n.group === 'main')
+  const org = visible.filter((n) => n.group === 'org')
 
   return (
     <aside className={styles.sidebar}>
@@ -83,14 +87,17 @@ export function Sidebar({ user, onSignOut }: { user: SessionUser; onSignOut: () 
           <NavRow key={item.id} item={item} />
         ))}
 
-        {/* Re-run setup wizard, rendered "coming soon" (disabled, no action). */}
-        <div className={styles.wizardWrap}>
-          <button type="button" className={styles.wizard} disabled title="Coming soon">
-            <Icon name="wand" size={16} />
-            <span className={styles.navLabel}>Re-run setup wizard</span>
-            <span className={styles.soonChip}>soon</span>
-          </button>
-        </div>
+        {/* The setup wizard, now a real fullscreen flow. Admins only; the
+            prominent accent card mirrors the prototype's entry point. */}
+        {isAdmin && (
+          <div className={styles.wizardWrap}>
+            <NavLink to="/setup" className={styles.wizard}>
+              <Icon name="wand" size={16} />
+              <span className={styles.navLabel}>Set up your workspace</span>
+              <Icon name="arrowRight" size={14} />
+            </NavLink>
+          </div>
+        )}
       </nav>
 
       {/* footprint */}
