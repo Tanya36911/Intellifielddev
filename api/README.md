@@ -168,6 +168,14 @@ ScopedRepo and with no database change (the `nodes` table already existed):
   responses). If it is not empty, the delete is refused with a 409 that names the
   blocker; a node outside the caller's branch is a 404.
 
+As of the set-org-levels brick (2026-06-26, the wizard's step-2 backend), this file
+also defines `PUT /org-levels` (admin only). It replaces the company's level
+definitions with an ordered top-to-bottom list (the top and bottom levels are always
+locked). A re-map guard refuses changing the NUMBER of levels once real nodes exist
+(renaming and reordering labels is fine, since those keep every node's level intact),
+while a fresh or root-only company can set any 2 to 7 level structure. No database
+change. This is the consumer for the wizard's "name your levels" step.
+
 ### app/catalog.py  (the product catalog API)
 Defines the product endpoints: `GET /skus` (any signed-in person in the company
 can view) and `POST /skus` + `PATCH /skus/{id}` (admins only, guarded by

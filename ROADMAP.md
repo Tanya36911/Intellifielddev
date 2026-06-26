@@ -234,8 +234,15 @@ plus tests). We add each only when its screen comes up, so we are never blocked:
   scope work in `api/app/scope.py` (new `get_node` / `create_node` / `update_node`
   / `delete_node` plus a `_slug_code` helper). No migration was needed (the `nodes`
   table already existed). Still deferred to later: moving a node to a new parent
-  (re-parenting), and editing the org LEVELS themselves (that comes with the wizard
-  UI).
+  (re-parenting).
+- **Setting the org levels** (the wizard's "name your levels" step) needed a
+  write endpoint. **BUILT** (2026-06-26): admin-only `PUT /org-levels` replaces
+  the company's level structure with an ordered top-to-bottom list (top and bottom
+  locked), with a re-map guard that refuses changing the NUMBER of levels once real
+  nodes exist (rename/reorder labels stays allowed), while a fresh company can set
+  any 2 to 7 levels. In `api/app/hierarchy.py` + `ScopedRepo.set_org_levels`, no
+  migration. With this, every backend piece the setup wizard needs exists; only the
+  wizard UI (slice 2) remains.
 - **Shelf photos** in responses need object storage, which is **5-BE-c** in the
   Field track.
 

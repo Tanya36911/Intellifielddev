@@ -246,7 +246,7 @@ honestly: moving a node to a new parent (a later piece), editing the org levels
 themselves (that comes with the wizard), and bulk CSV import/export (still greyed
 "soon" on the screen).
 
-The current green baseline is 243 backend tests + 221 frontend tests, build clean.
+The current green baseline is 249 backend tests + 221 frontend tests, build clean.
 What is next per the roadmap: the setup wizard UI (slice 2), a 5-step guided flow
 (pick a hierarchy template, name your levels, payroll, build the tree, invite
 people) that adds org-level editing on top of the editable hierarchy, then the

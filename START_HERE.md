@@ -250,7 +250,7 @@ unified company audit feed, and the data & security panel.
 **ALL the Admin sidebar screens are now DONE** (W1 dashboard, W3 catalog, W4 surveys,
 W5 responses, W6 payroll, W7 hierarchy, plus Users & Roles and Settings), and the
 **Hierarchy screen is now editable for admins** (setup-wizard slice 1, done
-2026-06-26). Current green baseline: 243 backend tests + 221 frontend tests, build
+2026-06-26). Current green baseline: 249 backend tests + 221 frontend tests, build
 clean. What is next: the **setup wizard UI** (slice 2): a 5-step guided flow (pick a
 hierarchy template, name your levels, payroll, build the tree, invite people) that
 adds org-level editing on top of the editable hierarchy we just built. The **Manager
@@ -524,7 +524,7 @@ project memory, so a new chat in this folder already knows them.)
   is permanent). New files in apps/admin/src/pages/Settings/.
 - **ALL the Admin sidebar screens are DONE** (W1, W3, W4, W5, W6, W7, plus Users &
   Roles and Settings), and the **Hierarchy screen is now editable for admins**
-  (setup-wizard slice 1, done 2026-06-26). Current green baseline: 243 backend tests
+  (setup-wizard slice 1, done 2026-06-26). Current green baseline: 249 backend tests
   + 221 frontend tests, build clean.
 - **NEXT (see [ROADMAP.md](ROADMAP.md)): the setup wizard UI (slice 2).** With the
   editable hierarchy and the Users brick now in place, the next step is the 5-step

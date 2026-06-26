@@ -419,3 +419,16 @@ fast-follow, never the headline.
   but NOT pushed yet. NEXT: slice 2, the 5-step setup wizard UI (pick a hierarchy template, name your
   levels, payroll, build the tree, invite people), which adds org-level editing on top of this. After
   the wizard: the Manager web app and Phase 5 (the Field mobile app + offline sync).
+- 2026-06-26: SETUP WIZARD SLICE 1b (set-org-levels brick) COMPLETE - the last backend prerequisite for
+  the wizard's step 2 ("name your levels"). Admin-only PUT /org-levels (in api/app/hierarchy.py +
+  ScopedRepo.set_org_levels) replaces the company's level definitions with an ordered top-to-bottom list
+  (level_order by position, top and bottom locked). Re-map safety: once real nodes exist the NUMBER of
+  levels cannot change (renaming and reordering labels is allowed, since those keep every node's
+  level_order valid; adding or removing a level is refused with 409), while a fresh or root-only company
+  can set any 2 to 7 level structure (the path the wizard uses on a new company). No migration; tenant
+  table unchanged. Backend-only (no UI yet; the wizard slice is the consumer). Self-reviewed plus six new
+  tests (the guard both ways, validation, role-gating, company isolation, and the fresh-company path).
+  Spec in docs/superpowers/specs/2026-06-26-org-levels-brick-design.md. Gate GREEN: 249 backend tests +
+  221 frontend, build clean. Committed locally but NOT pushed. With this, every backend piece the wizard
+  needs exists (nodes, org-levels, users, tenant/payroll config); the only thing left is the wizard UI
+  itself (slice 2), which is a fullscreen 5-step flow that assembles these.
