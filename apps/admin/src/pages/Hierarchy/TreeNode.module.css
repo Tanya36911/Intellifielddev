@@ -141,6 +141,43 @@
   flex-shrink: 0;
 }
 
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.row:hover .actions {
+  opacity: 1;
+}
+
+.actionBtn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-3);
+  border-radius: var(--r-xs);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.actionBtn:hover {
+  background: var(--bg-elev);
+  color: var(--text);
+}
+
+.actionDanger:hover {
+  color: var(--red-fg);
+}
+
 .children {
   /* children indent via paddingLeft on each row */
 }
