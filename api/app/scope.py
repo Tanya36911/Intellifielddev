@@ -7,6 +7,7 @@ it automatically limits every query to the caller's tenant and the subtree
 under their pinned node, so no endpoint can forget the filter.
 """
 import json
+import re
 from datetime import timezone
 
 from fastapi import Depends
@@ -95,6 +96,114 @@ class ScopedRepo:
                 {"tid": str(self.tenant_id)},
             ).mappings().all()
         return [dict(r) for r in rows]
+
+    # ----- node writes (add / rename / delete; admin-only at the router) -----
+
+    _NODE_COLS = ("id, name, code, level_order, parent_id, path, chain, "
+                  "address, lat, lng, tz")
+
+    def get_node(self, node_id) -> dict | None:
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(f"select {self._NODE_COLS} from nodes "
+                     "where id = cast(:id as uuid) and tenant_id = cast(:tid as uuid)"),
+                {"id": str(node_id), "tid": str(self.tenant_id)},
+            ).mappings().first()
+        return dict(row) if row else None
+
+    def _slug_code(self, conn, name: str) -> str:
+        """A URL-safe code from the name, made unique within the tenant by a
+        numeric suffix so the admin never types a code by hand."""
+        base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "node"
+        code, n = base, 2
+        while conn.execute(
+            text("select 1 from nodes where tenant_id = cast(:tid as uuid) and code = :code"),
+            {"tid": str(self.tenant_id), "code": code},
+        ).first() is not None:
+            code, n = f"{base}-{n}", n + 1
+        return code
+
+    def create_node(self, parent_id, name, attrs: dict) -> dict | None:
+        """Add a child under parent_id. Returns None if the parent is out of
+        scope/tenant. Raises ValueError('bottom') when the parent is already at
+        the locked lowest level (a store is a leaf)."""
+        if self.scope_path is None:
+            return None
+        with engine.begin() as conn:
+            parent = conn.execute(
+                text("select id, level_order, path from nodes where id = cast(:nid as uuid) "
+                     "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                {"nid": str(parent_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().first()
+            if parent is None:
+                return None
+            if parent["level_order"] >= self._max_level(conn):
+                raise ValueError("bottom")
+            code = self._slug_code(conn, name)
+            nid = conn.execute(
+                text("insert into nodes (tenant_id, parent_id, level_order, name, code, "
+                     "chain, address, lat, lng, tz) values (cast(:tid as uuid), "
+                     "cast(:pid as uuid), :lvl, :name, :code, :chain, :address, :lat, :lng, :tz) "
+                     "returning id"),
+                {"tid": str(self.tenant_id), "pid": str(parent_id),
+                 "lvl": parent["level_order"] + 1, "name": name, "code": code,
+                 "chain": attrs.get("chain"), "address": attrs.get("address"),
+                 "lat": attrs.get("lat"), "lng": attrs.get("lng"), "tz": attrs.get("tz")},
+            ).scalar()
+            conn.execute(
+                text("update nodes set path = :path where id = cast(:id as uuid)"),
+                {"path": f"{parent['path']}{nid}/", "id": str(nid)},
+            )
+        return self.get_node(nid)
+
+    def update_node(self, node_id, fields: dict) -> dict | None:
+        """Rename / edit a node's own attributes (not its parent, level, or code).
+        Returns None if the node is out of scope/tenant."""
+        if self.scope_path is None:
+            return None
+        allowed = {"name", "chain", "address", "lat", "lng", "tz"}
+        sets = {k: v for k, v in fields.items() if k in allowed}
+        with engine.begin() as conn:
+            found = conn.execute(
+                text("select 1 from nodes where id = cast(:id as uuid) "
+                     "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                {"id": str(node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).first()
+            if found is None:
+                return None
+            if sets:
+                clauses = ", ".join(f"{k} = :{k}" for k in sets)
+                conn.execute(
+                    text(f"update nodes set {clauses} where id = cast(:id as uuid)"),
+                    {**sets, "id": str(node_id)},
+                )
+        return self.get_node(node_id)
+
+    def delete_node(self, node_id) -> str | None:
+        """Delete an empty node. Returns "not_found" if out of scope/tenant, a
+        human blocker reason if it is not empty, or None on success."""
+        if self.scope_path is None:
+            return "not_found"
+        with engine.begin() as conn:
+            found = conn.execute(
+                text("select 1 from nodes where id = cast(:id as uuid) "
+                     "and tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                {"id": str(node_id), "tid": str(self.tenant_id), "scope": self.scope_path},
+            ).first()
+            if found is None:
+                return "not_found"
+            checks = [
+                ("select 1 from nodes where parent_id = cast(:id as uuid) limit 1", "it has child nodes"),
+                ("select 1 from assignments where node_id = cast(:id as uuid) limit 1", "users are pinned to it"),
+                ("select 1 from survey_assignments where target_node_id = cast(:id as uuid) limit 1", "surveys are assigned to it"),
+                ("select 1 from responses where store_node_id = cast(:id as uuid) limit 1", "it has responses"),
+            ]
+            for sql, reason in checks:
+                if conn.execute(text(sql), {"id": str(node_id)}).first() is not None:
+                    return reason
+            conn.execute(text("delete from nodes where id = cast(:id as uuid)"),
+                         {"id": str(node_id)})
+        return None
 
     # ----- catalog (company-wide: filtered by tenant only, not by path) -----
 
