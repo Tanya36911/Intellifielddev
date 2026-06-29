@@ -258,9 +258,20 @@ soon" because they need backends that do not exist yet. Spec:
   a friendly NoAccess wall). The four real screens are placeholders for now. Manager:
   15 tests, build clean. Reviewed by a 4-lens adversarial pass. Demo login:
   `sarah@lumenbeauty.com / demo1234`.
-- **Lanes 2 to 5 (NEXT):** Dashboard, Compliance Review, Survey Assignment, Payroll
-  Approval, each via mockup -> approve -> test-first build -> adversarial review,
-  reusing the Admin screen logic over the branch-scoped endpoints.
+- **Lane 2: the Dashboard (DONE).** The Manager Dashboard at `/`, reusing the Admin
+  dashboard (headline KPIs with trends, the weekly completion trend, the
+  compliance-by-node drill, CSV export, and the preview AI gap list) over the same
+  branch-scoped `/analytics/*` endpoints, so a manager sees only their branch.
+  Copied-and-adapted (only the top-bar copy changed; the shared primitives and API
+  client are already shared); the Admin app is untouched. Manager: 26 tests, build
+  clean. It skipped a fresh mockup because it mirrors the already-approved Admin
+  dashboard.
+- **Lanes 3 to 5 (NEXT):** Compliance Review, Survey Assignment, Payroll Approval,
+  each via mockup -> approve -> test-first build -> adversarial review, reusing the
+  Admin screen logic over the branch-scoped endpoints. Decision recorded: Manager
+  screens are copied-and-adapted from Admin (not shared as whole pages), because the
+  foundation is already shared, the screens genuinely diverge per app, and copying
+  keeps the green Admin app untouched.
 
 ## Small backend bricks to slot in just-in-time
 

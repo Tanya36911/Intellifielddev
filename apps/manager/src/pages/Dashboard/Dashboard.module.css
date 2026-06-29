@@ -1,0 +1,41 @@
+/* The dashboard now lives inside the shell: the Topbar carries the title +
+   range + Export, and this is the scrolling content below it. */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 14px;
+}
+.trendCard,
+.compCard {
+  padding: var(--pad);
+}
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+}
+@media (max-width: 860px) {
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
