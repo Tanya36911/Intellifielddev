@@ -1,4 +1,4 @@
-import { Chip } from '../../ui'
+import { Chip } from '@intelli/ui'
 import type { Sku } from './useCatalog'
 
 // Active = green dot chip; Discontinued = plain chip. (No "new" status exists.)

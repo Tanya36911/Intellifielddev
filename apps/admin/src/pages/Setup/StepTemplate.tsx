@@ -1,4 +1,4 @@
-import { Chip, Icon } from '../../ui'
+import { Chip, Icon } from '@intelli/ui'
 import { TEMPLATES } from './useSetup'
 import { StepHead, dotColor } from './StepHead'
 import styles from './steps.module.css'

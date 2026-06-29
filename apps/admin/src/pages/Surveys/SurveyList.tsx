@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Chip, Icon } from '../../ui'
+import { Button, Card, Chip, Icon } from '@intelli/ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import { surveyStats, useSurveyList, useSurvey, type Survey } from './useSurveys'

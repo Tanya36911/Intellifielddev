@@ -1,4 +1,4 @@
-import { Segmented, Select } from '../../ui'
+import { Segmented, Select } from '@intelli/ui'
 import { OP_LABEL } from './useSurveys'
 import type { BuilderQuestion } from './useSurveys'
 import styles from './PassConditionEditor.module.css'

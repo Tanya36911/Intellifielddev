@@ -1,4 +1,4 @@
-import { Modal, Avatar, Chip, Icon } from '../../ui'
+import { Modal, Avatar, Chip, Icon } from '@intelli/ui'
 import { useResponseDetail, responseStatus, type ResponseDetail } from './useResponses'
 import type { BackendQuestion } from './useSurveys'
 import type { Sku } from '../Catalog/useCatalog'

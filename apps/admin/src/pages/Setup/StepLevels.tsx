@@ -1,4 +1,4 @@
-import { Button, Card, Icon, Input } from '../../ui'
+import { Button, Card, Icon, Input } from '@intelli/ui'
 import { StepHead, dotColor } from './StepHead'
 import {
   addLevelAfter,

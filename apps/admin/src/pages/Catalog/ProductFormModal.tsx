@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Field, Icon, Input, Modal, Select } from '../../ui'
+import { Button, Field, Icon, Input, Modal, Select } from '@intelli/ui'
 import { ApiError } from '../../lib/api'
 import type { Sku, SkuInput } from './useCatalog'
 import { useCreateSku, useUpdateSku } from './useCatalog'

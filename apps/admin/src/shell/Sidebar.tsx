@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Avatar, Chip, Icon } from '../ui'
+import { Avatar, Chip, Icon } from '@intelli/ui'
 import { apiGet, type SessionUser } from '../lib/api'
 import { NAV, type NavItem } from './nav'
 import styles from './Sidebar.module.css'

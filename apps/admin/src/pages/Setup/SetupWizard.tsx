@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Button, Icon } from '../../ui'
+import { Button, Icon } from '@intelli/ui'
 import { ApiError } from '../../lib/api'
 import { selectSession, useAppSelector } from '../../store'
 import { useHierarchy } from '../Hierarchy/useHierarchy'

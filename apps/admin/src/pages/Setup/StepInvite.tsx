@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Avatar, Button, Card, Chip, Field, Icon, Input, Select } from '../../ui'
+import { Avatar, Button, Card, Chip, Field, Icon, Input, Select } from '@intelli/ui'
 import { ApiError } from '../../lib/api'
 import { useHierarchy } from '../Hierarchy/useHierarchy'
 import { pinOptions } from '../Users/pinOptions'

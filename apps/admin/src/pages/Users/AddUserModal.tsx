@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Chip, Field, Icon, Input, Modal, Select } from '../../ui'
+import { Button, Chip, Field, Icon, Input, Modal, Select } from '@intelli/ui'
 import { ApiError } from '../../lib/api'
 import { inheritanceText, ROLE_META, useCreateUser, type Role } from './useUsers'
 import type { PinOption } from './pinOptions'

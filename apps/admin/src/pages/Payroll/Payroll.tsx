@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useReducer, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Avatar, Button, Card, Chip, Icon, Segmented } from '../../ui'
+import { Avatar, Button, Card, Chip, Icon, Segmented } from '@intelli/ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import {

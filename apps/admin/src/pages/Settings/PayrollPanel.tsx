@@ -1,4 +1,4 @@
-import { Card, Chip, Icon, Switch } from '../../ui'
+import { Card, Chip, Icon, Switch } from '@intelli/ui'
 import styles from './Settings.module.css'
 
 // The Payroll section: a real on/off switch wired to tenants.payroll_enabled,

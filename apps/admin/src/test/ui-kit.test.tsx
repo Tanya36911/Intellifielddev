@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Bar, Chip, Field, Icon, Input, Modal, Segmented, Select, Spark, Switch } from './index'
+import { Bar, Chip, Field, Icon, Input, Modal, Segmented, Select, Spark, Switch } from '@intelli/ui'
 
 describe('Icon', () => {
   it('renders an svg for a known name and nothing crashes for unknown', () => {

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { Topbar } from '../../shell/Topbar'
-import { Button, Card, Segmented, Switch } from '../../ui'
+import { Button, Card, Segmented, Switch } from '@intelli/ui'
 import { useNodes, useCreateAssignment, useSurvey, pickPublishedVersionId, type Node } from './useSurveys'
 import styles from './AssignPanel.module.css'
 

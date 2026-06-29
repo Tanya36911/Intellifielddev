@@ -1,4 +1,4 @@
-import { Icon } from '../../ui'
+import { Icon } from '@intelli/ui'
 import type { Sku } from './useCatalog'
 import styles from './SkuThumb.module.css'
 

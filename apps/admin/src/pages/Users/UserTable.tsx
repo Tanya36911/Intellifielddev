@@ -1,4 +1,4 @@
-import { Avatar, Chip, Icon } from '../../ui'
+import { Avatar, Chip, Icon } from '@intelli/ui'
 import { getLevelName, type OrgLevel } from '../Hierarchy/useHierarchy'
 import { inheritanceText, type User } from './useUsers'
 import { RoleSelect } from './RoleSelect'

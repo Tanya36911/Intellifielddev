@@ -1,4 +1,4 @@
-import { Card, Chip, Icon, Switch } from '../../ui'
+import { Card, Chip, Icon, Switch } from '@intelli/ui'
 import { StepHead } from './StepHead'
 import styles from './steps.module.css'
 

@@ -1,4 +1,4 @@
-import { Icon } from '../../ui'
+import { Icon } from '@intelli/ui'
 import { getLevelName, isBottomLevel, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
 import styles from './TreeNode.module.css'
 

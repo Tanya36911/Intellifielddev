@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Card, Icon } from '../../ui'
+import { Button, Card, Icon } from '@intelli/ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import {

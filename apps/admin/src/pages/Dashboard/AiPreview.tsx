@@ -1,4 +1,4 @@
-import { Button, Chip, Icon } from '../../ui'
+import { Button, Chip, Icon } from '@intelli/ui'
 import styles from './AiPreview.module.css'
 
 // The two-tier AI framing from the prototype, trimmed for W1 to the rep-facing

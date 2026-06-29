@@ -1,4 +1,4 @@
-import { Card, Field, Input } from '../../ui'
+import { Card, Field, Input } from '@intelli/ui'
 import styles from './Settings.module.css'
 
 // The Company section: an editable company name and a read-only company code.

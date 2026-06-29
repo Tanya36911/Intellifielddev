@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Topbar } from '../../shell/Topbar'
-import { Button, Card, Chip, Icon } from '../../ui'
+import { Button, Card, Chip, Icon } from '@intelli/ui'
 import { useSkus } from '../Catalog/useCatalog'
 import { QuestionCard } from './QuestionCard'
 import { PublishConfirm } from './PublishConfirm'

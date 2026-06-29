@@ -16,6 +16,9 @@ importers:
       '@intelli/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
+      '@intelli/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@reduxjs/toolkit':
         specifier: ^2.12.0
         version: 2.12.0(react-redux@9.3.0(@types/react@19.2.17)(react@19.2.7)(redux@5.0.1))(react@19.2.7)
@@ -76,6 +79,21 @@ importers:
         version: 3.2.6(jsdom@29.1.1)
 
   packages/tokens: {}
+
+  packages/ui:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
 
 packages:
 

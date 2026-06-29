@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Icon, ICONS } from '../../ui'
+import { Button, Icon, ICONS } from '@intelli/ui'
 import { ApiError } from '../../lib/api'
 import { selectSession, useAppDispatch, useAppSelector } from '../../store'
 import { signedIn } from '../../store/auth'
