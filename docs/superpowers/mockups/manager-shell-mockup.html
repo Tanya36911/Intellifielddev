@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manager App Shell Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --accent: #1B4F8A; --accent-hover: #174274; --accent-fg: #fff;
+    --accent-subtle: #e8edf3; --accent-subtle-2: #d1dce8; --accent-ring: rgba(27,79,138,.16);
+    --bg: #fafafa; --bg-elev: #f4f4f5; --surface: #fff; --surface-2: #fafafa;
+    --surface-hover: #f4f4f5;
+    --border: #e9e9ec; --border-strong: #dcdce0; --border-faint: #f1f1f3;
+    --text: #18181b; --text-2: #52525b; --text-3: #8a8a93; --text-4: #b4b4bb;
+    --green: #16a34a; --green-bg: #ecfdf3; --green-fg: #157f3c;
+    --amber: #d97706; --amber-bg: #fffaeb; --amber-fg: #b45309;
+    --red: #dc2626; --red-bg: #fef3f2; --red-fg: #b42318;
+    --shadow-xs: 0 1px 2px rgba(24,24,27,.04);
+    --shadow-sm: 0 1px 2px rgba(24,24,27,.05), 0 1px 3px rgba(24,24,27,.04);
+    --shadow-md: 0 2px 4px rgba(24,24,27,.04), 0 4px 12px rgba(24,24,27,.06);
+    --r-sm: 7px; --r-md: 9px; --r-lg: 12px; --r-full: 999px;
+    --sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --head: 'Space Grotesk', var(--sans);
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    --sidebar-w: 248px; --topbar-h: 56px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+  .app { display: flex; height: 100vh; overflow: hidden; }
+  .icon { display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  /* ===================== SIDEBAR ===================== */
+  .sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--bg-elev); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; }
+
+  .brand { padding: 16px 16px 12px; display: flex; align-items: center; gap: 10px; }
+  .brandMark { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); color: #fff; }
+  .brandName { font-weight: 700; font-size: 15px; letter-spacing: -.02em; line-height: 1.15; }
+  .brandSub { font-size: 11px; color: var(--text-3); font-weight: 500; }
+
+  .companyWrap { padding: 0 12px 10px; }
+  .company { display: flex; align-items: center; gap: 9px; height: 46px; padding: 0 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-xs); }
+  .companyMark { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, #f9a8d4, #c084fc); flex-shrink: 0; }
+  .companyText { flex: 1; min-width: 0; line-height: 1.2; }
+  .companyName { font-weight: 600; font-size: 13px; }
+  .companySub { font-size: 11px; color: var(--text-3); }
+  .lock { color: var(--text-4); }
+
+  /* the signature: scope made loud */
+  .scopeWrap { padding: 0 12px 12px; }
+  .scope { display: flex; align-items: center; gap: 9px; padding: 9px 11px; background: var(--accent-subtle); border: 1px solid var(--accent-subtle-2); border-radius: var(--r-md); }
+  .scope .pin { color: var(--accent); }
+  .scopeEyebrow { font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); opacity: .85; line-height: 1.3; }
+  .scopeName { font-weight: 700; font-size: 13px; color: var(--accent); line-height: 1.2; }
+
+  .nav { flex: 1; padding: 0 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  .navItem { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: var(--r-sm); color: var(--text-2); font-size: 13.5px; font-weight: 500; text-decoration: none; cursor: pointer; }
+  .navItem:hover { background: var(--surface-hover); }
+  .navItem.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-xs); }
+  .navItem .navIcon { color: var(--text-3); }
+  .navItem.active .navIcon { color: var(--accent); }
+  .navLabel { flex: 1; }
+  .navItem.soon { color: var(--text-3); cursor: default; }
+  .soonChip { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-4); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-full); padding: 1px 6px; }
+  .badge { font-size: 10px; font-weight: 700; color: var(--amber-fg); background: var(--amber-bg); border-radius: var(--r-full); padding: 1px 7px; }
+  .eyebrow { padding: 14px 10px 6px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+
+  .footprint { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 14px; }
+  .footprintNum { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+  .footprintLabel { font-size: 10.5px; color: var(--text-3); font-weight: 500; }
+
+  .user { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .userText { flex: 1; min-width: 0; line-height: 1.2; }
+  .userName { font-weight: 600; font-size: 12.5px; }
+  .userMeta { font-size: 11px; color: var(--text-3); }
+  .signOut { width: 28px; height: 28px; border: none; background: transparent; color: var(--text-3); border-radius: var(--r-sm); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .signOut:hover { background: var(--surface-hover); color: var(--text-2); }
+
+  /* ===================== MAIN ===================== */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%; }
+  .topbar { height: var(--topbar-h); flex-shrink: 0; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 16px; padding: 0 24px; }
+  .topTitle { font-family: var(--head); font-size: 16px; font-weight: 600; }
+  .topSub { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: var(--r-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 500; font-family: var(--sans); cursor: pointer; }
+  .btn:hover { background: var(--surface-hover); }
+
+  .page { flex: 1; overflow-y: auto; background: var(--bg); }
+  .pageInner { max-width: 1180px; margin: 0 auto; padding: 22px 24px 64px; }
+
+  .scopeNote { display: flex; align-items: center; gap: 9px; padding: 10px 13px; background: var(--accent-subtle); border: 1px solid var(--accent-subtle-2); border-radius: var(--r-md); color: var(--accent); font-size: 12.5px; font-weight: 500; margin-bottom: 18px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-xs); padding: 16px 18px; }
+  .kpiLabel { font-size: 12px; color: var(--text-3); font-weight: 500; }
+  .kpiVal { font-family: var(--head); font-size: 26px; font-weight: 600; margin-top: 4px; }
+  .kpiDelta { font-size: 11.5px; font-weight: 600; margin-top: 4px; }
+  .up { color: var(--green-fg); } .down { color: var(--red-fg); } .flat { color: var(--text-3); }
+
+  .cardHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cardTitle { font-family: var(--head); font-size: 14.5px; font-weight: 600; }
+  .compRow { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border-faint); }
+  .compRow:first-of-type { border-top: none; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .compName { flex: 1; font-size: 13px; font-weight: 500; }
+  .compName small { color: var(--text-3); font-weight: 400; }
+  .barTrack { width: 160px; height: 7px; background: var(--surface-hover); border-radius: var(--r-full); overflow: hidden; }
+  .barFill { height: 100%; border-radius: var(--r-full); }
+  .compPct { width: 42px; text-align: right; font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+  .chev { color: var(--text-4); }
+
+  .caption { margin-top: 22px; padding: 12px 14px; border: 1px dashed var(--border-strong); border-radius: var(--r-md); background: var(--surface-2); color: var(--text-3); font-size: 12px; line-height: 1.5; }
+  .caption b { color: var(--text-2); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brandMark"><svg class="icon" width="17" height="17"><use href="#i-layers"/></svg></div>
+      <div>
+        <div class="brandName">Intelli</div>
+        <div class="brandSub">Manager</div>
+      </div>
+    </div>
+
+    <!-- company card: read-only, locked (a manager cannot switch companies) -->
+    <div class="companyWrap">
+      <div class="company">
+        <div class="companyMark"></div>
+        <div class="companyText">
+          <div class="companyName">Lumen Beauty</div>
+          <div class="companySub">Color Cosmetics</div>
+        </div>
+        <svg class="icon lock" width="13" height="13"><use href="#i-lock"/></svg>
+      </div>
+    </div>
+
+    <!-- THE SIGNATURE: scope made loud and constant -->
+    <div class="scopeWrap">
+      <div class="scope">
+        <svg class="icon pin" width="15" height="15"><use href="#i-pin"/></svg>
+        <div>
+          <div class="scopeEyebrow">Your scope</div>
+          <div class="scopeName">Central Region</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="navItem active"><svg class="icon navIcon" width="17" height="17"><use href="#i-chart"/></svg><span class="navLabel">Dashboard</span></a>
+      <a class="navItem"><svg class="icon navIcon" width="17" height="17"><use href="#i-shield"/></svg><span class="navLabel">Compliance Review</span></a>
+      <a class="navItem"><svg class="icon navIcon" width="17" height="17"><use href="#i-file"/></svg><span class="navLabel">Survey Assignment</span></a>
+      <a class="navItem soon"><svg class="icon navIcon" width="17" height="17"><use href="#i-pin"/></svg><span class="navLabel">Route Planning</span><span class="soonChip">soon</span></a>
+      <a class="navItem"><svg class="icon navIcon" width="17" height="17"><use href="#i-dollar"/></svg><span class="navLabel">Payroll Approval</span><span class="badge">3</span></a>
+
+      <div class="eyebrow">Team</div>
+      <a class="navItem soon"><svg class="icon navIcon" width="17" height="17"><use href="#i-send"/></svg><span class="navLabel">Announcements</span><span class="soonChip">soon</span></a>
+    </nav>
+
+    <!-- footprint, scoped to the manager's branch -->
+    <div class="footprint">
+      <div><div class="footprintNum">2</div><div class="footprintLabel">Districts</div></div>
+      <div><div class="footprintNum">6</div><div class="footprintLabel">Stores</div></div>
+      <div><div class="footprintNum">3</div><div class="footprintLabel">Reps</div></div>
+    </div>
+
+    <div class="user">
+      <div class="avatar">SM</div>
+      <div class="userText">
+        <div class="userName">Sarah Mitchell</div>
+        <div class="userMeta">District Mgr, Central Region</div>
+      </div>
+      <button class="signOut" title="Sign out"><svg class="icon" width="15" height="15"><use href="#i-logout"/></svg></button>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <header class="topbar">
+      <div style="flex:1; min-width:0;">
+        <div class="topTitle">Dashboard</div>
+        <div class="topSub">Central Region overview</div>
+      </div>
+      <button class="btn"><svg class="icon" width="15" height="15"><use href="#i-download"/></svg>Export</button>
+    </header>
+
+    <div class="page">
+      <div class="pageInner">
+
+        <div class="scopeNote">
+          <svg class="icon" width="15" height="15"><use href="#i-pin"/></svg>
+          You are seeing Central Region only. The backend narrows every screen to your branch automatically.
+        </div>
+
+        <div class="kpis">
+          <div class="card">
+            <div class="kpiLabel">Avg. compliance</div>
+            <div class="kpiVal">84%</div>
+            <div class="kpiDelta up">&#9650; 6 pts vs last week</div>
+          </div>
+          <div class="card">
+            <div class="kpiLabel">Surveys completed</div>
+            <div class="kpiVal">12</div>
+            <div class="kpiDelta up">&#9650; 3 vs last week</div>
+          </div>
+          <div class="card">
+            <div class="kpiLabel">Overdue</div>
+            <div class="kpiVal">1</div>
+            <div class="kpiDelta down">&#9660; 2 vs last week</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHead">
+            <div class="cardTitle">Compliance by district</div>
+            <div style="font-size:12px;color:var(--text-3);">Click a district to drill in</div>
+          </div>
+          <div class="compRow">
+            <span class="dot" style="background:var(--green)"></span>
+            <span class="compName">Chicago District <small>&middot; 4 stores</small></span>
+            <span class="barTrack"><span class="barFill" style="width:92%;background:var(--green)"></span></span>
+            <span class="compPct">92%</span>
+            <svg class="icon chev" width="16" height="16"><use href="#i-chev"/></svg>
+          </div>
+          <div class="compRow">
+            <span class="dot" style="background:var(--amber)"></span>
+            <span class="compName">St. Louis District <small>&middot; 2 stores</small></span>
+            <span class="barTrack"><span class="barFill" style="width:74%;background:var(--amber)"></span></span>
+            <span class="compPct">74%</span>
+            <svg class="icon chev" width="16" height="16"><use href="#i-chev"/></svg>
+          </div>
+        </div>
+
+        <div class="caption">
+          <b>This is the shell (the frame), shown around a sample Dashboard so you can judge the layout.</b>
+          The four real screens (Dashboard, Compliance Review, Survey Assignment, Payroll Approval) each get
+          their own mockup next. Note what carries the whole story: the loud <b>Your scope: Central Region</b>
+          chip, the locked company card (a manager cannot switch companies), the branch-only footprint, and
+          the two greyed <b>soon</b> items (Route Planning and Announcements) that need backends we have not
+          built yet. The numbers here are placeholders; the real ones come from your existing, branch-scoped
+          backend.
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
