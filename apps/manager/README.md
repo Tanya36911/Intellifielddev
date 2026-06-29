@@ -26,9 +26,9 @@ port from Admin's 5173, so both can run at once). Demo login:
 
 ## What is built so far
 
-**The shell (the frame) and the first screen (the Dashboard) are done.** The
-other three real screens are placeholders for now; each is built in its own step
-next.
+**The shell, the Dashboard, and the Compliance Review screen are done.** The
+other two real screens (Survey Assignment, Payroll Approval) are placeholders for
+now; each is built in its own step next.
 
 - **The Dashboard** (`src/pages/Dashboard/`, at `/`): the manager's branch
   narrowed down version of the Admin dashboard. Headline cards (average
@@ -40,6 +40,17 @@ next.
   narrows to the manager's branch, so Sarah sees Central only. It reuses the Admin
   dashboard's pieces (copied and adapted: only the top-bar wording changed).
 
+- **Compliance Review** (`src/pages/Compliance/`, at `/compliance`): the hero screen.
+  A breadcrumb drill from the manager's branch root, through districts, to a single
+  store, then a store-detail review of each submitted survey, scored live. The failing
+  products are surfaced by shade name and colour (for example "Rosewood: 2 facings",
+  "Mauve: out of stock"). It reuses the dashboard's branch-scoped compliance drill
+  (`/analytics/compliance/nodes`) plus a small `/skus` lookup for the shade names.
+  **Review-only for v1:** the failures are shown in full, but "Assign follow-up to
+  rep" and the before/after shelf photos are greyed "coming soon" (they need the rep
+  field app and photo storage, Phase 5). Per-question text labels and the
+  rep/last-visit line are a noted fast-follow.
+
 - **The sidebar** (`src/shell/Sidebar.tsx`): the Intelli "Manager" brand; a
   **locked company card** (a manager cannot switch companies, shown with a small
   padlock); the prominent **"Your scope" chip** showing the branch the manager is
@@ -47,9 +58,9 @@ next.
   (Nodes / Stores / Reps, the manager's own branch numbers, read from the
   dashboard endpoint); and the user card with Sign out.
 - **The menu** (`src/shell/nav.ts`): six items in the prototype's order.
-  **Dashboard** is live; **Compliance Review, Survey Assignment, and Payroll
-  Approval** are the remaining real screens (placeholders until their own steps
-  land). **Route Planning** and **Announcements** are greyed "soon", because they
+  **Dashboard** and **Compliance Review** are live; **Survey Assignment** and
+  **Payroll Approval** are the remaining real screens (placeholders until their own
+  steps land). **Route Planning** and **Announcements** are greyed "soon", because they
   need backends that do not exist yet (geo/routing and messaging).
 - **The top bar** (`src/shell/Topbar.tsx`): the page title and a disabled
   notifications bell, the same web trims as the Admin app.
@@ -87,10 +98,9 @@ The layout mirrors the Admin app on purpose, so the two are easy to keep in step
 
 ## What is next
 
-The **Dashboard** is done (above). The three remaining screens are built one per
-step, reusing the Admin app's screen logic over the same branch-scoped backend:
-**Compliance Review** (drill into a store and see exactly what a rep submitted),
-**Survey Assignment** (assign a published survey inside the branch), and
-**Payroll Approval** (approve the branch's reps' hours). Route Planning and
-Announcements stay "coming soon" until their backends exist. Full design:
+The **Dashboard** and **Compliance Review** are done (above). The two remaining
+screens are built one per step, reusing the Admin app's screen logic over the same
+branch-scoped backend: **Survey Assignment** (assign a published survey inside the
+branch) and **Payroll Approval** (approve the branch's reps' hours). Route Planning
+and Announcements stay "coming soon" until their backends exist. Full design:
 `docs/superpowers/specs/2026-06-29-manager-web-app-design.md`.

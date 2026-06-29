@@ -1,0 +1,345 @@
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 24px 64px;
+}
+
+/* breadcrumb */
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.crumbWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.crumbSep {
+  color: var(--text-4);
+}
+.crumb {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.crumbActive {
+  color: var(--text);
+  font-weight: 600;
+  cursor: default;
+}
+
+/* keyboard focus ring for the interactive drill controls */
+.crumb:focus-visible,
+.nodeCard:focus-visible,
+.clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card {
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.cardTitle {
+  font-family: 'Space Grotesk', var(--sans);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.cardSub {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.emptyNote {
+  font-size: 13px;
+  color: var(--text-3);
+  padding: 8px 0;
+}
+
+/* node cards (districts) */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.nodeCard {
+  margin-bottom: 0;
+  cursor: pointer;
+  transition: border-color 0.14s, box-shadow 0.14s;
+}
+.nodeCard:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.nodeCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.nodeName {
+  font-family: 'Space Grotesk', var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+}
+.nodePct {
+  font-family: 'Space Grotesk', var(--sans);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.nodeSub {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.nodeBar {
+  margin-top: 14px;
+}
+.drillIn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* store table */
+.tableCard {
+  padding: 0;
+  overflow: hidden;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-faint);
+}
+.table tr:last-child td {
+  border-bottom: none;
+}
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover td {
+  background: var(--surface-hover);
+}
+.storeName {
+  font-weight: 600;
+}
+.mono {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.chevCell {
+  text-align: right;
+  color: var(--text-4);
+  width: 32px;
+}
+
+/* survey blocks (store detail) */
+.svList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.svRow {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.svHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.svFileIcon {
+  color: var(--text-3);
+}
+.svHeadText {
+  flex: 1;
+}
+.svName {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.svMeta {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--r-full);
+  font-size: 11px;
+  font-weight: 600;
+}
+.chipGreen {
+  background: var(--green-bg);
+  color: var(--green-fg);
+}
+.chipRed {
+  background: var(--red-bg);
+  color: var(--red-fg);
+}
+.svBody {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+  background: var(--surface-2);
+}
+.blockEyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.photoSoon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 92px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-4);
+  font-size: 12.5px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+.fixesHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--red-fg);
+  margin-bottom: 9px;
+}
+.alertIcon {
+  color: var(--red-fg);
+}
+.fixList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fixItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--border);
+}
+.fixName {
+  font-weight: 600;
+}
+.fixVal {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--red-fg);
+}
+.fixX {
+  color: var(--red);
+  margin-left: auto;
+}
+.allClear {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--green-fg);
+  font-weight: 500;
+}
+
+/* coming-soon follow-up */
+.soonRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.soonBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-4);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+.soonChip {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 1px 6px;
+}
+.soonNote {
+  font-size: 12px;
+  color: var(--text-3);
+}
