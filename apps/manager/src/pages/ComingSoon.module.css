@@ -1,0 +1,38 @@
+/* A centered placeholder for the not-yet-built screens. */
+.wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  max-width: 360px;
+}
+.iconCircle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r-full);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.line {
+  font-size: 13.5px;
+  color: var(--text-3);
+}

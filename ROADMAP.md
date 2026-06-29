@@ -235,6 +235,33 @@ frontend tests, build clean. With the Admin web app feature-complete, the larger
 tracks from here are the **Manager web app** (reuses the same backend, scoped to a
 manager's branch) and **Phase 5** (the Field mobile app + offline sync).
 
+## Manager web app track (STARTED 2026-06-29)
+
+We chose the Manager web app next over Phase 5: it is the lighter, higher-visibility
+step (mostly screen work, because the backend already enforces branch scope), and it
+completes the web story by showing the "see only your branch" boundary live next to
+the Admin app. v1 covers **four real screens** (Dashboard, Compliance Review
+review-only, Survey Assignment, Payroll Approval), all on existing branch-scoped
+endpoints (no new backend); **Route Planning** and **Announcements** stay "coming
+soon" because they need backends that do not exist yet. Spec:
+`docs/superpowers/specs/2026-06-29-manager-web-app-design.md`. It is built in lanes:
+
+- **Lane 0: shared packages (DONE, pushed).** Extracted the Admin UI kit into
+  `@intelli/ui` and the API client into `@intelli/api-client` (in `packages/`), so
+  both web apps share one copy instead of duplicating; the session key is now per-app
+  so the apps never share a login. Behavior-preserving (Admin 247 tests green). Plan:
+  `docs/superpowers/plans/2026-06-29-manager-lane0-shared-packages.md`.
+- **Lane 1: the Manager app shell (DONE).** A new `apps/manager` app (port 5174) with
+  the scope-forward sidebar ("Your scope" chip, locked company card, branch
+  footprint, 6-item nav with the two "coming soon" items), a Manager-branded login
+  with its own session, and a fail-closed doorman (managers/admins in; field reps hit
+  a friendly NoAccess wall). The four real screens are placeholders for now. Manager:
+  15 tests, build clean. Reviewed by a 4-lens adversarial pass. Demo login:
+  `sarah@lumenbeauty.com / demo1234`.
+- **Lanes 2 to 5 (NEXT):** Dashboard, Compliance Review, Survey Assignment, Payroll
+  Approval, each via mockup -> approve -> test-first build -> adversarial review,
+  reusing the Admin screen logic over the branch-scoped endpoints.
+
 ## Small backend bricks to slot in just-in-time
 
 A few screens need a small, quick backend addition first (each one is the same

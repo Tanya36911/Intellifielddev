@@ -287,6 +287,24 @@ this roadmap. Current green baseline: 249 backend tests + 247 frontend tests, bu
 clean. What is next: the **Manager web app** (reuses the same backend, scoped to a
 manager's branch) and **Phase 5** (the Field mobile app + offline sync).
 
+**Manager web app STARTED (2026-06-29):** we picked the Manager web app as the next
+track (the lighter, higher-visibility step, since the backend already enforces "see
+only your branch"). It is a second web app for branch managers, scoped to their own
+branch. Two pieces are done so far. First, a behind-the-scenes tidy-up (**Lane 0**):
+the building blocks the Admin app uses (its buttons and pop-ups, and its "talk to the
+backend" helper) were moved into one shared place so the new Manager app can reuse
+them instead of copying; the Admin app works exactly as before. Second, the **Manager
+app shell (Lane 1)**: the new app now opens with its own sidebar that makes the scope
+loud (a "Your scope: Central" chip, a locked company card, the branch's own
+Nodes/Stores/Reps), a six-item menu (Dashboard, Compliance Review, Survey Assignment,
+Payroll Approval, plus Route Planning and Announcements greyed "coming soon"), its own
+login, and a doorman that lets managers and admins in and shows a field rep a friendly
+"this app is for managers" page. The four real screens are placeholders for now and
+get built one at a time next. You can see it: log in as a manager with
+`sarah@lumenbeauty.com / demo1234`. Both pieces are tested (the Admin app's 247 checks
+still pass; the Manager app has 15 of its own) and were checked by an adversarial
+reviewer. Lane 0 is pushed (deployed); the shell follows.
+
 ---
 
 ## 2. The tools you'll use (what each one is for)
@@ -339,6 +357,7 @@ for next time).
 | Start backend + database | `docker compose up -d` |
 | Stop backend + database | `docker compose down` |
 | See the Admin web app | `pnpm dev:admin` (then open http://localhost:5173) |
+| See the Manager web app | `pnpm dev:manager` (then open http://localhost:5174; log in as `sarah@lumenbeauty.com / demo1234`) |
 | Apply new database changes | `bash scripts/db-migrate.sh` (or `docker compose run --rm migrate up`) |
 | Re-create the demo data (companies, tree, users) | `docker compose exec api python -m app.seed` |
 | Apply backend code changes | `docker compose restart api` (code is now live-mounted) |
@@ -409,7 +428,8 @@ intelli-app/
     │       ├── test/             Shared test helpers
     │       ├── App.tsx           The route map (which address shows what)
     │       └── main.tsx          The app's front door (wiring)
-    ├── manager/         MANAGER web app  (not created yet)
+    ├── manager/         MANAGER web app (React). App shell live; screens being built.
+    │   └── README.md    Plain-English guide to the Manager app
     └── field/           FIELD mobile app (not created yet)
 ```
 
