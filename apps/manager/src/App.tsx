@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import NoAccess from './pages/NoAccess'
 import ComingSoon from './pages/ComingSoon'
 import Dashboard from './pages/Dashboard/Dashboard'
+import Compliance from './pages/Compliance/Compliance'
 import { selectSession, useAppSelector } from './store'
 
 // The doorman. Unauthenticated visitors get the login screen. A field rep who
@@ -37,7 +38,7 @@ export default function App() {
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route element={<Shell />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/compliance" element={<ComingSoon title="Compliance Review" />} />
+        <Route path="/compliance" element={<Compliance />} />
         <Route path="/assign" element={<ComingSoon title="Survey Assignment" />} />
         <Route path="/payroll" element={<ComingSoon title="Payroll Approval" />} />
         <Route path="/routes" element={<ComingSoon title="Route Planning" />} />
