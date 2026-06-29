@@ -53,6 +53,12 @@ export type NodeComplianceRow = {
   passed: number
   completion_pct: number | null
   pass_pct: number | null
+  // Compliance-by-node card extras (present on the non-store rollup; the store
+  // table view does not use them, and older callers may omit them).
+  stores?: number
+  reps?: number
+  failing_stores?: number
+  delta?: number | null
 }
 
 // A store's per-survey detail when you drill all the way down: one block per

@@ -115,18 +115,43 @@
   color: var(--text-3);
   margin-top: 2px;
 }
+.nodePctWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.nodeDelta {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.up {
+  color: var(--green-fg);
+}
+.down {
+  color: var(--red-fg);
+}
 .nodeBar {
   margin-top: 14px;
+}
+.nodeCardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
 }
 .drillIn {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 4px;
-  margin-top: 12px;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--accent);
+  white-space: nowrap;
 }
 
 /* store table */

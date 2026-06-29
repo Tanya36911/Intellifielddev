@@ -1402,14 +1402,48 @@ class ScopedRepo:
                 {"nid": str(node["id"]), "tid": str(self.tenant_id)},
             ).mappings().all()
             rows = []
-            # N+1: one _dashboard_window per child (each a few queries). Same bounded
-            # caveat as assignment_compliance; fine for the handful of regions per
-            # branch. Revisit with a single roll-up if node counts ever grow large.
+            # When the caller passes a window, also measure the immediately prior
+            # window of the same length so each child can carry a period-over-period
+            # delta (the up/down arrow on the prototype's district cards).
+            span = (date_to - date_from) if (date_from is not None and date_to is not None) else None
+            # N+1: one _dashboard_window per child (each a few queries), plus a small
+            # footprint count and an optional prior-window pass. Same bounded caveat
+            # as assignment_compliance; fine for the handful of regions per branch.
+            # Revisit with a single roll-up if node counts ever grow large.
             for c in children:
                 m = self._dashboard_window(conn, c["path"], maxlvl, date_from, date_to)
+                # Footprint beneath this child: store count (deepest level) and the
+                # distinct reps pinned at-or-under it.
+                stores = conn.execute(
+                    text("select count(*) from nodes where tenant_id = cast(:tid as uuid) "
+                         "and path like :p || '%' and level_order = :ml"),
+                    {"tid": str(self.tenant_id), "p": c["path"], "ml": maxlvl},
+                ).scalar() or 0
+                reps = conn.execute(
+                    text("select count(distinct a.user_id) from assignments a "
+                         "join nodes n on n.id = a.node_id "
+                         "join users u on u.id = a.user_id "
+                         "where a.tenant_id = cast(:tid as uuid) and u.role = 'rep' "
+                         "and n.path like :p || '%'"),
+                    {"tid": str(self.tenant_id), "p": c["path"]},
+                ).scalar() or 0
+                # Stores with a failing latest reading. With one survey covering a
+                # store, the scored (store, version) pairs are the stores, so the
+                # failed pairs are the stores with failures.
+                failing_stores = max(0, (m.get("scored") or 0) - (m.get("passed") or 0))
+                # Period-over-period pass-% delta, when this and a prior window exist.
+                delta = None
+                if span is not None and m.get("pass_pct") is not None:
+                    prev = self._dashboard_window(
+                        conn, c["path"], maxlvl, date_from - span, date_from
+                    )
+                    if prev.get("pass_pct") is not None:
+                        delta = round(m["pass_pct"] - prev["pass_pct"], 1)
                 rows.append({"node_id": c["id"], "name": c["name"],
                              "level_order": c["level_order"],
-                             "is_store": c["level_order"] == maxlvl, **m})
+                             "is_store": c["level_order"] == maxlvl,
+                             "stores": stores, "reps": reps,
+                             "failing_stores": failing_stores, "delta": delta, **m})
         return {"is_store": False, "children": rows}
 
     def _store_node_compliance(self, conn, node, date_from, date_to):

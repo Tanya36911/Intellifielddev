@@ -519,4 +519,13 @@ fast-follow, never the headline.
     (test_dashboard_weekly_trend hardcoded date_to=2026-06-29, which the real calendar reached today, making
     it window-out the now()-dated submissions; now relative to now()). The LOCAL dev DB is re-seeded; the
     DEPLOYED dev server's DB must be re-seeded after deploy (`docker compose exec api python -m app.seed`)
-    for the extras to show there. NEXT: Lane 4, Survey Assignment.
+    for the extras to show there.
+  - **Compliance Review district cards matched to the prototype:** the cards were thinner than the approved
+    prototype, so `GET /analytics/compliance/nodes` gained additive per-child fields (stores, reps,
+    failing_stores = scored - passed, and a period-over-period delta over the prior same-length window) and
+    the card now renders the prototype layout: "N stores, N reps" subtitle, big % + up/down delta, progress
+    bar, and an "N stores with failures" chip (green when none). Territories are intentionally omitted
+    (Lumen's levels are Region/District/Store, no Territory level). delta shows only when there is a prior
+    window to compare (none for the just-seeded stores, so it is honestly absent for now). Additive backend
+    change, no migration; 249 backend tests still green (the new fields did not change existing assertions).
+    NEXT: Lane 4, Survey Assignment.

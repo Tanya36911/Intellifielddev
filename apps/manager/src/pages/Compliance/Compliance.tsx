@@ -40,6 +40,17 @@ function pctColor(v: number | null): string {
   return t ? TONE_COLOR[t] : 'var(--text)'
 }
 
+// "3 stores, 1 rep" for a district card subtitle (Lumen has no Territory level,
+// so we show stores + reps, not the prototype's "territories").
+function footprintLabel(r: NodeComplianceRow): string {
+  const stores = r.stores ?? 0
+  const reps = r.reps ?? 0
+  return `${stores} ${stores === 1 ? 'store' : 'stores'}, ${reps} ${reps === 1 ? 'rep' : 'reps'}`
+}
+function failLabel(n: number): string {
+  return `${n} ${n === 1 ? 'store' : 'stores'} with failures`
+}
+
 // Make a click-handler also fire on Enter/Space, so a card or row that acts like
 // a button is reachable by keyboard (matches the Admin ComplianceList pattern).
 function onActivate(fn: () => void) {
@@ -214,19 +225,36 @@ function NodeLevel({
           onKeyDown={onActivate(() => onDrill(r))}
         >
           <div className={styles.nodeCardTop}>
-            <div className={styles.nodeName}>{r.name}</div>
-            <div className={styles.nodePct} style={{ color: pctColor(r.pass_pct) }}>
-              {pctLabel(r.pass_pct)}
+            <div>
+              <div className={styles.nodeName}>{r.name}</div>
+              <div className={styles.nodeSub}>{footprintLabel(r)}</div>
             </div>
-          </div>
-          <div className={styles.nodeSub}>
-            {r.responded} of {r.expected} expected responses
+            <div className={styles.nodePctWrap}>
+              <div className={styles.nodePct} style={{ color: pctColor(r.pass_pct) }}>
+                {pctLabel(r.pass_pct)}
+              </div>
+              {r.delta != null && r.delta !== 0 && (
+                <div className={`${styles.nodeDelta} ${r.delta > 0 ? styles.up : styles.down}`}>
+                  <Icon name={r.delta > 0 ? 'arrowUp' : 'arrowDown'} size={11} />
+                  <span>{`${Math.abs(r.delta)}%`}</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className={styles.nodeBar}>
             <Bar value={r.pass_pct == null ? 0 : r.pass_pct / 100} tone={tone(r.pass_pct)} height={8} />
           </div>
-          <div className={styles.drillIn}>
-            Drill in <Icon name="arrowRight" size={13} />
+          <div className={styles.nodeCardBottom}>
+            {(r.failing_stores ?? 0) > 0 ? (
+              <span className={`${styles.chip} ${styles.chipRed}`}>
+                {failLabel(r.failing_stores ?? 0)}
+              </span>
+            ) : (
+              <span className={`${styles.chip} ${styles.chipGreen}`}>No failing stores</span>
+            )}
+            <span className={styles.drillIn}>
+              Drill in <Icon name="arrowRight" size={13} />
+            </span>
           </div>
         </Card>
       ))}

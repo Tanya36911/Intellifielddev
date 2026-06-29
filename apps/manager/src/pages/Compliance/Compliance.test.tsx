@@ -21,7 +21,7 @@ const SKUS = {
 const ROOT = {
   is_store: false,
   children: [
-    { node_id: 'district-1', name: 'Chicago', level_order: 2, is_store: false, expected: 2, responded: 2, scored: 2, passed: 1, completion_pct: 100, pass_pct: 74 },
+    { node_id: 'district-1', name: 'Chicago', level_order: 2, is_store: false, expected: 3, responded: 3, scored: 3, passed: 2, completion_pct: 100, pass_pct: 74, stores: 3, reps: 1, failing_stores: 1, delta: 4 },
   ],
 }
 // the district -> one store
@@ -67,6 +67,10 @@ describe('Compliance Review', () => {
     expect(await screen.findByText('Chicago')).toBeTruthy()
     expect(screen.getByText('Central')).toBeTruthy()
     expect(screen.getByText('74%')).toBeTruthy()
+    // the prototype-style card extras: footprint subtitle, fail chip, delta
+    expect(screen.getByText('3 stores, 1 rep')).toBeTruthy()
+    expect(screen.getByText('1 store with failures')).toBeTruthy()
+    expect(screen.getByText('4%')).toBeTruthy()
   })
 
   it('drills district -> store -> the store-detail review of the failed survey', async () => {
