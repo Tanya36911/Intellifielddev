@@ -1,0 +1,17 @@
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-top: 12px;
+}
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-3);
+  font-size: 13px;
+}

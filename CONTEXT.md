@@ -489,5 +489,14 @@ fast-follow, never the headline.
     fidelity, lane-readiness) passed; its fixes are folded in (honest scope label "No branch assigned" for
     an unpinned caller instead of a misleading "Whole company"; test fixtures match the real seed node names
     "Central"/"Lumen Beauty"; the role guard is an explicit fail-closed allowlist; the dead nav `badge`
-    field removed; a deep-link rep test added). NEXT: Lane 2, the Manager Dashboard (mockup -> build ->
-    review), then Compliance Review, Survey Assignment, Payroll Approval.
+    field removed; a deep-link rep test added).
+  - **Lane 2 (Manager Dashboard), DONE:** the Dashboard at `/`, reusing the Admin dashboard (headline
+    KPIs with trends, weekly completion trend, the compliance-by-node drill, CSV export, the preview AI
+    gap list) over the same branch-scoped `/analytics/dashboard`, `/analytics/compliance/nodes`, and
+    `/export/compliance`, so a manager sees only their branch. Copied-and-adapted from Admin (only the
+    top-bar copy changed: "Dashboard" / "Your branch, period to date"); Admin untouched. It skipped a
+    fresh mockup (it mirrors the already-approved Admin dashboard). Manager: 26 frontend tests, build
+    clean; Admin: 247. Decision recorded: Manager screens are copied-and-adapted from Admin, not shared
+    as whole pages (the foundation primitives + API client are already shared, the screens diverge per
+    app, and copying keeps the green Admin app untouched). NEXT: Lane 3, Compliance Review (mockup ->
+    build -> review), then Survey Assignment, Payroll Approval.

@@ -26,8 +26,19 @@ port from Admin's 5173, so both can run at once). Demo login:
 
 ## What is built so far
 
-**The shell (the frame) is done.** The four real screens are placeholders for
-now; each one is built in its own step next.
+**The shell (the frame) and the first screen (the Dashboard) are done.** The
+other three real screens are placeholders for now; each is built in its own step
+next.
+
+- **The Dashboard** (`src/pages/Dashboard/`, at `/`): the manager's branch
+  narrowed down version of the Admin dashboard. Headline cards (average
+  compliance, surveys completed, overdue) with trend lines and up/down changes, a
+  weekly completion-trend chart, a compliance-by-node list you can click to drill
+  from a district down to a store and the exact product that failed, an Export to
+  CSV button, and a "preview"-badged AI gap list. The numbers are real, read from
+  the same `/analytics/*` endpoints the Admin app uses, which the backend already
+  narrows to the manager's branch, so Sarah sees Central only. It reuses the Admin
+  dashboard's pieces (copied and adapted: only the top-bar wording changed).
 
 - **The sidebar** (`src/shell/Sidebar.tsx`): the Intelli "Manager" brand; a
   **locked company card** (a manager cannot switch companies, shown with a small
@@ -36,10 +47,10 @@ now; each one is built in its own step next.
   (Nodes / Stores / Reps, the manager's own branch numbers, read from the
   dashboard endpoint); and the user card with Sign out.
 - **The menu** (`src/shell/nav.ts`): six items in the prototype's order.
-  **Dashboard, Compliance Review, Survey Assignment, and Payroll Approval** are
-  the real screens (placeholders until their own steps land). **Route Planning**
-  and **Announcements** are greyed "soon", because they need backends that do not
-  exist yet (geo/routing and messaging).
+  **Dashboard** is live; **Compliance Review, Survey Assignment, and Payroll
+  Approval** are the remaining real screens (placeholders until their own steps
+  land). **Route Planning** and **Announcements** are greyed "soon", because they
+  need backends that do not exist yet (geo/routing and messaging).
 - **The top bar** (`src/shell/Topbar.tsx`): the page title and a disabled
   notifications bell, the same web trims as the Admin app.
 - **The doorman** (`src/App.tsx`): an unauthenticated visitor goes to the login
@@ -76,10 +87,10 @@ The layout mirrors the Admin app on purpose, so the two are easy to keep in step
 
 ## What is next
 
-Each of the four real screens is built in its own step, reusing the Admin app's
-screen logic over the same branch-scoped backend: the **Dashboard** (the manager's
-scoped roll-up), **Compliance Review** (drill into a store and see exactly what a
-rep submitted), **Survey Assignment** (assign a published survey inside the
-branch), and **Payroll Approval** (approve the branch's reps' hours). Route
-Planning and Announcements stay "coming soon" until their backends exist. Full
-design: `docs/superpowers/specs/2026-06-29-manager-web-app-design.md`.
+The **Dashboard** is done (above). The three remaining screens are built one per
+step, reusing the Admin app's screen logic over the same branch-scoped backend:
+**Compliance Review** (drill into a store and see exactly what a rep submitted),
+**Survey Assignment** (assign a published survey inside the branch), and
+**Payroll Approval** (approve the branch's reps' hours). Route Planning and
+Announcements stay "coming soon" until their backends exist. Full design:
+`docs/superpowers/specs/2026-06-29-manager-web-app-design.md`.
