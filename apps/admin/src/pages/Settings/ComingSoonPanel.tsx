@@ -1,4 +1,4 @@
-import { Card, Chip, Icon, ICONS } from '../../ui'
+import { Card, Chip, Icon, ICONS } from '@intelli/ui'
 import styles from './Settings.module.css'
 
 // A reusable placeholder for sections that are designed but not yet built. Shows

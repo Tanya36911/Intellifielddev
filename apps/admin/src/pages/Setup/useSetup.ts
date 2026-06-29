@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiSend } from '../../lib/api'
+import { apiSend } from '@intelli/api-client'
 import type { OrgLevel, OrgNode } from '../Hierarchy/useHierarchy'
 
 // Turn the company's real saved levels into the wizard's editable draft shape,

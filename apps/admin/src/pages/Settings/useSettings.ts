@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiSend } from '../../lib/api'
+import { apiGet, apiSend } from '@intelli/api-client'
 
 export type Tenant = {
   id: string

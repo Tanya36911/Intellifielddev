@@ -1,4 +1,4 @@
-import { Modal } from '../../ui'
+import { Modal } from '@intelli/ui'
 import { getAncestors, getLevelName, isLocked, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
 
 export default function StoreDetailModal({

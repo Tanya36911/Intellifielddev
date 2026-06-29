@@ -3,7 +3,7 @@
 // the sidebar shows with a "soon" chip instead of a link. `adminOnly` hides an
 // item from non-admins (the route still redirects them, the backend still
 // guards): used by the Setup wizard.
-import { ICONS } from '../ui'
+import { ICONS } from '@intelli/ui'
 
 export type NavItem = {
   id: string

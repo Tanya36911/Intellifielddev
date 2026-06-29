@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Card, Icon } from '../../ui'
+import { Button, Card, Icon } from '@intelli/ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import {
@@ -11,7 +11,7 @@ import {
   uniqueChains,
   type OrgNode,
 } from './useHierarchy'
-import { ApiError } from '../../lib/api'
+import { ApiError } from '@intelli/api-client'
 import TreeNode from './TreeNode'
 import StoreDetailModal from './StoreDetailModal'
 import NodeFormModal from './NodeFormModal'

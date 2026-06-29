@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Chip, Icon } from '../../ui'
+import { Chip, Icon } from '@intelli/ui'
 import type { Sku } from './useCatalog'
 import { photoCount } from './useCatalog'
 import { SkuThumb } from './SkuThumb'

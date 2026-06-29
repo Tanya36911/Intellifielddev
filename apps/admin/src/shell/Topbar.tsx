@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Icon } from '../ui'
+import { Icon } from '@intelli/ui'
 import styles from './Topbar.module.css'
 
 // The per-page top bar. Each screen renders its own at the top of its content:

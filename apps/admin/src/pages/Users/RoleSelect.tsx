@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Chip, Icon } from '../../ui'
+import { Chip, Icon } from '@intelli/ui'
 import { ROLE_META, useUpdateUser, type Role, type User } from './useUsers'
 import styles from './UserTable.module.css'
 

@@ -1,4 +1,4 @@
-import { Card, Icon, Spark } from '../../ui'
+import { Card, Icon, Spark } from '@intelli/ui'
 import styles from './KpiCard.module.css'
 
 // One KPI tile: a label, a big value, an optional delta chip (arrow + number,

@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { makeStore } from '../store'
 import type { Session } from '../store/auth'
-import { SESSION_KEY } from '../lib/session'
+import { SESSION_KEY } from '../store/auth'
 
 // Wrap a component in the same providers the app uses, with retries off so a
 // failing query fails fast in tests. Pass `session` to render as a signed-in user

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Field, Icon, Input, Modal } from '../../ui'
-import { ApiError } from '../../lib/api'
+import { Button, Field, Icon, Input, Modal } from '@intelli/ui'
+import { ApiError } from '@intelli/api-client'
 import {
   getLevelName,
   isBottomLevel,

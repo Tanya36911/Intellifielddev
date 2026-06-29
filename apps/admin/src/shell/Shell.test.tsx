@@ -6,8 +6,8 @@ import { SESSION_KEY } from '../store/auth'
 import { fakeToken, HOUR } from '../test/fixtures'
 import Shell from './Shell'
 
-vi.mock('../lib/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../lib/api')>()),
+vi.mock('@intelli/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@intelli/api-client')>()),
   apiGet: vi.fn().mockResolvedValue({ footprint: { nodes: 8, stores: 3, reps: 2 } }),
 }))
 afterEach(() => vi.clearAllMocks())

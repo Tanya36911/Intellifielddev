@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiGet } from '../../lib/api'
+import { apiGet } from '@intelli/api-client'
 
 export type Range = '4w' | '12w' | 'YTD'
 

@@ -8,8 +8,10 @@ look identical and a color change happens in one spot instead of twenty.
 These values were copied straight from the finished prototype, so the real app
 matches the demo.
 
-`packages/` is where shared frontend pieces live. Today there is one shared
-piece, `tokens`. The name `@intelli/tokens` is how the apps refer to it.
+`packages/` is where shared frontend pieces live. There are three: `tokens`
+(this one, the colors and fonts), `ui` (the shared web building blocks like
+buttons and pop-ups), and `api-client` (the shared backend helper). The name
+`@intelli/tokens` is how the apps refer to this one.
 
 ---
 

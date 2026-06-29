@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Card, Chip, Icon, Segmented } from '../../ui'
+import { Button, Card, Chip, Icon, Segmented } from '@intelli/ui'
 import { selectSession, useAppSelector } from '../../store'
 import { useHierarchy } from '../Hierarchy/useHierarchy'
 import { roleCounts, ROLE_META, useUsers, type Role, type User } from './useUsers'

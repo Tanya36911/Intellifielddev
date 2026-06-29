@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Icon, Modal } from '../../ui'
+import { Button, Icon, Modal } from '@intelli/ui'
 import type { TimeEntry, PayPeriod } from './usePayroll'
 import styles from './ReopenModal.module.css'
 

@@ -1,4 +1,4 @@
-import { Icon } from '../ui'
+import { Icon } from '@intelli/ui'
 import { Topbar } from '../shell/Topbar'
 import styles from './ComingSoon.module.css'
 

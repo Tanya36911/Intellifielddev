@@ -3,7 +3,7 @@ import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession } from '../../test/fixtures'
 import Builder from './Builder'
-import * as api from '../../lib/api'
+import * as api from '@intelli/api-client'
 
 beforeEach(() => {
   vi.spyOn(api, 'apiGet').mockImplementation(async (path: string) => {

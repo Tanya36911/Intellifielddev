@@ -3,10 +3,10 @@ import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession, repSession } from '../../test/fixtures'
 import Settings from './Settings'
-import { apiGet, apiSend } from '../../lib/api'
+import { apiGet, apiSend } from '@intelli/api-client'
 
-vi.mock('../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../lib/api')>()
+vi.mock('@intelli/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@intelli/api-client')>()
   return { ...actual, apiGet: vi.fn(), apiSend: vi.fn() }
 })
 

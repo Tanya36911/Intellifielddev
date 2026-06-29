@@ -1,4 +1,4 @@
-import { Modal, Avatar, Chip, Icon } from '../../ui'
+import { Modal, Avatar, Chip, Icon } from '@intelli/ui'
 import { type ResponseRow } from './useResponses'
 import type { Survey } from './useSurveys'
 import styles from './ResponsesListModal.module.css'

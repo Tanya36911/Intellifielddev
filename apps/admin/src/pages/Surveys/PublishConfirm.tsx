@@ -1,4 +1,4 @@
-import { Button, Modal } from '../../ui'
+import { Button, Modal } from '@intelli/ui'
 import styles from './PublishConfirm.module.css'
 
 // Modal shown before the Builder publishes a survey. Publishing freezes the

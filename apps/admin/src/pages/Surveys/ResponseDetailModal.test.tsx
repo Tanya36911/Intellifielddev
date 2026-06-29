@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession } from '../../test/fixtures'
 import { ResponseDetailModal } from './ResponseDetailModal'
-import * as api from '../../lib/api'
+import * as api from '@intelli/api-client'
 import type { BackendQuestion } from './useSurveys'
 import type { Sku } from '../Catalog/useCatalog'
 

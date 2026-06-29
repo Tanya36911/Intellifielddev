@@ -3,12 +3,12 @@ import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import Dashboard from './Dashboard'
 
-vi.mock('../../lib/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../lib/api')>()),
+vi.mock('@intelli/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@intelli/api-client')>()),
   apiGet: vi.fn(),
   downloadCsv: vi.fn(),
 }))
-import { apiGet, downloadCsv } from '../../lib/api'
+import { apiGet, downloadCsv } from '@intelli/api-client'
 
 const DASH = {
   footprint: { nodes: 8, stores: 3, reps: 2 },

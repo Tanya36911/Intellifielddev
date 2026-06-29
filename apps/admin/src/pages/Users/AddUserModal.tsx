@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Chip, Field, Icon, Input, Modal, Select } from '../../ui'
-import { ApiError } from '../../lib/api'
+import { Button, Chip, Field, Icon, Input, Modal, Select } from '@intelli/ui'
+import { ApiError } from '@intelli/api-client'
 import { inheritanceText, ROLE_META, useCreateUser, type Role } from './useUsers'
 import type { PinOption } from './pinOptions'
 import styles from './UserModals.module.css'

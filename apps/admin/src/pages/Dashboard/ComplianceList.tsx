@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Bar, Icon } from '../../ui'
+import { Bar, Icon } from '@intelli/ui'
 import {
   useNodeCompliance,
   type NodeComplianceRow,

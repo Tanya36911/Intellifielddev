@@ -2,17 +2,17 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { ApiError } from '../lib/api'
+import { ApiError } from '@intelli/api-client'
 import { makeStore } from '../store'
 import { dana, fakeToken, HOUR } from '../test/fixtures'
 import Login from './Login'
 
-vi.mock('../lib/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../lib/api')>()),
+vi.mock('@intelli/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@intelli/api-client')>()),
   login: vi.fn(),
 }))
 
-import { login } from '../lib/api'
+import { login } from '@intelli/api-client'
 const mockedLogin = vi.mocked(login)
 
 function renderLogin() {

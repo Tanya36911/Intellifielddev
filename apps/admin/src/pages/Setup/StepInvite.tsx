@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Avatar, Button, Card, Chip, Field, Icon, Input, Select } from '../../ui'
-import { ApiError } from '../../lib/api'
+import { Avatar, Button, Card, Chip, Field, Icon, Input, Select } from '@intelli/ui'
+import { ApiError } from '@intelli/api-client'
 import { useHierarchy } from '../Hierarchy/useHierarchy'
 import { pinOptions } from '../Users/pinOptions'
 import { ROLE_META, useCreateUser, type Role, type User } from '../Users/useUsers'

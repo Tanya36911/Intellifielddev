@@ -1,4 +1,4 @@
-import { Chip, Icon } from '../../ui'
+import { Chip, Icon } from '@intelli/ui'
 import styles from './RolesReference.module.css'
 
 type Cell = 'Full' | 'Scoped' | 'None'

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Chip, Icon, Switch } from '../../ui'
+import { Button, Chip, Icon, Switch } from '@intelli/ui'
 import { PassConditionEditor } from './PassConditionEditor'
 import {
   SCORABLE,
@@ -22,7 +22,7 @@ const TYPE_LABELS: Record<QType, string> = {
 }
 
 // Icon name per question type
-const TYPE_ICONS: Record<QType, keyof typeof import('../../ui/icons').ICONS> = {
+const TYPE_ICONS: Record<QType, keyof typeof import('@intelli/ui').ICONS> = {
   boolean: 'toggle',
   number: 'hash',
   single_choice: 'list',

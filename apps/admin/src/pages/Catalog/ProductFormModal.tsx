@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Field, Icon, Input, Modal, Select } from '../../ui'
-import { ApiError } from '../../lib/api'
+import { Button, Field, Icon, Input, Modal, Select } from '@intelli/ui'
+import { ApiError } from '@intelli/api-client'
 import type { Sku, SkuInput } from './useCatalog'
 import { useCreateSku, useUpdateSku } from './useCatalog'
 import styles from './ProductFormModal.module.css'

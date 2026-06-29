@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Icon, Segmented } from '../../ui'
+import { Button, Card, Icon, Segmented } from '@intelli/ui'
 import { Topbar } from '../../shell/Topbar'
 import { selectSession, useAppSelector } from '../../store'
 import {
