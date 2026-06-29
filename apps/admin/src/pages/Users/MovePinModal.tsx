@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Icon, Modal, Select } from '@intelli/ui'
-import { ApiError } from '../../lib/api'
+import { ApiError } from '@intelli/api-client'
 import { inheritanceText, useUpdateUser, type User } from './useUsers'
 import type { PinOption } from './pinOptions'
 import styles from './UserModals.module.css'

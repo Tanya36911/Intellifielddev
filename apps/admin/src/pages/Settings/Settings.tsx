@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Icon, ICONS } from '@intelli/ui'
-import { ApiError } from '../../lib/api'
+import { ApiError } from '@intelli/api-client'
 import { selectSession, useAppDispatch, useAppSelector } from '../../store'
 import { signedIn } from '../../store/auth'
 import { tenantChanges, useTenant, useUpdateTenant } from './useSettings'

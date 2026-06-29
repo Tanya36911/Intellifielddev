@@ -11,7 +11,7 @@ import {
   uniqueChains,
   type OrgNode,
 } from './useHierarchy'
-import { ApiError } from '../../lib/api'
+import { ApiError } from '@intelli/api-client'
 import TreeNode from './TreeNode'
 import StoreDetailModal from './StoreDetailModal'
 import NodeFormModal from './NodeFormModal'

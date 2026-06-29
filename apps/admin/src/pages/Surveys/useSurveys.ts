@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiSend } from '../../lib/api'
+import { apiGet, apiSend } from '@intelli/api-client'
 import type { Sku } from '../Catalog/useCatalog'
 
 export type QType = 'boolean' | 'number' | 'single_choice' | 'multi_choice' | 'photo' | 'text'

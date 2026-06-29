@@ -4,13 +4,13 @@ import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
-import { ApiError } from './lib/api'
+import { ApiError } from '@intelli/api-client'
 import { makeStore } from './store'
 import { SESSION_KEY } from './store/auth'
 import { dana, fakeToken, HOUR, adminSession } from './test/fixtures'
 
-vi.mock('./lib/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./lib/api')>()),
+vi.mock('@intelli/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@intelli/api-client')>()),
   login: vi.fn(),
   health: vi.fn(),
   // The dashboard fetches on mount, so the journey/redirect tests stub the
@@ -19,7 +19,7 @@ vi.mock('./lib/api', async (importOriginal) => ({
   downloadCsv: vi.fn(),
 }))
 
-import { apiGet, health, login } from './lib/api'
+import { apiGet, health, login } from '@intelli/api-client'
 const mockedLogin = vi.mocked(login)
 const mockedHealth = vi.mocked(health)
 const mockedApiGet = vi.mocked(apiGet)

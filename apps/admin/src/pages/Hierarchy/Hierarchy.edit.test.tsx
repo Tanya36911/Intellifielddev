@@ -3,10 +3,10 @@ import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession, repSession } from '../../test/fixtures'
 import Hierarchy from './Hierarchy'
-import { apiGet, apiSend, apiDelete } from '../../lib/api'
+import { apiGet, apiSend, apiDelete } from '@intelli/api-client'
 
-vi.mock('../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../lib/api')>()
+vi.mock('@intelli/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@intelli/api-client')>()
   return { ...actual, apiGet: vi.fn(), apiSend: vi.fn(), apiDelete: vi.fn() }
 })
 
@@ -111,7 +111,7 @@ describe('Hierarchy edit mode', () => {
   })
 
   it('a 409 on delete surfaces the backend reason to the user', async () => {
-    const { ApiError } = await import('../../lib/api')
+    const { ApiError } = await import('@intelli/api-client')
     vi.mocked(apiDelete).mockRejectedValueOnce(
       new ApiError(409, 'Cannot delete this node: it has children'),
     )

@@ -3,7 +3,7 @@ import { screen, fireEvent } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession, repSession } from '../../test/fixtures'
 import SurveyList from './SurveyList'
-import * as api from '../../lib/api'
+import * as api from '@intelli/api-client'
 
 const SURVEYS = [
   { id: 's1', name: 'Velvet Lip Shelf Check', type: null, status: 'published', created_at: '', latest_version: 2, assigned: true },

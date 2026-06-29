@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@intelli/api-client": "workspace:*",
     "@intelli/tokens": "workspace:*",
     "@intelli/ui": "workspace:*",
     "@reduxjs/toolkit": "^2.12.0",

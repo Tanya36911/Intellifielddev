@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiDelete, apiGet, apiSend } from '../../lib/api'
+import { apiDelete, apiGet, apiSend } from '@intelli/api-client'
 
 // --- types ---
 

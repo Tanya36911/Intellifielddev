@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Card, Chip, Field, Icon, Input, Select } from '@intelli/ui'
-import { ApiError } from '../../lib/api'
+import { ApiError } from '@intelli/api-client'
 import {
   getLevelName,
   isBottomLevel,

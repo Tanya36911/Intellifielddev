@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Button, Icon } from '@intelli/ui'
-import { ApiError } from '../../lib/api'
+import { ApiError } from '@intelli/api-client'
 import { selectSession, useAppSelector } from '../../store'
 import { useHierarchy } from '../Hierarchy/useHierarchy'
 import { useTenant, useUpdateTenant } from '../Settings/useSettings'

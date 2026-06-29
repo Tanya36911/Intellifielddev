@@ -3,8 +3,8 @@ import { screen } from '@testing-library/react'
 import { renderApp } from '../test/render'
 import { Sidebar } from './Sidebar'
 
-vi.mock('../lib/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../lib/api')>()),
+vi.mock('@intelli/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@intelli/api-client')>()),
   apiGet: vi.fn().mockResolvedValue({ footprint: { nodes: 8, stores: 3, reps: 2 } }),
 }))
 

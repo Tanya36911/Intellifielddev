@@ -1,5 +1,5 @@
-import { ApiError, apiGet, apiSend, health, login } from './api'
-import { SESSION_KEY, readToken } from './session'
+import { ApiError, apiGet, apiSend, health, login } from '@intelli/api-client'
+import { getSessionKey, readToken } from '@intelli/api-client'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -10,7 +10,7 @@ function jsonResponse(status: number, body: unknown): Response {
 
 function setSession(token: string) {
   localStorage.setItem(
-    SESSION_KEY,
+    getSessionKey(),
     JSON.stringify({ token, user: { name: 'Dana', role: 'admin' } }),
   )
 }

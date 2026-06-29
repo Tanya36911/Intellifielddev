@@ -2,12 +2,10 @@
 // Mirrored into localStorage so it survives closing the browser, and
 // expiry-checked every time the app starts.
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { SessionUser } from '../lib/api'
-import { SESSION_KEY } from '../lib/session'
-
-// Re-exported so existing importers of SESSION_KEY from store/auth keep working.
-// The single definition now lives in lib/session.ts (shared with api.ts).
-export { SESSION_KEY }
+import type { SessionUser } from '@intelli/api-client'
+// The Admin app's session-storage key. The shared API client is told this key
+// once at startup (configureSession) so it reads the same localStorage entry.
+export const SESSION_KEY = 'intelli-admin-session'
 
 export type Session = { token: string; user: SessionUser }
 

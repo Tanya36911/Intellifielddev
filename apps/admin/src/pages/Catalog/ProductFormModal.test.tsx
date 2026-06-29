@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { ProductFormModal } from './ProductFormModal'
-import { apiSend, ApiError } from '../../lib/api'
+import { apiSend, ApiError } from '@intelli/api-client'
 
-vi.mock('../../lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../lib/api')>()
+vi.mock('@intelli/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@intelli/api-client')>()
   return { ...actual, apiSend: vi.fn() }
 })
 
