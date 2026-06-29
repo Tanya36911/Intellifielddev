@@ -89,8 +89,9 @@ is the groundwork for the offline queue the field app will use.
 As of W1 (the first Admin web screen), the Admin dining room is no longer just a
 login plus a near-empty welcome page. It now has the **app shell** (the
 persistent left sidebar and a per-page top bar, in `apps/admin/src/shell/`), a
-small shared **UI kit** ported from the prototype (`apps/admin/src/ui/`: Icon,
-Avatar, Chip, Button, Card, Segmented, Switch, Spark, Bar), and its first real
+small shared **UI kit** ported from the prototype (now the `@intelli/ui`
+package in `packages/ui/`: Icon, Avatar, Chip, Button, Card, Segmented, Switch,
+Spark, Bar, plus Modal/Field/Input/Select), and its first real
 screen, the **Analytics dashboard** (`apps/admin/src/pages/Dashboard/`): headline
 cards with sparklines and deltas, a weekly completion-trend line, a
 **compliance-by-node** card that lists your org nodes (the regions when you are at
@@ -323,7 +324,7 @@ On the frontend (`apps/admin/src/pages/Surveys/`):
 | `apps/admin/` | FRONTEND | The Admin dining room: the React screens brand HQ uses. It has the app shell (sidebar + top bar), a shared UI kit, the Analytics dashboard wired to `/analytics/dashboard`, the Catalog screen wired to `/skus`, the Surveys area (build, publish, assign) wired to `/surveys` and `/survey-assignments`, the Payroll screen wired to `/pay-periods`, `/time-entries`, `/audit`, and `/export/payroll`, the Hierarchy screen wired to `/nodes` and `/org-levels` (now with an admin-only Edit mode that adds/renames/deletes nodes via `POST`/`PATCH`/`DELETE /nodes`), the Users & Roles screen wired to `/users`, the Settings screen wired to `/tenants`, and the fullscreen 5-step Setup Wizard at `/setup` (which reuses `PUT /org-levels`, `PATCH /tenants`, `POST /nodes`, and `POST /users`), on top of the login screen. All Admin web sidebar screens are complete, the Hierarchy screen is editable, and with the setup wizard done the Admin web app is feature-complete. Full guide: [apps/admin/README.md](apps/admin/README.md). |
 | `apps/manager/` | FRONTEND | The Manager app. Not created yet. |
 | `apps/field/` | FRONTEND | The Field mobile app for reps. Not created yet. |
-| `packages/` | FRONTEND (shared) | Pieces shared by all the frontend apps, like the brand colors and fonts. Full guide: [packages/tokens/README.md](packages/tokens/README.md). |
+| `packages/` | FRONTEND (shared) | Pieces shared by the frontend apps. Three of them: `tokens` (brand colors and fonts, [packages/tokens/README.md](packages/tokens/README.md)), `ui` (the shared web building blocks like buttons and pop-ups, used by both Admin and the upcoming Manager app, [packages/ui/README.md](packages/ui/README.md)), and `api-client` (the shared backend-talking helper, with a per-app login key, [packages/api-client/README.md](packages/api-client/README.md)). The UI kit and API client moved here out of `apps/admin/src/ui` and `apps/admin/src/lib` so the Manager app can reuse them; the move did not change how the Admin app behaves. |
 | `docs/` | NOTES | Design write-ups and build plans (one file per feature). Not code. |
 
 Everything else at the top level is setup/config, explained in section 4.
