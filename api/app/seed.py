@@ -287,7 +287,13 @@ def _time_entry(conn, tenant_id, period_id, user_email, store_min, reset_min,
     ).scalar()
 
 
-def run() -> None:
+def run(demo_extras: bool = False) -> None:
+    """Seed the demo world. The TESTS call run() with demo_extras=False, which
+    keeps a small, stable world their assertions depend on. The dev/demo database
+    (seeded via `python -m app.seed`) calls run(demo_extras=True), which adds a
+    richer Central branch (more districts/stores/reps/responses) so the Manager
+    app demos look full. The extras are purely additive and dev-only, so the
+    backend test suite never sees them and stays green untouched."""
     with engine.begin() as conn:
         # ----- Lumen Beauty -----
         lumen = _tenant(conn, "Lumen Beauty", "lumen")
@@ -443,6 +449,44 @@ def run() -> None:
         _time_entry(conn, lumen, period, "marcus@lumenbeauty.com", 480, 60, 90, 42, "pending")
         _time_entry(conn, lumen, period, "rico@lumenbeauty.com", 510, 45, 70, 33, "approved")
 
+        if demo_extras:
+            # ----- Demo-only enrichment of Sarah's Central branch -----
+            # Additive and dev-only (tests run with demo_extras=False). Gives the
+            # Manager app a full, varied branch: more districts and stores, reps
+            # pinned in them, and a mix of passing/failing readings so the
+            # compliance drill shows real variety. The company-wide Velvet Lip
+            # assignment (at l_root) already covers these new stores by path.
+            _node(conn, lumen, chicago, 3, "Naperville store", "naperville", chain="Walmart")
+            _node(conn, lumen, chicago, 3, "Evanston store", "evanston", chain="Target")
+            detroit = _node(conn, lumen, central, 2, "Detroit", "detroit")
+            _node(conn, lumen, detroit, 3, "Detroit store", "detroit-store", chain="CVS")
+            _node(conn, lumen, detroit, 3, "Ann Arbor store", "annarbor", chain="Walgreens")
+            indy = _node(conn, lumen, central, 2, "Indianapolis", "indianapolis")
+            _node(conn, lumen, indy, 3, "Indianapolis store", "indy-store", chain="CVS")
+            _node(conn, lumen, indy, 3, "Bloomington store", "bloomington", chain="Walmart")
+            # Reps pinned in the new districts.
+            _user(conn, lumen, "tasha@lumenbeauty.com", "Tasha Green", "rep", detroit)
+            _user(conn, lumen, "omar@lumenbeauty.com", "Omar Reyes", "rep", indy)
+            # Latest readings (Velvet Lip Shelf Check: q1 Rosewood facings >= 4
+            # passes; q2 endcap present). Bloomington is left unread on purpose so
+            # the demo also shows an expected-but-not-responded store.
+            for store_code, author, facings, endcap in [
+                ("naperville", "rico@lumenbeauty.com", 5, True),       # pass
+                ("evanston", "rico@lumenbeauty.com", 2, True),         # fail: Rosewood short
+                ("detroit-store", "tasha@lumenbeauty.com", 6, True),   # pass
+                ("annarbor", "tasha@lumenbeauty.com", 0, False),       # fail: OOS + no endcap
+                ("indy-store", "omar@lumenbeauty.com", 4, True),       # pass
+            ]:
+                _response(
+                    conn, lumen, "Velvet Lip Shelf Check", store_code, author,
+                    [{"question_id": "q1", "sku_id": str(rose), "value": facings},
+                     {"question_id": "q2", "value": endcap}],
+                    submitted_at="2026-06-17T10:00:00Z",
+                )
+            # Hours for the new reps so the (upcoming) Payroll Approval demo is full.
+            _time_entry(conn, lumen, period, "tasha@lumenbeauty.com", 465, 50, 80, 28, "pending")
+            _time_entry(conn, lumen, period, "omar@lumenbeauty.com", 495, 40, 95, 51, "pending")
+
         # ----- Acme Cosmetics (proves cross-tenant isolation) -----
         acme = _tenant(conn, "Acme Cosmetics", "acme")
         _levels(conn, acme)
@@ -467,7 +511,10 @@ def run() -> None:
         )
 
     print("Seeded Lumen (8 nodes, 33 products across 6 lines, 1 survey, 2 assignments, 11 responses, payroll on, 6 users, 1 period, 2 entries) + Acme (4 nodes, 1 product, 1 survey, 1 response, payroll off) + 6 users with pins.")
+    if demo_extras:
+        print("  + demo extras on Central: 2 districts (Detroit, Indianapolis), 6 stores, 2 reps, 5 readings, 2 hours entries (dev/demo only, not seeded for tests).")
 
 
 if __name__ == "__main__":
-    run()
+    # The dev/demo database gets the richer Central branch.
+    run(demo_extras=True)

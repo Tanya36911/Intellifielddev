@@ -509,6 +509,14 @@ fast-follow, never the headline.
     apps/manager/src/pages/Compliance/. Reviewed by a read-only adversarial pass. Deferred (noted):
     per-question text labels + pass-rule chips (need the survey-version question join) and the
     rep/last-visit metadata (needs /responses). Manager: 33 frontend tests, build clean; Admin: 247.
-    NOTE on demo data: the real Central branch is sparse (one district, one store, one rep), so the live
-    screen looks thinner than the rich prototype until the seed is enriched for Central (a recommended
-    follow-up). NEXT: Lane 4, Survey Assignment (mockup -> build -> review), then Payroll Approval.
+    NEXT: Lane 4, Survey Assignment (mockup -> build -> review), then Payroll Approval.
+  - **Central demo enrichment, DONE:** the seed now adds (behind a `demo_extras` flag) two more districts
+    under Central (Detroit, Indianapolis), six more stores, two reps (Tasha, Omar), a mix of passing/failing
+    Velvet Lip readings, and hours, so the Manager screens demo full (Sarah's branch went from 3 nodes to
+    11). The flag is dev/demo-only: backend TESTS call `run()` (demo_extras=False) and keep the small,
+    asserted world, so the suite stays green (249) with no test churn; only `python -m app.seed` (the
+    dev/demo DB) includes the extras. Also fixed a pre-existing date-rotted dashboard trend test
+    (test_dashboard_weekly_trend hardcoded date_to=2026-06-29, which the real calendar reached today, making
+    it window-out the now()-dated submissions; now relative to now()). The LOCAL dev DB is re-seeded; the
+    DEPLOYED dev server's DB must be re-seeded after deploy (`docker compose exec api python -m app.seed`)
+    for the extras to show there. NEXT: Lane 4, Survey Assignment.

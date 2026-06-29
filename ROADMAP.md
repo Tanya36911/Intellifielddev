@@ -279,10 +279,16 @@ soon" because they need backends that do not exist yet. Spec:
   the branch-scoped endpoints. Decision recorded: Manager screens are copied-and-adapted
   from Admin (not shared as whole pages), because the foundation is already shared, the
   screens genuinely diverge per app, and copying keeps the green Admin app untouched.
-- **Recommended follow-up (demo richness):** the real Central branch is sparse (one
-  district, one store, one rep), so the Manager screens look thinner than the rich
-  prototype. A seed enrichment for Central (more districts/stores/reps/responses) would
-  make all the Manager demos compelling. Additive, seed-only, in the main folder.
+- **Central demo enrichment (DONE):** Sarah's Central branch was sparse (one district,
+  one store, one rep), making the Manager screens look thin. The seed now adds (behind a
+  `demo_extras` flag) two more districts (Detroit, Indianapolis), six more stores, two
+  reps, a mix of passing/failing readings, and hours, so the Dashboard, Compliance
+  Review, and (later) Payroll demos look full. The flag is dev/demo-only: the backend
+  tests call `run()` without it and keep the small, asserted world, so the suite stays
+  green (249) untouched. Also fixed a pre-existing date-rotted dashboard trend test
+  (it hardcoded a date_to the calendar reached). NOTE: re-seed the deployed dev DB
+  (`docker compose exec api python -m app.seed`) after deploy for the extras to appear
+  there; the local dev DB is already re-seeded.
 
 ## Small backend bricks to slot in just-in-time
 

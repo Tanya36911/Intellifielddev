@@ -214,10 +214,13 @@ def test_dashboard_weekly_trend(client, login):
     _assign(client, dana, vid, "bayarea")  # expected = 2 stores (sf, oakland)
     _submit(client, login("marcus@lumenbeauty.com"), vid, "sf",
             [{"question_id": "q1", "sku_id": str(rose), "value": 5}])
+    # Window relative to now() so it always brackets the now()-dated submissions
+    # above; a hardcoded date_to rots once the real calendar reaches it.
+    now = dt.datetime.now(dt.timezone.utc)
     body = client.get("/analytics/dashboard", headers=_auth(dana),
                       params={"node_id": str(_node_id("bayarea")),
-                              "date_from": "2026-06-15T00:00:00Z",
-                              "date_to": "2026-06-29T00:00:00Z"}).json()
+                              "date_from": (now - dt.timedelta(days=14)).strftime("%Y-%m-%dT00:00:00Z"),
+                              "date_to": (now + dt.timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")}).json()
     trend = body["trend"]
     assert len(trend) >= 1                       # weekly buckets across the range
     assert all(set(p) == {"week_start", "completion_pct", "responded", "expected"} for p in trend)
