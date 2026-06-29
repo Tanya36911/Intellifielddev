@@ -266,12 +266,23 @@ soon" because they need backends that do not exist yet. Spec:
   client are already shared); the Admin app is untouched. Manager: 26 tests, build
   clean. It skipped a fresh mockup because it mirrors the already-approved Admin
   dashboard.
-- **Lanes 3 to 5 (NEXT):** Compliance Review, Survey Assignment, Payroll Approval,
-  each via mockup -> approve -> test-first build -> adversarial review, reusing the
-  Admin screen logic over the branch-scoped endpoints. Decision recorded: Manager
-  screens are copied-and-adapted from Admin (not shared as whole pages), because the
-  foundation is already shared, the screens genuinely diverge per app, and copying
-  keeps the green Admin app untouched.
+- **Lane 3: Compliance Review (DONE), the hero screen.** At `/compliance`: a breadcrumb
+  drill from the branch root through districts to a store, then a store-detail review of
+  each submitted survey scored live, with failing products surfaced by shade name and
+  colour. Reuses the dashboard's branch-scoped `/analytics/compliance/nodes` drill plus a
+  small `/skus` lookup; no backend change. Review-only for v1: failures shown, but
+  "Assign follow-up" and shelf photos greyed "coming soon" (Phase 5). Mockup approved
+  first. Reviewed by a read-only adversarial pass. Manager: 33 tests, build clean.
+  Deferred (noted): per-question text labels and the rep/last-visit metadata.
+- **Lanes 4 to 5 (NEXT):** Survey Assignment, Payroll Approval, each via mockup ->
+  approve -> test-first build -> adversarial review, reusing the Admin screen logic over
+  the branch-scoped endpoints. Decision recorded: Manager screens are copied-and-adapted
+  from Admin (not shared as whole pages), because the foundation is already shared, the
+  screens genuinely diverge per app, and copying keeps the green Admin app untouched.
+- **Recommended follow-up (demo richness):** the real Central branch is sparse (one
+  district, one store, one rep), so the Manager screens look thinner than the rich
+  prototype. A seed enrichment for Central (more districts/stores/reps/responses) would
+  make all the Manager demos compelling. Additive, seed-only, in the main folder.
 
 ## Small backend bricks to slot in just-in-time
 

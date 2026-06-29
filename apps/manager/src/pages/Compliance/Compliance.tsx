@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { Bar, Button, Card, Icon } from '@intelli/ui'
 import { downloadCsv } from '@intelli/api-client'
 import { Topbar } from '../../shell/Topbar'
@@ -38,6 +38,17 @@ const TONE_COLOR: Record<'green' | 'amber' | 'red', string> = {
 function pctColor(v: number | null): string {
   const t = tone(v)
   return t ? TONE_COLOR[t] : 'var(--text)'
+}
+
+// Make a click-handler also fire on Enter/Space, so a card or row that acts like
+// a button is reachable by keyboard (matches the Admin ComplianceList pattern).
+function onActivate(fn: () => void) {
+  return (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      fn()
+    }
+  }
 }
 
 // The store-level review: one block per survey covering the store, with the
@@ -166,7 +177,14 @@ function NodeLevel({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.node_id} className={styles.clickable} onClick={() => onDrill(r)}>
+              <tr
+                key={r.node_id}
+                className={styles.clickable}
+                role="button"
+                tabIndex={0}
+                onClick={() => onDrill(r)}
+                onKeyDown={onActivate(() => onDrill(r))}
+              >
                 <td className={styles.storeName}>{r.name}</td>
                 <td className={styles.mono}>
                   {r.responded} / {r.expected}
@@ -187,7 +205,14 @@ function NodeLevel({
   return (
     <div className={styles.cardGrid}>
       {rows.map((r) => (
-        <Card key={r.node_id} className={`${styles.card} ${styles.nodeCard}`} onClick={() => onDrill(r)}>
+        <Card
+          key={r.node_id}
+          className={`${styles.card} ${styles.nodeCard}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => onDrill(r)}
+          onKeyDown={onActivate(() => onDrill(r))}
+        >
           <div className={styles.nodeCardTop}>
             <div className={styles.nodeName}>{r.name}</div>
             <div className={styles.nodePct} style={{ color: pctColor(r.pass_pct) }}>

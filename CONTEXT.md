@@ -498,5 +498,17 @@ fast-follow, never the headline.
     fresh mockup (it mirrors the already-approved Admin dashboard). Manager: 26 frontend tests, build
     clean; Admin: 247. Decision recorded: Manager screens are copied-and-adapted from Admin, not shared
     as whole pages (the foundation primitives + API client are already shared, the screens diverge per
-    app, and copying keeps the green Admin app untouched). NEXT: Lane 3, Compliance Review (mockup ->
-    build -> review), then Survey Assignment, Payroll Approval.
+    app, and copying keeps the green Admin app untouched).
+  - **Lane 3 (Compliance Review, the hero screen), DONE:** at `/compliance`. A breadcrumb drill from the
+    manager's branch root through districts to a store, then a store-detail review of each submitted
+    survey scored live, with failing products surfaced by shade name and colour. Reuses the dashboard's
+    branch-scoped `/analytics/compliance/nodes` drill (useNodeCompliance) plus a small `/skus` lookup for
+    shade names; no backend change. Review-only for v1: failures shown in full, but "Assign follow-up to
+    rep" and shelf photos are greyed "coming soon" (need the field app + photo storage, Phase 5). Mockup
+    approved first (docs/superpowers/mockups/manager-compliance-mockup.html). New files in
+    apps/manager/src/pages/Compliance/. Reviewed by a read-only adversarial pass. Deferred (noted):
+    per-question text labels + pass-rule chips (need the survey-version question join) and the
+    rep/last-visit metadata (needs /responses). Manager: 33 frontend tests, build clean; Admin: 247.
+    NOTE on demo data: the real Central branch is sparse (one district, one store, one rep), so the live
+    screen looks thinner than the rich prototype until the seed is enriched for Central (a recommended
+    follow-up). NEXT: Lane 4, Survey Assignment (mockup -> build -> review), then Payroll Approval.
