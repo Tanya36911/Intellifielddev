@@ -94,7 +94,7 @@ describe('apiSend', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('POSTs JSON with the auth header and returns the parsed body', async () => {
-    localStorage.setItem('intelli-admin-session', JSON.stringify({ token: 't.t.t' }))
+    localStorage.setItem(getSessionKey(), JSON.stringify({ token: 't.t.t' }))
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ id: '1', variant: 'Rosewood' }), { status: 200 }),
     )

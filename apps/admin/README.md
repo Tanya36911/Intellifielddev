@@ -70,29 +70,24 @@ A few global style rules: the background color, the body font, and pointing
 headings at the heading font. The detailed look of each screen lives in that
 screen's own style file (below).
 
-### lib/api.ts  (the one phone line to the backend)
-The ONLY file that talks to the backend waiter. It knows the backend's address
-and offers the calls every screen needs: `login` (send email + password, get a
-wristband back), `health` (is the backend awake?), and (added in W1) `apiGet`
-(fetch data from any backend address, automatically attaching the login
-wristband) and `downloadCsv` (ask the backend for a spreadsheet file and save it
-to your computer, also with the wristband attached). Added in W3: `apiSend`
-(the write helper, used for POST and PATCH requests that save or update
-something, like adding or editing a product; as of the setup wizard, `apiSend`
-also allows PUT, used by the wizard's "name your levels" step to save the level
-structure via `PUT /org-levels`). Added with the editable Hierarchy
-(2026-06-26): `apiDelete` (the delete helper, used to remove something, like
-deleting an empty org node), again with the login wristband attached. Every screen
-goes through this file, so the backend's address is written in exactly one place.
-It also turns backend problems into friendly messages ("Invalid email or password",
-or "Can't reach the backend").
-Its check: `lib/api.test.ts`.
-
-### lib/session.ts  (where the login wristband is read)
-A tiny shared helper, added in W1, that knows how to read the saved login
-wristband out of the browser's storage pocket. `apiGet` and `downloadCsv` use it
-so they can attach the wristband to every request without each screen having to
-fish it out itself. One place to read the token means the rule lives in one spot.
+### The backend helper and session (now shared in `@intelli/api-client`)
+The one set of calls that talk to the backend waiter used to live in
+`apps/admin/src/lib/`. As of the Manager-app groundwork (2026-06-29) they moved
+into a shared package, `@intelli/api-client` (in `packages/api-client/`), so the
+Admin and the future Manager web app use one copy. A screen pulls them in with
+`import { apiGet } from '@intelli/api-client'`. The calls are unchanged: `login`
+(send email + password, get a wristband back), `health` (is the backend awake?),
+`apiGet` (fetch data, automatically attaching the login wristband), `downloadCsv`
+(save a spreadsheet file, wristband attached), `apiSend` (the write helper for
+POST / PATCH / PUT that save or update something), and `apiDelete` (remove
+something). It is still the one place that knows the backend's address, and it
+turns backend problems into friendly messages ("Invalid email or password", or
+"Can't reach the backend"). It also reads the saved login wristband out of the
+browser's storage pocket; because the Admin and Manager apps could share a web
+address, each app tells the helper its own storage slot once at startup (the
+Admin app uses `intelli-admin-session`, set in `main.tsx`), so they never share a
+login. The package's checks live in `apps/admin/src/test/api-client.test.ts`.
+Full guide: `packages/api-client/README.md`.
 
 ### store/  (the session pocket: who is signed in)
 "Store" is the agreed shared memory for the whole app. We use a tool called
@@ -128,29 +123,19 @@ shown inside it.
   wizard it includes the admin-only **Setup** item (in the organization group),
   which the sidebar hides from non-admins.
 
-### ui/  (the shared UI kit, added in W1 and extended in W3)
-Small reusable building blocks ported from the prototype, so every screen looks
-consistent and we are not re-styling a button each time. These are the Lego
-bricks the screens are built from.
-- `ui/Icon.tsx` + `ui/icons.ts`: the icon drawer (one component that draws any
-  named icon, and the list of icon shapes it can draw).
-- `ui/Avatar.tsx`, `ui/Chip.tsx`, `ui/Button.tsx`, `ui/Card.tsx`,
-  `ui/Segmented.tsx` (a row of buttons where one is selected, like a toggle),
-  `ui/Switch.tsx` (an on/off toggle), each with its own `.module.css` look.
-- `ui/Spark.tsx` (a tiny inline trend line) and `ui/Bar.tsx` (a simple bar), the
-  little charts the dashboard cards use.
-- Added in W3: `ui/Modal.tsx` (the pop-up shell used for the add/edit form: a
-  darkened backdrop, a centered panel with a title and close button, and a
-  scrollable body; closes on the backdrop or the close button); `ui/Field.tsx`
-  (a labelled form field wrapper that pairs a label with its input, so the label
-  is always correctly wired to what it labels); `ui/Input.tsx` (a text input that
-  matches the app's look); `ui/Select.tsx` (a dropdown that also matches the
-  look). These four share a `ui/form.module.css` for their styling, and they are
-  designed to be reused by every future screen that has a form or a pop-up
-  (surveys, payroll, settings, and so on).
-- `ui/index.ts`: one tidy front door that re-exports the whole kit, so a screen
-  imports all its bricks from one place.
-All of the kit is checked together by `ui/ui.test.tsx`.
+### The shared UI kit (now `@intelli/ui`)
+The small reusable building blocks (the Lego bricks the screens are built from,
+ported from the prototype so every screen looks consistent) used to live in
+`apps/admin/src/ui/`. As of the Manager-app groundwork (2026-06-29) they moved
+into a shared package, `@intelli/ui` (in `packages/ui/`), so the Admin and the
+future Manager web app use one copy and a button looks and behaves the same in
+both. A screen pulls them in with `import { Button, Card, Modal } from '@intelli/ui'`.
+The kit holds: the icon drawer (Icon + icons), Avatar, Chip, Button, Card,
+Segmented (a toggle row), Switch (an on/off toggle), Spark and Bar (the little
+dashboard charts), and the form pieces Modal (the pop-up shell), Field (a labelled
+form-field wrapper), Input, and Select (a dropdown), which share one form style.
+Its checks live in `apps/admin/src/test/ui-kit.test.tsx`. Full guide:
+`packages/ui/README.md`.
 
 ### pages/  (the actual screens)
 - `pages/Login.tsx` + `Login.module.css`: the login screen and its looks. The
@@ -307,7 +292,7 @@ All of the kit is checked together by `ui/ui.test.tsx`.
   mode) `NodeFormModal.tsx` (the add/rename pop-up form), plus tests and CSS. Edit
   mode also added new mutation hooks plus an `isBottomLevel` helper and a
   `levelChildName` helper in `useHierarchy.ts`, edit-mode wiring in `Hierarchy.tsx`
-  and `TreeNode.tsx`, and an `apiDelete` helper in `lib/api.ts`. Deferred (shown as
+  and `TreeNode.tsx`, and an `apiDelete` helper in the shared API client. Deferred (shown as
   greyed "soon"): coverage mode (managers/reps overlay), moving a node to a new
   parent (re-parenting), editing the org levels themselves (that comes with the
   wizard), bulk import, and export.
@@ -422,7 +407,9 @@ screens can use the same names without clashing.
 
 ## How it connects to everything else
 
-The screens here call `lib/api.ts`, which calls the backend in `api/`, which
-reads the database whose shape is in `db/`. The colors and fonts come from the
-shared `packages/tokens/`. So this folder is purely the "what you see and
-click" layer.
+The screens here call the shared API client (`@intelli/api-client` in
+`packages/api-client/`), which calls the backend in `api/`, which reads the
+database whose shape is in `db/`. The shared building blocks come from
+`@intelli/ui` (`packages/ui/`) and the colors and fonts from `@intelli/tokens`
+(`packages/tokens/`). So this folder is purely the "what you see and click"
+layer.
