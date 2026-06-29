@@ -82,9 +82,15 @@ Ported from the prototype `dm-shell.jsx` so placement matches the real spec.
   "coming soon").
 - **Top bar** per page: title and subtitle. The prototype's "Sync" control and the
   notifications bell are trimmed / "coming soon", consistent with Admin's web trims.
-- **Route guard:** managers and admins may open the app (an admin's branch is the
-  whole company, so it just works); reps are bounced to login, because reps have no
-  web app. Same guard pattern Admin already uses.
+- **Route guard:** managers and admins may open the app (an admin is pinned at the
+  company root node, so their scope is the whole company and it just works). The
+  guard is fail-closed: only the manager and admin roles reach the shell. A field
+  rep who signs in (their credentials are valid; the backend authenticates any role)
+  hits a friendly NoAccess wall ("this app is for managers") with a sign-out, rather
+  than being let in, because reps have no web app yet. The scope chip shows the
+  caller's pinned-node name (a branch like "Central" for a manager, the root node
+  "Lumen Beauty" for the demo admin); a caller with no pin sees no data, so it says
+  "No branch assigned" rather than implying full access.
 
 ## The four real screens
 

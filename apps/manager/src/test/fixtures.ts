@@ -7,19 +7,22 @@ export function fakeToken(expiresAtMs: number): string {
   return `header.${payload}.signature`
 }
 
-// Sarah is the demo manager, pinned at Central Region (matches the seed).
+// Sarah is the demo manager, pinned at the "Central" node (matches the seed:
+// the node is named "Central", not "Central Region").
 export const sarah = {
   name: 'Sarah Mitchell',
   role: 'manager',
   company_name: 'Lumen Beauty',
-  pinned_node_name: 'Central Region',
+  pinned_node_name: 'Central',
 }
-// An admin can also open the Manager app; their scope is the whole company.
+// An admin can also open the Manager app. The demo admin is pinned at the
+// company root node, which is named "Lumen Beauty" (matches the seed), so that
+// is the admin's scope label.
 export const dana = {
   name: 'Dana Whitfield',
   role: 'admin',
   company_name: 'Lumen Beauty',
-  pinned_node_name: null,
+  pinned_node_name: 'Lumen Beauty',
 }
 // A field rep, who must be bounced from the Manager app.
 export const marcus = {

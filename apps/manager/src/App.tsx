@@ -23,7 +23,11 @@ export default function App() {
     )
   }
 
-  if (session.user.role === 'rep') {
+  // Fail closed: only managers and admins reach the shell. Anyone else (a field
+  // rep, or any unexpected role) hits the NoAccess wall. The backend still gates
+  // every call on the signed token, so this is the front-door defense, not the
+  // security boundary.
+  if (session.user.role !== 'manager' && session.user.role !== 'admin') {
     return <NoAccess />
   }
 

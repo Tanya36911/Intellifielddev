@@ -467,3 +467,27 @@ fast-follow, never the headline.
   locally but NOT pushed yet. NEXT: the Admin app is feature-complete, so the next tracks are the Manager
   web app (reuses the same backend, scoped to a manager's branch) and Phase 5 (the Field mobile app +
   offline sync).
+- 2026-06-29: MANAGER WEB APP STARTED (Lane 0 + Lane 1), and the push rule changed (Tanya: push completed
+  green work autonomously, do not ask first; design/mockup gates still stand). Chose the Manager web app
+  over Phase 5 as the next track (lighter, higher-visibility, mostly screen work since the backend already
+  enforces branch scope). v1 = 4 real screens (Dashboard, Compliance Review review-only, Survey Assignment,
+  Payroll Approval) on existing branch-scoped endpoints; Route Planning + Announcements stay "coming soon"
+  (no backend). Spec: docs/superpowers/specs/2026-06-29-manager-web-app-design.md.
+  - **Lane 0 (shared packages), DONE + PUSHED:** extracted the Admin UI kit into `@intelli/ui` and the API
+    client into `@intelli/api-client` (in `packages/`, source-only like `@intelli/tokens`), re-pointed the
+    Admin imports, and made the session-storage key per-app (the shared client is told its key once at
+    startup via `configureSession`), so the Admin and Manager apps never share a login. Behavior-preserving:
+    Admin build clean, 247 frontend tests green. Plan: docs/superpowers/plans/2026-06-29-manager-lane0-shared-packages.md.
+  - **Lane 1 (Manager app shell), DONE:** a new `apps/manager` Vite app (port 5174), sibling to Admin,
+    reusing the shared packages. The shell: a scope-forward Sidebar (loud "Your scope" chip from the pinned
+    node, locked company card, branch-scoped footprint, 6-item nav with Route Planning + Announcements
+    greyed "soon"), Topbar, a Manager-branded Login (own session key `intelli-manager-session`), and a
+    fail-closed doorman (manager/admin -> shell; field rep -> a friendly NoAccess wall; unauthenticated ->
+    login). The four real screens are ComingSoon placeholders, built one per lane next. No backend change.
+    Manager: 15 frontend tests, build clean; Admin unchanged (247). New demo login: sarah@lumenbeauty.com /
+    demo1234, scoped to "Central". A 4-lens adversarial review (correctness, scope-security, mockup
+    fidelity, lane-readiness) passed; its fixes are folded in (honest scope label "No branch assigned" for
+    an unpinned caller instead of a misleading "Whole company"; test fixtures match the real seed node names
+    "Central"/"Lumen Beauty"; the role guard is an explicit fail-closed allowlist; the dead nav `badge`
+    field removed; a deep-link rep test added). NEXT: Lane 2, the Manager Dashboard (mockup -> build ->
+    review), then Compliance Review, Survey Assignment, Payroll Approval.

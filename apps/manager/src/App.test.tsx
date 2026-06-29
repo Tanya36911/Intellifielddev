@@ -20,20 +20,29 @@ describe('the Manager app doorman', () => {
   it('shows the shell with the loud scope chip for a signed-in manager', () => {
     renderApp(<App />, { route: '/', session: managerSession() })
     expect(screen.getByText('Your scope')).toBeInTheDocument()
-    expect(screen.getAllByText('Central Region').length).toBeGreaterThan(0)
+    // Sarah is pinned at the "Central" node, so that is her scope label.
+    expect(screen.getAllByText('Central').length).toBeGreaterThan(0)
     // a real nav item and a coming-soon one both render
     expect(screen.getByText('Compliance Review')).toBeInTheDocument()
     expect(screen.getByText('Route Planning')).toBeInTheDocument()
   })
 
-  it('lets an admin in, scoped to the whole company', () => {
+  it('lets an admin in, scoped to the company root node', () => {
     renderApp(<App />, { route: '/', session: adminSession() })
     expect(screen.getByText('Your scope')).toBeInTheDocument()
-    expect(screen.getByText('Whole company')).toBeInTheDocument()
+    // The admin is pinned at the root node "Lumen Beauty", which shows in both
+    // the company card and the scope chip (not a "whole company" placeholder).
+    expect(screen.getAllByText('Lumen Beauty').length).toBeGreaterThanOrEqual(2)
   })
 
   it('bounces a field rep to the no-access wall (no shell)', () => {
     renderApp(<App />, { route: '/', session: repSession() })
+    expect(screen.getByText('This app is for managers')).toBeInTheDocument()
+    expect(screen.queryByText('Your scope')).not.toBeInTheDocument()
+  })
+
+  it('keeps the no-access wall even on a deep link for a rep', () => {
+    renderApp(<App />, { route: '/payroll', session: repSession() })
     expect(screen.getByText('This app is for managers')).toBeInTheDocument()
     expect(screen.queryByText('Your scope')).not.toBeInTheDocument()
   })

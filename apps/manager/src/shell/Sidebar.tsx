@@ -5,8 +5,9 @@ import { apiGet, type SessionUser } from '@intelli/api-client'
 import { NAV, type NavItem } from './nav'
 import styles from './Sidebar.module.css'
 
-// The footprint counts the dashboard endpoint also returns, branch-scoped to the
-// caller, so for a manager these are their own branch's numbers, not the company's.
+// The footprint counts (Nodes / Stores / Reps) come from the same dashboard
+// endpoint, branch-scoped to the caller, so a manager sees their own branch's
+// numbers, not the whole company's.
 type Footprint = { nodes: number; stores: number; reps: number }
 
 const DASH = '—'
@@ -50,9 +51,11 @@ export function Sidebar({ user, onSignOut }: { user: SessionUser; onSignOut: () 
   const main = NAV.filter((n) => n.group === 'main')
   const team = NAV.filter((n) => n.group === 'team')
 
-  // A manager is pinned to a branch node; an admin (who can also open this app)
-  // is pinned at the company root, so their scope is the whole company.
-  const scopeName = user.pinned_node_name ?? 'Whole company'
+  // The scope label is the name of the node the person is pinned to: a branch
+  // for a manager (e.g. "Central"), the company root for an admin (e.g. "Lumen
+  // Beauty"). A caller with no pin sees no data, so we say so honestly rather
+  // than implying they see everything.
+  const scopeName = user.pinned_node_name ?? 'No branch assigned'
 
   return (
     <aside className={styles.sidebar}>

@@ -10,7 +10,6 @@ export type NavItem = {
   icon: keyof typeof ICONS
   group: 'main' | 'team'
   path: string
-  badge?: string
   comingSoon?: boolean
 }
 
