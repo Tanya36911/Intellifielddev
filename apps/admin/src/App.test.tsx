@@ -123,7 +123,7 @@ describe('the whole journey', () => {
   })
 })
 
-it('shows the Surveys screen at /surveys and has no Form Builder nav item', async () => {
+it('shows the Surveys screen at /surveys, with a Form Builder nav item linking to the builder', async () => {
   localStorage.setItem(SESSION_KEY, JSON.stringify(adminSession()))
   mockedApiGet.mockImplementation(async (path: string) => {
     if (path === '/surveys') return { surveys: [] } as any
@@ -131,5 +131,7 @@ it('shows the Surveys screen at /surveys and has no Form Builder nav item', asyn
   })
   renderApp('/surveys')
   expect(await screen.findByRole('heading', { name: /surveys/i })).toBeInTheDocument()
-  expect(screen.queryByText(/form builder/i)).not.toBeInTheDocument()
+  // Form Builder is restored to the sidebar (matching the prototype) and links
+  // to the real builder; the AI "draft it for me" assist remains a fast-follow.
+  expect(screen.getByRole('link', { name: /form builder/i })).toHaveAttribute('href', '/surveys/new')
 })

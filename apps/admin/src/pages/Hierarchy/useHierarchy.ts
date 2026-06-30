@@ -40,13 +40,19 @@ export function buildTreeIndex(nodes: OrgNode[]): TreeIndex {
     children[n.id] = children[n.id] ?? []
   }
   for (const n of nodes) {
-    if (n.parent_id !== null) {
-      children[n.parent_id] = children[n.parent_id] ?? []
+    // Only attach to a parent that is actually in this set. A scoped fetch (a
+    // manager) starts partway down the tree, so its top node's parent (an
+    // ancestor above the manager's scope) is not present; that node becomes a
+    // root below instead of being silently dropped.
+    if (n.parent_id !== null && byId[n.parent_id]) {
       children[n.parent_id].push(n.id)
     }
   }
 
-  const roots = nodes.filter(n => n.parent_id === null).map(n => n.id)
+  // Roots: nodes with no parent, OR whose parent is outside this (scoped) set.
+  // An admin sees the company root (parent_id null); a manager's root is their
+  // branch node (e.g. Central), whose parent sits above their scope.
+  const roots = nodes.filter(n => n.parent_id === null || !byId[n.parent_id]).map(n => n.id)
   return { byId, children, roots }
 }
 

@@ -18,8 +18,15 @@ export type NavItem = {
 
 export const NAV: NavItem[] = [
   { id: 'dashboard', label: 'Analytics', icon: 'chart', group: 'main', path: '/' },
+  // Form Builder is the prototype's AI-draft entry point. It opens the real
+  // survey builder; the "describe it and draft" AI assist is a documented
+  // fast-follow, so the AI badge is aspirational (the prototype labels it the
+  // same way). Kept as its own item to match the prototype sidebar.
+  { id: 'forms', label: 'Form Builder', icon: 'sparkles', group: 'main', path: '/surveys/new', badge: 'AI' },
   { id: 'surveys', label: 'Surveys', icon: 'file', group: 'main', path: '/surveys' },
-  { id: 'catalog', label: 'Catalog', icon: 'grid', group: 'main', path: '/catalog' },
+  { id: 'catalog', label: 'Catalog', icon: 'box', group: 'main', path: '/catalog' },
+  // Payroll and Setup are real built screens the prototype's sidebar predates;
+  // kept here so the working features stay reachable.
   { id: 'payroll', label: 'Payroll', icon: 'dollar', group: 'main', path: '/payroll' },
   { id: 'hierarchy', label: 'Hierarchy', icon: 'tree', group: 'org', path: '/hierarchy' },
   { id: 'users', label: 'Users & Roles', icon: 'users', group: 'org', path: '/users' },
