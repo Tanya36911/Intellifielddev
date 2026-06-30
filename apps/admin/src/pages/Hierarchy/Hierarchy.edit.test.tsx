@@ -56,10 +56,12 @@ describe('Hierarchy edit mode', () => {
     await screen.findByText('Lumen Beauty')
     const editBtn = screen.getByRole('button', { name: /edit/i })
     fireEvent.click(editBtn)
-    // Edit mode reveals an add-child button on the (non-store) company root.
+    // Edit mode reveals an add-child button on the (non-store) company root, but the
+    // root cannot be renamed or deleted (the company name lives in Settings; the root
+    // can never be removed).
     expect(await screen.findByRole('button', { name: /add child under Lumen Beauty/i })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /rename Lumen Beauty/i })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /delete Lumen Beauty/i })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /rename Lumen Beauty/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /delete Lumen Beauty/i })).toBeNull()
   })
 
   it('clicking add opens the modal and submitting POSTs /nodes with the parent_id + name', async () => {
@@ -120,7 +122,10 @@ describe('Hierarchy edit mode', () => {
     renderApp(<Hierarchy />, { session: adminSession() })
     await screen.findByText('Lumen Beauty')
     fireEvent.click(screen.getByRole('button', { name: /edit/i }))
-    fireEvent.click(screen.getByRole('button', { name: /delete Lumen Beauty/i }))
+    // The root cannot be deleted from here; use a non-empty Region instead.
+    fireEvent.click(screen.getByRole('button', { name: /expand all/i }))
+    await screen.findByText('West Region')
+    fireEvent.click(screen.getByRole('button', { name: /delete West Region/i }))
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith('Cannot delete this node: it has children'),
     )

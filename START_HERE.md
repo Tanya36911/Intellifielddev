@@ -305,6 +305,16 @@ get built one at a time next. You can see it: log in as a manager with
 still pass; the Manager app has 15 of its own) and were checked by an adversarial
 reviewer. Lane 0 is pushed (deployed); the shell follows.
 
+**Prototype fidelity pass STARTED (2026-06-30):** a careful screen-by-screen pass to make
+every built screen (Admin and Manager) look exactly like the hi-fi prototype, at maximum
+parity, Admin app first. The first screen done is the Admin **Hierarchy** screen: it now
+has coloured retailer dots on the chain badges, a small lock icon on the locked rows, the
+prototype's two explanatory banners, a Structure/Coverage toggle (Coverage shows who
+manages and staffs each part of the tree), and a real **Bulk import** pop-up that reads a
+spreadsheet and creates the stores (a new server step, `POST /nodes/bulk`). Tests stayed
+green (257 backend + 268 Admin). Next come the other Admin screens, then the Manager
+screens, then the two Manager screens that are not built yet.
+
 ---
 
 ## 2. The tools you'll use (what each one is for)

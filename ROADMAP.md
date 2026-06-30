@@ -290,6 +290,27 @@ soon" because they need backends that do not exist yet. Spec:
   (`docker compose exec api python -m app.seed`) after deploy for the extras to appear
   there; the local dev DB is already re-seeded.
 
+## Prototype fidelity pass (STARTED 2026-06-30)
+
+A screen-by-screen pass to make every built Admin and Manager screen match the hi-fi
+prototype exactly (layout, components, copy, navigation, badges, spacing, polish), at
+maximum parity. Order: the Admin app first, then the Manager fidelity work, then the two
+still-unbuilt Manager screens (Survey Assignment, Payroll Approval). Each screen goes
+mockup -> approve -> test-first build -> read-only adversarial review, and only the
+genuinely blocked items (real shelf photos, the AI reading photos, a messaging system)
+stay honestly "coming soon". Specs live in `docs/superpowers/specs/`.
+
+- **Admin Hierarchy (/hierarchy): DONE (2026-06-30).** Coloured retailer dots on chain
+  badges, lock icons on locked rows + legend, the two prototype info banners, a
+  Structure/Coverage staffing view (adapted to Region/District/Store, reusing `/users`),
+  and a real Bulk import pop-up backed by a new admin-only `POST /nodes/bulk` (no
+  migration). The company root no longer offers Rename/Delete (the company name lives in
+  Settings). 257 backend + 268 admin frontend tests green. Spec:
+  `docs/superpowers/specs/2026-06-30-admin-hierarchy-fidelity-design.md`.
+- NEXT: the remaining Admin screens (Responses, Users, Catalog, Surveys + Assign,
+  Settings + Setup, the shell copy, then the Analytics dashboard), then Manager Compliance
+  + Dashboard fidelity, then build the two new Manager screens.
+
 ## Small backend bricks to slot in just-in-time
 
 A few screens need a small, quick backend addition first (each one is the same

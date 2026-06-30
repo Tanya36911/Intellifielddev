@@ -156,6 +156,72 @@ class ScopedRepo:
             )
         return self.get_node(nid)
 
+    def bulk_create_nodes(self, rows: list[dict]) -> dict:
+        """Create many nodes from {level, name, parent} rows in one transaction.
+        Valid rows are created; invalid rows are reported (never raise). A row's
+        `parent` is resolved by name to a SINGLE in-scope node one level up,
+        considering both pre-existing nodes and ones created earlier in this batch
+        (so a District and its Stores can import together)."""
+        if self.scope_path is None:
+            return {"created": 0,
+                    "errors": [{"row": i, "name": r.get("name", ""), "reason": "no scope"}
+                               for i, r in enumerate(rows)]}
+        # level name (case-insensitive) -> level_order
+        levels = {lvl["name"].strip().lower(): lvl["level_order"] for lvl in self.list_org_levels()}
+        errors: list[dict] = []
+        created = 0
+        with engine.begin() as conn:
+            max_level = self._max_level(conn)
+            # in-scope nodes indexed by (lower name, level_order) -> [{id, path}]
+            index: dict[tuple[str, int], list[dict]] = {}
+            for n in conn.execute(
+                text("select id, name, level_order, path from nodes "
+                     "where tenant_id = cast(:tid as uuid) and path like :scope || '%'"),
+                {"tid": str(self.tenant_id), "scope": self.scope_path},
+            ).mappings().all():
+                index.setdefault((n["name"].strip().lower(), n["level_order"]), []).append(
+                    {"id": n["id"], "path": n["path"]})
+
+            for i, row in enumerate(rows):
+                name = (row.get("name") or "").strip()
+                raw_level = (row.get("level") or "").strip()
+                raw_parent = (row.get("parent") or "").strip()
+                if not name:
+                    errors.append({"row": i, "name": "", "reason": "name is required"})
+                    continue
+                lvl = levels.get(raw_level.lower())
+                if lvl is None:
+                    errors.append({"row": i, "name": name, "reason": f"unknown level '{raw_level}'"})
+                    continue
+                if lvl == 0:
+                    errors.append({"row": i, "name": name, "reason": "cannot import the top (Company) level"})
+                    continue
+                if lvl > max_level:
+                    errors.append({"row": i, "name": name, "reason": "cannot import below the lowest level"})
+                    continue
+                matches = index.get((raw_parent.lower(), lvl - 1), [])
+                if len(matches) == 0:
+                    errors.append({"row": i, "name": name, "reason": f"parent '{raw_parent}' not found"})
+                    continue
+                if len(matches) > 1:
+                    errors.append({"row": i, "name": name, "reason": f"parent '{raw_parent}' is ambiguous"})
+                    continue
+                parent = matches[0]
+                code = self._slug_code(conn, name)
+                nid = conn.execute(
+                    text("insert into nodes (tenant_id, parent_id, level_order, name, code) "
+                         "values (cast(:tid as uuid), cast(:pid as uuid), :lvl, :name, :code) "
+                         "returning id"),
+                    {"tid": str(self.tenant_id), "pid": str(parent["id"]),
+                     "lvl": lvl, "name": name, "code": code},
+                ).scalar()
+                new_path = f"{parent['path']}{nid}/"
+                conn.execute(text("update nodes set path = :path where id = cast(:id as uuid)"),
+                             {"path": new_path, "id": str(nid)})
+                index.setdefault((name.lower(), lvl), []).append({"id": nid, "path": new_path})
+                created += 1
+        return {"created": created, "errors": errors}
+
     def update_node(self, node_id, fields: dict) -> dict | None:
         """Rename / edit a node's own attributes (not its parent, level, or code).
         Returns None if the node is out of scope/tenant."""

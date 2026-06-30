@@ -1,5 +1,5 @@
 import { Modal } from '@intelli/ui'
-import { getAncestors, getLevelName, isLocked, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
+import { chainColor, getAncestors, getLevelName, isLocked, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
 
 export default function StoreDetailModal({
   open,
@@ -53,7 +53,12 @@ export default function StoreDetailModal({
       <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-md)', overflow: 'hidden', marginBottom: 14 }}>
         <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--border-faint)', display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Chain</span>
-          <span style={{ fontSize: 13 }}>{node.chain ?? 'N/A'}</span>
+          <span style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            {node.chain && (
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: chainColor(node.chain), display: 'inline-block' }} />
+            )}
+            {node.chain ?? 'N/A'}
+          </span>
         </div>
         <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--border-faint)', display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Store ID</span>
