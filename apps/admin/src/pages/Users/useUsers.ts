@@ -23,10 +23,11 @@ export type UserInput = {
 
 export type UserPatch = { role?: Role; node_id?: string | null }
 
-export function useUsers() {
+export function useUsers(enabled = true) {
   return useQuery({
     queryKey: ['users'],
     queryFn: () => apiGet<{ users: User[]; count: number }>('/users'),
+    enabled,
   })
 }
 

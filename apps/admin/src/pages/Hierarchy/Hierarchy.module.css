@@ -120,6 +120,35 @@
   flex: 1;
 }
 
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--bg-elev);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.segBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--r-xs);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.segBtnActive {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+}
+
 .legend {
   display: flex;
   align-items: center;

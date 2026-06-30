@@ -9,12 +9,15 @@ import {
   filterNodes,
   hierarchyStats,
   uniqueChains,
+  computeCoverage,
   type OrgNode,
 } from './useHierarchy'
+import { useUsers } from '../Users/useUsers'
 import { ApiError } from '@intelli/api-client'
 import TreeNode from './TreeNode'
 import StoreDetailModal from './StoreDetailModal'
 import NodeFormModal from './NodeFormModal'
+import BulkImportModal from './BulkImportModal'
 import styles from './Hierarchy.module.css'
 
 // Level dot colours for the legend
@@ -55,6 +58,11 @@ export default function Hierarchy() {
   // The add/rename modal: which mode, and the node it acts on (parent in add mode,
   // the target node in rename mode).
   const [formState, setFormState] = useState<{ mode: 'add' | 'rename'; node: OrgNode } | null>(null)
+  // Coverage mode (read-only): show who manages / staffs each node. Bulk import pop-up.
+  const [coverage, setCoverage] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  // Only fetch the team when the Coverage view is open (it is the only consumer).
+  const usersQ = useUsers(coverage)
 
   function openAddChild(parent: OrgNode) {
     setFormState({ mode: 'add', node: parent })
@@ -77,6 +85,11 @@ export default function Hierarchy() {
   const idx = useMemo(() => buildTreeIndex(nodes), [nodes])
   const stats = useMemo(() => hierarchyStats(nodes, levels), [nodes, levels])
   const chains = useMemo(() => uniqueChains(nodes), [nodes])
+  // Coverage roll-up only when the Coverage view is on (reuses the team list).
+  const cov = useMemo(
+    () => (coverage ? computeCoverage(usersQ.data?.users ?? [], idx) : null),
+    [coverage, usersQ.data, idx],
+  )
 
   const keepIds = useMemo(() => {
     const hasFilter = query.trim() !== '' || chain !== 'All'
@@ -120,7 +133,12 @@ export default function Hierarchy() {
   return (
     <>
       <Topbar title="Hierarchy" subtitle={subtitle}>
-        {isAdmin && (
+        {isAdmin && !coverage && (
+          <Button size="sm" onClick={() => setBulkOpen(true)} title="Import nodes from a CSV">
+            <Icon name="upload" size={13} /> Bulk import
+          </Button>
+        )}
+        {isAdmin && !coverage && (
           <Button
             size="sm"
             variant={editMode ? 'primary' : 'default'}
@@ -149,60 +167,115 @@ export default function Hierarchy() {
 
           {/* toolbar */}
           <div className={styles.toolbar}>
+            <div className={styles.seg} role="tablist" aria-label="View">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!coverage}
+                className={`${styles.segBtn}${!coverage ? ` ${styles.segBtnActive}` : ''}`}
+                onClick={() => setCoverage(false)}
+              >
+                Structure
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={coverage}
+                className={`${styles.segBtn}${coverage ? ` ${styles.segBtnActive}` : ''}`}
+                onClick={() => setCoverage(true)}
+              >
+                Coverage
+              </button>
+            </div>
             <div className={styles.searchWrap}>
               <Icon name="search" size={14} />
               <input
                 className={styles.searchInput}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Find a node..."
+                placeholder="Find a node&#8230;"
                 aria-label="Find a node"
               />
             </div>
-            <div className={styles.chainWrap}>
-              <Icon name="tag" size={13} style={{ color: 'var(--text-3)' }} />
-              <select
-                className={styles.chainSelect}
-                value={chain}
-                onChange={e => setChain(e.target.value)}
-                aria-label="Filter by chain"
-              >
-                <option value="All">All chains</option>
-                {chains.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
+            {!coverage && (
+              <div className={styles.chainWrap}>
+                <Icon name="tag" size={13} style={{ color: 'var(--text-3)' }} />
+                <select
+                  className={styles.chainSelect}
+                  value={chain}
+                  onChange={e => setChain(e.target.value)}
+                  aria-label="Filter by chain"
+                >
+                  <option value="All">All chains</option>
+                  {chains.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className={styles.spacer} />
             <Button size="sm" variant="ghost" onClick={() => expandAll(true)}>Expand all</Button>
             <Button size="sm" variant="ghost" onClick={() => expandAll(false)}>Collapse</Button>
           </div>
 
-          {/* level legend */}
-          <div className={styles.legend}>
-            {LEGEND_LEVELS.map(lv => (
-              <span key={lv.name} className={styles.lvChip}>
-                <span style={{ width: 8, height: 8, borderRadius: lv.square ? 2 : 99, background: lv.color, display: 'inline-block' }} />
-                {lv.name}
-                {lv.note && <span style={{ color: 'var(--text-4)', fontWeight: 500, fontSize: 11 }}>{lv.note}</span>}
+          {/* level legend (structure view) */}
+          {!coverage && (
+            <div className={styles.legend}>
+              {LEGEND_LEVELS.map(lv => (
+                <span key={lv.name} className={styles.lvChip}>
+                  <span style={{ width: 8, height: 8, borderRadius: lv.square ? 2 : 99, background: lv.color, display: 'inline-block' }} />
+                  {lv.name}
+                  {lv.note && <Icon name="lock" size={10} style={{ color: 'var(--text-4)' }} />}
+                  {lv.note && <span style={{ color: 'var(--text-4)', fontWeight: 500, fontSize: 11 }}>{lv.note}</span>}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* info banners (structure view): locked levels, and chain-is-an-attribute */}
+          {!coverage && (
+            <>
+              <div className={styles.banner}>
+                <Icon name="lock" size={15} style={{ flexShrink: 0, marginTop: 1, color: 'var(--text-3)' }} />
+                <span>
+                  <strong style={{ color: 'var(--text-2)' }}>Company</strong> and <strong style={{ color: 'var(--text-2)' }}>Store</strong> are locked levels. They can't be renamed or removed. Middle levels are fully editable.
+                </span>
+              </div>
+              <div className={styles.banner}>
+                <Icon name="tag" size={15} style={{ flexShrink: 0, marginTop: 1, color: 'var(--text-3)' }} />
+                <span>
+                  <strong style={{ color: 'var(--text-2)' }}>Chain</strong> (CVS, Walmart, Target, Walgreens) is a store <strong style={{ color: 'var(--text-2)' }}>attribute</strong> used for survey targeting and filtering, not a management level. No one is pinned to a chain.
+                </span>
+              </div>
+              {chain !== 'All' && (
+                <div className={`${styles.banner} ${styles.chainBanner}`}>
+                  <Icon name="tag" size={15} style={{ flexShrink: 0, marginTop: 1, color: 'var(--accent)' }} />
+                  <span style={{ flex: 1 }}>Showing {chainCount} {chain} store{chainCount !== 1 ? 's' : ''} and their management path.</span>
+                  <Button size="sm" variant="ghost" onClick={() => setChain('All')}>Clear</Button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* coverage summary banner */}
+          {coverage && (
+            <div
+              className={styles.banner}
+              style={{
+                background: cov && cov.districtGaps === 0 ? 'var(--green-bg)' : 'var(--amber-bg)',
+                borderColor: 'transparent',
+              }}
+            >
+              <Icon
+                name={cov && cov.districtGaps === 0 ? 'checkCircle' : 'alert'}
+                size={15}
+                style={{ flexShrink: 0, marginTop: 1, color: cov && cov.districtGaps === 0 ? 'var(--green-fg)' : 'var(--amber-fg)' }}
+              />
+              <span style={{ color: cov && cov.districtGaps === 0 ? 'var(--green-fg)' : 'var(--amber-fg)', fontWeight: 500 }}>
+                {cov && cov.districtGaps === 0
+                  ? 'Every district has a rep.'
+                  : `${cov?.districtGaps ?? 0} district${(cov?.districtGaps ?? 0) !== 1 ? 's' : ''} have no rep yet.`}
               </span>
-            ))}
-          </div>
-
-          {/* info banner */}
-          <div className={styles.banner}>
-            <Icon name="lock" size={15} style={{ flexShrink: 0, marginTop: 1, color: 'var(--text-3)' }} />
-            <span>
-              <strong style={{ color: 'var(--text-2)' }}>Store</strong> is a locked level. Chain (CVS, Walgreens, Target) is a store <strong style={{ color: 'var(--text-2)' }}>attribute</strong> used for survey targeting, not a management level. Click any store name to see its details.
-            </span>
-          </div>
-
-          {/* chain active banner */}
-          {chain !== 'All' && (
-            <div className={`${styles.banner} ${styles.chainBanner}`}>
-              <Icon name="tag" size={15} style={{ flexShrink: 0, marginTop: 1, color: 'var(--accent)' }} />
-              <span style={{ flex: 1 }}>Showing {chainCount} {chain} store{chainCount !== 1 ? 's' : ''} and their management path.</span>
-              <Button size="sm" variant="ghost" onClick={() => setChain('All')}>Clear</Button>
             </div>
           )}
 
@@ -223,10 +296,12 @@ export default function Hierarchy() {
                 onSelectStore={setSelectedStore}
                 depth={0}
                 keepIds={keepIds}
-                editMode={editMode}
+                editMode={editMode && !coverage}
                 onAddChild={openAddChild}
                 onRename={openRename}
                 onDelete={handleDelete}
+                coverage={coverage}
+                cov={cov}
               />
             ))}
           </Card>
@@ -249,6 +324,8 @@ export default function Hierarchy() {
         levels={levels}
         onClose={() => setFormState(null)}
       />
+
+      <BulkImportModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
     </>
   )
 }

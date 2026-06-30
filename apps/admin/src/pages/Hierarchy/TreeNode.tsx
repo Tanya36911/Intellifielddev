@@ -1,5 +1,15 @@
-import { Icon } from '@intelli/ui'
-import { getLevelName, isBottomLevel, levelColor, type OrgNode, type OrgLevel, type TreeIndex } from './useHierarchy'
+import { Chip, Icon } from '@intelli/ui'
+import {
+  chainColor,
+  getLevelName,
+  isBottomLevel,
+  isLocked,
+  levelColor,
+  type Coverage,
+  type OrgNode,
+  type OrgLevel,
+  type TreeIndex,
+} from './useHierarchy'
 import styles from './TreeNode.module.css'
 
 export default function TreeNode({
@@ -15,6 +25,8 @@ export default function TreeNode({
   onAddChild,
   onRename,
   onDelete,
+  coverage = false,
+  cov = null,
 }: {
   id: string
   idx: TreeIndex
@@ -30,6 +42,9 @@ export default function TreeNode({
   onAddChild?: (parent: OrgNode) => void
   onRename?: (node: OrgNode) => void
   onDelete?: (node: OrgNode) => void
+  // Coverage mode (read-only): hides chain/code/count and shows manager/rep chips.
+  coverage?: boolean
+  cov?: Coverage | null
 }) {
   const node = idx.byId[id]
   if (!node) return null
@@ -45,6 +60,11 @@ export default function TreeNode({
   // A store is the deepest level, not any locked level (the Company root is also
   // locked). This drives the store-link, the square dot, and the add-child gate.
   const isStore = isBottomLevel(node.level_order, levels)
+  const locked = isLocked(node.level_order, levels)
+  // The company root cannot be renamed or deleted here (the company name lives in
+  // Settings; the root can never be removed). A store IS editable (its name, chain
+  // and address) by design, so only the root hides the rename/delete actions.
+  const isRoot = node.parent_id === null
   const levelName = getLevelName(node.level_order, levels)
   const color = levelColor(node.level_order, isStore)
   const isBold = node.level_order <= 1
@@ -96,19 +116,44 @@ export default function TreeNode({
         {/* level label chip */}
         <span className={styles.levelLabel}>{levelName}</span>
 
-        {/* chain badge on stores */}
-        {isStore && node.chain && (
-          <span className={styles.chainBadge}>{node.chain}</span>
+        {/* lock icon on a locked-level row (Company root and Store) */}
+        {locked && (
+          <Icon name="lock" size={12} style={{ color: 'var(--text-4)', flexShrink: 0 }} />
         )}
 
-        {/* store code in mono */}
-        {node.code && (
-          <span className={styles.code}>{node.code}</span>
+        {/* structure view: chain badge (with retailer colour dot), code, child count */}
+        {!coverage && (
+          <>
+            {isStore && node.chain && (
+              <span className={styles.chainBadge}>
+                <span className={styles.chainDot} style={{ background: chainColor(node.chain) }} />
+                {node.chain}
+              </span>
+            )}
+            {node.code && <span className={styles.code}>{node.code}</span>}
+            {!isStore && rawKids.length > 0 && (
+              <span className={styles.childCount}>{rawKids.length}</span>
+            )}
+          </>
         )}
 
-        {/* child count on non-store rows */}
-        {!isStore && rawKids.length > 0 && (
-          <span className={styles.childCount}>{rawKids.length}</span>
+        {/* coverage view: who manages / staffs this node */}
+        {coverage && cov && (
+          <span className={styles.coverage}>
+            {cov.managerByNode[node.id] && (
+              <Chip tone="blue">
+                <Icon name="pin" size={10} /> {cov.managerByNode[node.id].name}
+              </Chip>
+            )}
+            {(node.level_order === 1 || node.level_order === 2) &&
+              ((cov.repCountByNode[node.id] ?? 0) > 0 ? (
+                <Chip tone="green" dot>
+                  {cov.repCountByNode[node.id]} {cov.repCountByNode[node.id] === 1 ? 'rep' : 'reps'}
+                </Chip>
+              ) : (
+                <Chip tone="amber">No reps yet</Chip>
+              ))}
+          </span>
         )}
 
         {/* edit-mode row actions (admin only). A store is a leaf, so it gets no
@@ -126,24 +171,28 @@ export default function TreeNode({
                 <Icon name="plus" size={13} />
               </button>
             )}
-            <button
-              type="button"
-              className={styles.actionBtn}
-              onClick={() => onRename?.(node)}
-              aria-label={`Rename ${node.name}`}
-              title="Rename"
-            >
-              <Icon name="edit" size={13} />
-            </button>
-            <button
-              type="button"
-              className={`${styles.actionBtn} ${styles.actionDanger}`}
-              onClick={() => onDelete?.(node)}
-              aria-label={`Delete ${node.name}`}
-              title="Delete"
-            >
-              <Icon name="trash" size={13} />
-            </button>
+            {!isRoot && (
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => onRename?.(node)}
+                aria-label={`Rename ${node.name}`}
+                title="Rename"
+              >
+                <Icon name="edit" size={13} />
+              </button>
+            )}
+            {!isRoot && (
+              <button
+                type="button"
+                className={`${styles.actionBtn} ${styles.actionDanger}`}
+                onClick={() => onDelete?.(node)}
+                aria-label={`Delete ${node.name}`}
+                title="Delete"
+              >
+                <Icon name="trash" size={13} />
+              </button>
+            )}
           </span>
         )}
       </div>
@@ -164,6 +213,8 @@ export default function TreeNode({
           onAddChild={onAddChild}
           onRename={onRename}
           onDelete={onDelete}
+          coverage={coverage}
+          cov={cov}
         />
       ))}
     </div>

@@ -8,9 +8,13 @@ import {
   hierarchyStats,
   getAncestors,
   uniqueChains,
+  chainColor,
+  computeCoverage,
+  parseCsv,
   type OrgNode,
   type OrgLevel,
 } from './useHierarchy'
+import type { User } from '../Users/useUsers'
 
 const LEVELS: OrgLevel[] = [
   { level_order: 0, name: 'Company', locked: false },
@@ -192,5 +196,108 @@ describe('uniqueChains', () => {
 
   it('returns empty array when no chains', () => {
     expect(uniqueChains([mkNode({ id: 'x' })])).toEqual([])
+  })
+})
+
+describe('chainColor', () => {
+  it('returns the keyed tone for known chains', () => {
+    expect(chainColor('CVS')).toBe('#cc0000')
+    expect(chainColor('Walmart')).toBe('#0071ce')
+  })
+
+  it('falls back to grey for an unknown chain', () => {
+    expect(chainColor('Costco')).toBe('#999999')
+  })
+
+  it('falls back to grey for null', () => {
+    expect(chainColor(null)).toBe('#999999')
+  })
+})
+
+describe('computeCoverage', () => {
+  function mkUser(over: Partial<User> & { id: string }): User {
+    return {
+      name: over.id,
+      email: `${over.id}@x.com`,
+      role: 'rep',
+      pinned_node_id: null,
+      pinned_node_name: null,
+      pinned_node_level_order: null,
+      ...over,
+    }
+  }
+
+  const idx = buildTreeIndex(FLAT)
+
+  it('maps a manager to the node they are pinned to', () => {
+    const users = [mkUser({ id: 'm1', name: 'Pat', role: 'manager', pinned_node_id: 'r1' })]
+    const cov = computeCoverage(users, idx)
+    expect(cov.managerByNode['r1']).toEqual({ name: 'Pat' })
+  })
+
+  it('counts a rep at its pinned node and rolls it up to every ancestor', () => {
+    const users = [mkUser({ id: 'rep1', role: 'rep', pinned_node_id: 's1' })]
+    const cov = computeCoverage(users, idx)
+    // s1 is under d1 under r1 under company; the rep counts at each.
+    expect(cov.repCountByNode['s1']).toBe(1)
+    expect(cov.repCountByNode['d1']).toBe(1)
+    expect(cov.repCountByNode['r1']).toBe(1)
+    expect(cov.repCountByNode['company']).toBe(1)
+  })
+
+  it('counts a rep pinned directly to a district', () => {
+    const users = [mkUser({ id: 'rep1', role: 'rep', pinned_node_id: 'd1' })]
+    const cov = computeCoverage(users, idx)
+    expect(cov.repCountByNode['d1']).toBe(1)
+    expect(cov.repCountByNode['s1'] ?? 0).toBe(0)
+  })
+
+  it('counts districtGaps as level-2 nodes with no reps', () => {
+    // No reps anywhere -> d1 (the only district) is a gap.
+    expect(computeCoverage([], idx).districtGaps).toBe(1)
+    // A rep under d1 closes the gap.
+    const covered = computeCoverage(
+      [mkUser({ id: 'rep1', role: 'rep', pinned_node_id: 's1' })],
+      idx,
+    )
+    expect(covered.districtGaps).toBe(0)
+  })
+
+  it('ignores users with no pin', () => {
+    const users = [mkUser({ id: 'rep1', role: 'rep', pinned_node_id: null })]
+    expect(computeCoverage(users, idx).repCountByNode['d1'] ?? 0).toBe(0)
+  })
+})
+
+describe('parseCsv', () => {
+  it('skips a header row when the first cell is "level"', () => {
+    const rows = parseCsv('Level,Name,Parent\nStore,CVS Foo,Bay Area')
+    expect(rows).toEqual([{ level: 'Store', name: 'CVS Foo', parent: 'Bay Area' }])
+  })
+
+  it('keeps the first row when it is not a header', () => {
+    const rows = parseCsv('Store,CVS Foo,Bay Area')
+    expect(rows).toEqual([{ level: 'Store', name: 'CVS Foo', parent: 'Bay Area' }])
+  })
+
+  it('handles a double-quoted field containing a comma', () => {
+    const rows = parseCsv('Store,"Foo, Inc",Bay Area')
+    expect(rows).toEqual([{ level: 'Store', name: 'Foo, Inc', parent: 'Bay Area' }])
+  })
+
+  it('ignores blank lines', () => {
+    const rows = parseCsv('\nStore,A,P\n\nStore,B,P\n')
+    expect(rows).toEqual([
+      { level: 'Store', name: 'A', parent: 'P' },
+      { level: 'Store', name: 'B', parent: 'P' },
+    ])
+  })
+
+  it('trims fields and tolerates fewer or more columns', () => {
+    const rows = parseCsv('Region, North \nStore,A,P,extra,cols')
+    expect(rows).toEqual([
+      { level: 'Region', name: 'North', parent: '' },
+      { level: 'Store', name: 'A', parent: 'P' },
+    ])
   })
 })

@@ -540,3 +540,31 @@ fast-follow, never the headline.
     window to compare (none for the just-seeded stores, so it is honestly absent for now). Additive backend
     change, no migration; 249 backend tests still green (the new fields did not change existing assertions).
     NEXT: Lane 4, Survey Assignment.
+- 2026-06-30: PROTOTYPE FIDELITY PASS started (Tanya: every built Admin + Manager screen must match the
+  hi-fi prototype in layout, components, copy, badges, spacing; max parity, Admin app first, then Manager
+  fidelity, then the two unbuilt Manager screens). Each screen goes mockup -> approve -> test-first build
+  -> read-only adversarial review. Specs in docs/superpowers/specs/.
+  - **Screen 1, Admin Hierarchy (/hierarchy): DONE.** Brought to prototype fidelity: a coloured retailer
+    dot on each chain badge (CVS/Walmart/Target/Walgreens, in TreeNode + the store detail panel); a lock
+    icon on locked rows (Company root + Store) and in the level legend; the prototype's TWO info banners
+    (locked-levels, and chain-is-an-attribute); a Structure/Coverage segmented toggle whose Coverage view
+    shows who manages/staffs each node (manager chip on the pinned node, rep-count chip on regions/
+    districts, a green/amber "every district has a rep / N have no rep yet" summary), adapted to Lumen's
+    Region/District/Store levels (no "Territory" level, so rep coverage is per district) and reusing the
+    existing GET /users (fetched lazily, only when Coverage is opened); and a real, end-to-end **Bulk
+    import** pop-up (CSV tab parses the file in the browser into {level,name,parent} rows, shows a review,
+    imports; API-import tab is a styled "coming soon"). New backend brick (no migration): admin-only,
+    branch-scoped **POST /nodes/bulk** (api/app/hierarchy.py + ScopedRepo.bulk_create_nodes in
+    api/app/scope.py) creates many nodes in one transaction, resolving each row's parent BY NAME to a
+    single in-scope node one level up (existing or created earlier in the same batch), refusing the
+    company-root level and unknown levels, reporting per-row errors; 8 new tests in
+    api/tests/test_nodes_bulk.py (happy path, in-batch parent, unknown level, parent not found, ambiguous
+    parent, company-root refused, non-admin 403, cross-tenant refused). Frontend: new helpers in
+    useHierarchy.ts (chainColor, computeCoverage, parseCsv, useBulkImportNodes) and a new BulkImportModal.tsx,
+    plus edits to TreeNode.tsx, Hierarchy.tsx, StoreDetailModal.tsx, and CSS. An adversarial review caught
+    that the company ROOT was still offering Rename/Delete in edit mode (it should not: the company name
+    lives in Settings and the root can never be removed); fixed so only the root hides those actions while a
+    store stays editable by design (its name/chain/address). Gate GREEN: 257 backend tests (249 + 8) + 268
+    admin frontend tests, admin build clean. Spec:
+    docs/superpowers/specs/2026-06-30-admin-hierarchy-fidelity-design.md. NOTE: re-seed the deployed dev DB
+    after deploy for the demo data; the bulk endpoint needs no migration.

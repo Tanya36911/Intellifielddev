@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiDelete, apiGet, apiSend } from '@intelli/api-client'
+import type { User } from '../Users/useUsers'
 
 // --- types ---
 
@@ -185,6 +186,107 @@ export function uniqueChains(nodes: OrgNode[]): string[] {
   return [...chains].sort()
 }
 
+// Retailer brand tones, used for the small colour dot on a store's chain badge.
+export const RETAILER_TONE: Record<string, string> = {
+  CVS: '#cc0000',
+  Walgreens: '#e01a2b',
+  Walmart: '#0071ce',
+  Target: '#cc0000',
+  'Rite Aid': '#005daa',
+}
+
+/** Brand colour for a chain's dot; grey for unknown or missing chains. */
+export function chainColor(chain: string | null): string {
+  return (chain && RETAILER_TONE[chain]) ?? '#999999'
+}
+
+// --- coverage (read-only view: who manages / staffs each node) ---
+
+export type Coverage = {
+  managerByNode: Record<string, { name: string }>
+  repCountByNode: Record<string, number>
+  districtGaps: number
+}
+
+/**
+ * Coverage roll-up. Managers attach to the exact node they pin to. A rep counts
+ * for its pinned node AND every ancestor (walking parent_id up via idx.byId),
+ * so a region shows the reps of all its districts/stores. districtGaps is the
+ * number of districts (level_order 2) that end up with zero reps.
+ */
+export function computeCoverage(users: User[], idx: TreeIndex): Coverage {
+  const managerByNode: Record<string, { name: string }> = {}
+  const repCountByNode: Record<string, number> = {}
+
+  for (const u of users) {
+    if (!u.pinned_node_id) continue
+    if (u.role === 'manager') {
+      managerByNode[u.pinned_node_id] = { name: u.name }
+    } else if (u.role === 'rep') {
+      // Count at the pinned node and every ancestor above it.
+      let id: string | null = u.pinned_node_id
+      while (id !== null) {
+        const node: OrgNode | undefined = idx.byId[id]
+        if (!node) break
+        repCountByNode[id] = (repCountByNode[id] ?? 0) + 1
+        id = node.parent_id
+      }
+    }
+  }
+
+  const districtGaps = Object.values(idx.byId).filter(
+    (n) => n.level_order === 2 && (repCountByNode[n.id] ?? 0) === 0,
+  ).length
+
+  return { managerByNode, repCountByNode, districtGaps }
+}
+
+// --- bulk import CSV parsing ---
+
+// Split one CSV line into fields, honouring simple double-quoted fields that may
+// contain commas. Good enough for the small import sheets this screen accepts.
+function splitCsvLine(line: string): string[] {
+  const out: string[] = []
+  let field = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (inQuotes) {
+      if (c === '"') inQuotes = false
+      else field += c
+    } else if (c === '"') {
+      inQuotes = true
+    } else if (c === ',') {
+      out.push(field)
+      field = ''
+    } else {
+      field += c
+    }
+  }
+  out.push(field)
+  return out
+}
+
+/**
+ * Parse a pasted/uploaded CSV into {level, name, parent} rows. Skips blank lines
+ * and a leading header row (first cell == "level", case-insensitive). Maps the
+ * first three columns; missing columns become ''.
+ */
+export function parseCsv(text: string): { level: string; name: string; parent: string }[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '')
+  if (lines.length === 0) return []
+
+  const rows = lines.map(splitCsvLine)
+  // Drop a header row if the first cell reads "level".
+  if (rows[0][0]?.trim().toLowerCase() === 'level') rows.shift()
+
+  return rows.map((cols) => ({
+    level: (cols[0] ?? '').trim(),
+    name: (cols[1] ?? '').trim(),
+    parent: (cols[2] ?? '').trim(),
+  }))
+}
+
 // --- TanStack Query hook ---
 
 export function useHierarchy() {
@@ -246,6 +348,23 @@ export function useDeleteNode() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiDelete<{ ok: true }>(`/nodes/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['nodes'] }),
+  })
+}
+
+// Bulk import. Rows carry a level NAME and a parent NAME; the backend resolves
+// them and returns how many it created plus a per-row error list.
+export type BulkImportRow = { level: string; name: string; parent: string }
+export type BulkImportResult = {
+  created: number
+  errors: { row: number; name: string; reason: string }[]
+}
+
+export function useBulkImportNodes() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (rows: BulkImportRow[]) =>
+      apiSend<BulkImportResult>('POST', '/nodes/bulk', { rows }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nodes'] }),
   })
 }

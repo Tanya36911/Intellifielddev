@@ -167,6 +167,16 @@ ScopedRepo and with no database change (the `nodes` table already existed):
   nodes, nobody is pinned to it, no surveys are assigned to it, and there are no
   responses). If it is not empty, the delete is refused with a 409 that names the
   blocker; a node outside the caller's branch is a 404.
+- `POST /nodes/bulk` (added 2026-06-30, for the Hierarchy screen's "Bulk import"
+  pop-up) creates MANY nodes at once from a list of `{level, name, parent}` rows
+  (the level is a level NAME like "District"; the parent is a parent node's NAME).
+  In one transaction it resolves each row's parent by name to a single in-scope node
+  one level up (considering both pre-existing nodes and nodes created earlier in the
+  same batch, so a District and its Stores can import together), creates the valid
+  rows, and returns `{created, errors}` where each error names the offending row and
+  why (unknown level, parent not found, ambiguous parent, the company-root level is
+  refused). Admin-only and branch-scoped like the others; no database change. Tested
+  in `tests/test_nodes_bulk.py`.
 
 As of the set-org-levels brick (2026-06-26, the wizard's step-2 backend), this file
 also defines `PUT /org-levels` (admin only). It replaces the company's level

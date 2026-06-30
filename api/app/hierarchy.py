@@ -34,6 +34,16 @@ class NodeCreate(BaseModel):
     tz: str | None = None
 
 
+class BulkRow(BaseModel):
+    level: str = ""
+    name: str = ""
+    parent: str = ""
+
+
+class NodesBulk(BaseModel):
+    rows: list[BulkRow] = Field(default_factory=list)
+
+
 class NodeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1)
     chain: str | None = None
@@ -96,6 +106,18 @@ def create_node(
     if node is None:
         raise HTTPException(status_code=404, detail="Parent node not found in your scope")
     return node
+
+
+@router.post("/nodes/bulk")
+def bulk_import_nodes(
+    body: NodesBulk,
+    repo: ScopedRepo = Depends(get_scoped_repo),
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    """Create many nodes at once from {level, name, parent} rows (admin-only,
+    scoped). Valid rows are created; invalid rows are returned in `errors` so the
+    screen can show which spreadsheet rows did not import and why."""
+    return repo.bulk_create_nodes([r.model_dump() for r in body.rows])
 
 
 @router.patch("/nodes/{node_id}")

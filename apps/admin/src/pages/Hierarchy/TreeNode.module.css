@@ -119,6 +119,21 @@
   flex-shrink: 0;
 }
 
+.chainDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.coverage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .code {
   font-family: var(--mono);
   font-size: 10.5px;

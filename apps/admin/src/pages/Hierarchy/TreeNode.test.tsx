@@ -3,7 +3,7 @@ import { screen, fireEvent } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { adminSession } from '../../test/fixtures'
 import TreeNode from './TreeNode'
-import type { OrgNode, OrgLevel, TreeIndex } from './useHierarchy'
+import type { OrgNode, OrgLevel, TreeIndex, Coverage } from './useHierarchy'
 import { buildTreeIndex } from './useHierarchy'
 
 const LEVELS: OrgLevel[] = [
@@ -148,5 +148,101 @@ describe('TreeNode', () => {
     )
     expect(screen.queryByText('CVS Palo Alto')).toBeNull()
     expect(screen.getByText('Bay Area')).toBeTruthy()
+  })
+})
+
+describe('TreeNode coverage mode', () => {
+  it('shows the manager chip and rep counts in coverage mode', () => {
+    const cov: Coverage = {
+      managerByNode: { r1: { name: 'Pat Manager' } },
+      repCountByNode: { r1: 2, d1: 2 },
+      districtGaps: 0,
+    }
+    renderApp(
+      <TreeNode
+        id="r1"
+        idx={IDX}
+        levels={LEVELS}
+        expanded={{ r1: true, d1: true }}
+        onToggle={vi.fn()}
+        onSelectStore={vi.fn()}
+        depth={0}
+        keepIds={null}
+        coverage
+        cov={cov}
+      />,
+      { session: adminSession() }
+    )
+    // manager pinned at the region shows their name; region + district show rep counts
+    expect(screen.getByText('Pat Manager')).toBeTruthy()
+    expect(screen.getAllByText('2 reps').length).toBeGreaterThan(0)
+  })
+
+  it('shows "No reps yet" for a district with no reps', () => {
+    const cov: Coverage = { managerByNode: {}, repCountByNode: {}, districtGaps: 1 }
+    renderApp(
+      <TreeNode
+        id="r1"
+        idx={IDX}
+        levels={LEVELS}
+        expanded={{ r1: true, d1: true }}
+        onToggle={vi.fn()}
+        onSelectStore={vi.fn()}
+        depth={0}
+        keepIds={null}
+        coverage
+        cov={cov}
+      />,
+      { session: adminSession() }
+    )
+    expect(screen.getAllByText('No reps yet').length).toBeGreaterThan(0)
+  })
+})
+
+describe('TreeNode edit actions', () => {
+  // A fixture with a real company root (parent_id null) plus a middle node and a store.
+  const ROOTED: OrgNode[] = [
+    mkNode({ id: 'co', name: 'Lumen Beauty', level_order: 0, parent_id: null }),
+    mkNode({ id: 'r1', name: 'West Region', level_order: 1, parent_id: 'co' }),
+    mkNode({ id: 'd1', name: 'Bay Area', level_order: 2, parent_id: 'r1' }),
+    mkNode({ id: 's1', name: 'CVS Palo Alto', level_order: 3, parent_id: 'd1', chain: 'CVS' }),
+  ]
+  const ROOTED_IDX: TreeIndex = buildTreeIndex(ROOTED)
+
+  function renderEdit() {
+    renderApp(
+      <TreeNode
+        id="co"
+        idx={ROOTED_IDX}
+        levels={LEVELS}
+        expanded={{ co: true, r1: true, d1: true }}
+        onToggle={vi.fn()}
+        onSelectStore={vi.fn()}
+        depth={0}
+        keepIds={null}
+        editMode
+        onAddChild={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+      { session: adminSession() }
+    )
+  }
+
+  it('hides Rename and Delete on the company root, but keeps Add child', () => {
+    renderEdit()
+    expect(screen.queryByRole('button', { name: /rename lumen beauty/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /delete lumen beauty/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /add child under lumen beauty/i })).toBeTruthy()
+  })
+
+  it('keeps Rename and Delete on a middle node and a store (store editing is intended)', () => {
+    renderEdit()
+    expect(screen.getByRole('button', { name: /rename bay area/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /delete bay area/i })).toBeTruthy()
+    // a store is editable by design (name, chain, address)
+    expect(screen.getByRole('button', { name: /rename cvs palo alto/i })).toBeTruthy()
+    // but a store is a leaf, so it gets no add-child
+    expect(screen.queryByRole('button', { name: /add child under cvs palo alto/i })).toBeNull()
   })
 })

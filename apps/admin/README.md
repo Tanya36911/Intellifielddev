@@ -292,10 +292,26 @@ Its checks live in `apps/admin/src/test/ui-kit.test.tsx`. Full guide:
   mode) `NodeFormModal.tsx` (the add/rename pop-up form), plus tests and CSS. Edit
   mode also added new mutation hooks plus an `isBottomLevel` helper and a
   `levelChildName` helper in `useHierarchy.ts`, edit-mode wiring in `Hierarchy.tsx`
-  and `TreeNode.tsx`, and an `apiDelete` helper in the shared API client. Deferred (shown as
-  greyed "soon"): coverage mode (managers/reps overlay), moving a node to a new
-  parent (re-parenting), editing the org levels themselves (that comes with the
-  wizard), bulk import, and export.
+  and `TreeNode.tsx`, and an `apiDelete` helper in the shared API client.
+  As of the prototype fidelity pass (2026-06-30) the screen also matches the prototype
+  on: a coloured retailer dot on each chain badge (and in the store detail panel); a
+  lock icon on locked rows (Company root and Store) and in the level legend; the
+  prototype's two info banners (locked levels, and chain-is-an-attribute); a
+  **Structure / Coverage** segmented toggle whose Coverage view shows who manages and
+  staffs each node (a manager chip on the node they are pinned to, a rep-count chip on
+  regions and districts, and a green/amber "every district has a rep / N have no rep
+  yet" summary), adapted to Lumen's Region/District/Store levels and reusing the
+  existing `GET /users` (fetched lazily, only when Coverage is opened, via
+  `useUsers(enabled)`); and a real **Bulk import** pop-up (`BulkImportModal.tsx`) whose
+  CSV tab parses the file in the browser into `{level, name, parent}` rows (the
+  `parseCsv` helper), shows a review, then imports through the new admin-only
+  `POST /nodes/bulk` endpoint (the `useBulkImportNodes` hook); the API-import tab is a
+  styled "coming soon". New pure helpers in `useHierarchy.ts` (`chainColor`,
+  `computeCoverage`, `parseCsv`) are unit-tested. The company root no longer offers
+  Rename/Delete in edit mode (the company name lives in Settings; the root cannot be
+  removed); a store stays editable by design. Deferred: moving a node to a new parent
+  (re-parenting), editing the org levels themselves (that comes with the wizard), and
+  export.
 - `pages/Users/`: the Users & Roles screen, at `/users`. A People tab with three
   role-count cards (Admin / Manager / Rep), a plain-language banner ("a role is what
   a person can do, their pin is where they can do it"), and a team table; a Roles tab
