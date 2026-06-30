@@ -56,6 +56,20 @@ describe('buildTreeIndex', () => {
     expect(idx.roots).toEqual(['company'])
   })
 
+  it('roots on the shallowest in-scope node when an ancestor is out of scope', () => {
+    // A manager's scoped fetch starts at Central (whose parent, the company
+    // root, is above their scope and absent from the set), then its descendants.
+    const scoped: OrgNode[] = [
+      mkNode({ id: 'central', name: 'Central', level_order: 1, parent_id: 'company' }),
+      mkNode({ id: 'chi', name: 'Chicago', level_order: 2, parent_id: 'central' }),
+      mkNode({ id: 'chi-store', name: 'Chicago store', level_order: 3, parent_id: 'chi', code: 'ST010' }),
+    ]
+    const idx = buildTreeIndex(scoped)
+    expect(idx.roots).toEqual(['central']) // not dropped just because 'company' is absent
+    expect(idx.children['central']).toContain('chi')
+    expect(idx.children['chi']).toContain('chi-store')
+  })
+
   it('leaf nodes have an empty children array', () => {
     const idx = buildTreeIndex(FLAT)
     expect(idx.children['s1']).toEqual([])

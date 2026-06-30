@@ -510,6 +510,17 @@ fast-follow, never the headline.
     per-question text labels + pass-rule chips (need the survey-version question join) and the
     rep/last-visit metadata (needs /responses). Manager: 33 frontend tests, build clean; Admin: 247.
     NEXT: Lane 4, Survey Assignment (mockup -> build -> review), then Payroll Approval.
+- 2026-06-30: ADMIN sidebar fidelity + Hierarchy tree fix (Tanya spotted the Admin sidebar diverging from
+  the prototype and an empty Hierarchy tree). Admin nav now matches the prototype: re-added the **Form
+  Builder** item (sparkles icon + AI badge, linking to the real builder at /surveys/new; the AI "draft it"
+  assist is still a fast-follow), Catalog icon back to `box`, reordered to Analytics, Form Builder, Surveys,
+  Catalog. Kept **Payroll** and the admin-only **Setup** item (real built screens the prototype's sidebar
+  predates). Fixed a real bug in `apps/admin/src/pages/Hierarchy/useHierarchy.ts` buildTreeIndex: it rooted
+  the tree only on parent_id===null (the company root), so a manager whose scoped /nodes starts mid-tree
+  (at Central) saw "No nodes found" despite the stat tiles showing 11 nodes; roots now also include nodes
+  whose parent is outside the scoped set, so the tree renders for any scope. Updated the Admin App.test
+  (Form Builder nav item now expected) and added a useHierarchy test for the manager-scoped tree. Gate
+  GREEN: 248 admin tests (was 247, +1 tree test), build clean; Manager + backend unaffected.
   - **Central demo enrichment, DONE:** the seed now adds (behind a `demo_extras` flag) two more districts
     under Central (Detroit, Indianapolis), six more stores, two reps (Tasha, Omar), a mix of passing/failing
     Velvet Lip readings, and hours, so the Manager screens demo full (Sarah's branch went from 3 nodes to
