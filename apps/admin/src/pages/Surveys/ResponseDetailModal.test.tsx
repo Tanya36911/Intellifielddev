@@ -36,7 +36,8 @@ const DETAIL = {
   id: 'r1', survey_version_id: 'v1', survey_id: 's1', store_node_id: 'n1',
   store_path: '/lumen/west/sf/', user_id: 'u1', online: true,
   submitted_at: '2026-06-01T10:00:00Z', created_at: '2026-06-01T10:00:00Z',
-  store_name: 'SF Flagship', survey_name: 'Velvet Lip Shelf Check',
+  store_name: 'SF Flagship', store_chain: 'CVS', store_code: 'sf', store_address: null,
+  survey_name: 'Velvet Lip Shelf Check',
   survey_version_number: 2, rep_name: 'Marcus Bell', overall: true,
   scored: 2, passed: 1,
   items: [
@@ -71,6 +72,25 @@ describe('ResponseDetailModal', () => {
     expect(await screen.findByText('Marcus Bell')).toBeInTheDocument()
     const storeInstances = screen.getAllByText('SF Flagship')
     expect(storeInstances.length).toBeGreaterThan(0)
+  })
+
+  it('shows the chain, store code and location under the rep name', async () => {
+    renderApp(
+      <ResponseDetailModal open responseId="r1" questions={QUESTIONS} skus={SKUS} onClose={vi.fn()} />,
+      { session: adminSession() },
+    )
+    await screen.findByText('Marcus Bell')
+    expect(screen.getByText('CVS, sf')).toBeInTheDocument()
+  })
+
+  it('shows the SKU-gap callout when audited shades fall below the threshold', async () => {
+    renderApp(
+      <ResponseDetailModal open responseId="r1" questions={QUESTIONS} skus={SKUS} onClose={vi.fn()} />,
+      { session: adminSession() },
+    )
+    await screen.findByText('Marcus Bell')
+    // DETAIL: Rosewood passes, Mauve fails -> 1 of 2 shades below the threshold
+    expect(screen.getByText(/1 of 2 audited shades below the facings threshold/i)).toBeInTheDocument()
   })
 
   it('renders per-SKU facings grid with pass and fail cells', async () => {

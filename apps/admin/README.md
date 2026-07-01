@@ -249,12 +249,16 @@ Its checks live in `apps/admin/src/test/ui-kit.test.tsx`. Full guide:
     Pass / Partial / Fail / Not scored chip. Clicking a row opens the detail
     pop-up. Checked by `ResponsesListModal.test.tsx`.
   - `ResponseDetailModal.tsx` + `ResponseDetailModal.module.css`: the pop-up
-    that shows one response in full. The header shows the rep, store, and a
-    verdict badge (percentage and pass/partial/fail/na label). Below that, each
-    survey question appears with its answer and a pass/fail result chip. Per-product
-    number questions show a color-dot grid: green cell for pass, red cell for fail,
-    with the count and a check or X icon. Photo questions show a placeholder.
-    Checked by `ResponseDetailModal.test.tsx`.
+    that shows one response in full. The header shows the rep, the store's chain,
+    code and address (e.g. "CVS, sf", added in the 2026-07-01 fidelity pass), and a
+    verdict badge (percentage and pass/partial/fail/na label). When a store has
+    audited shades below the facings threshold, a red **SKU-gap callout** ("N of M
+    audited shades below the facings threshold") appears under the verdict, computed
+    from the response's per-SKU verdicts by the `skuGapSummary` helper in
+    `useResponses.ts`. Below that, each survey question appears with its answer and a
+    pass/fail result chip. Per-product number questions show a color-dot grid: green
+    cell for pass, red cell for fail, with the count and a check or X icon. Photo
+    questions show a placeholder. Checked by `ResponseDetailModal.test.tsx`.
 - `pages/Payroll/`: the Payroll screen, added in W6, at `/payroll`. Shows a pay
   period selector and a table of each rep's hours (store/reset/drive minutes,
   miles, approval status) for the selected period. Managers can approve or reject

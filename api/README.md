@@ -225,7 +225,12 @@ snapshot of the store's place in the org tree at that moment, so the history is
 correct even if the store is moved later. Re-visits add a fresh row and never
 overwrite the old one. `GET /responses` lists responses in the caller's branch
 (with pass/fail worked out live); `GET /responses/{id}` returns one response in
-full, same live scoring. All go through the ScopedRepo.
+full, same live scoring. All go through the ScopedRepo. Both list and detail also
+carry a few display fields joined from the store node and survey: `store_name`,
+`store_chain`, `store_code`, `store_address`, `survey_name`, `survey_version_number`,
+and `rep_name` (the chain/code/address were added 2026-07-01 so the Response pop-up
+can show "CVS, sf" under the rep name, matching the prototype). These are additive
+read-only fields, no database change.
 
 As of Phase 5-BE-a, `POST /responses` also accepts an optional `idempotency_key`
 (a client-generated UUID, a "claim ticket" like a coat-check stub). If the same

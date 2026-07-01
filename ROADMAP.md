@@ -307,9 +307,14 @@ stay honestly "coming soon". Specs live in `docs/superpowers/specs/`.
   migration). The company root no longer offers Rename/Delete (the company name lives in
   Settings). 257 backend + 268 admin frontend tests green. Spec:
   `docs/superpowers/specs/2026-06-30-admin-hierarchy-fidelity-design.md`.
-- NEXT: the remaining Admin screens (Responses, Users, Catalog, Surveys + Assign,
-  Settings + Setup, the shell copy, then the Analytics dashboard), then Manager Compliance
-  + Dashboard fidelity, then build the two new Manager screens.
+- **Admin Responses (2026-07-01): DONE.** The response-detail pop-up gained the red
+  SKU-gap callout ("N of M audited shades below the facings threshold") and a verdict
+  subtitle showing the store's chain, code and address (e.g. "CVS, sf"). Small additive
+  backend change: `/responses` and `/responses/{id}` now also return store_chain,
+  store_code, store_address (no migration). 258 backend + 273 admin frontend tests green.
+- NEXT: the remaining Admin screens (Users, Catalog, Surveys + Assign, Settings + Setup,
+  the shell copy, then the Analytics dashboard), then Manager Compliance + Dashboard
+  fidelity, then build the two new Manager screens.
 
 ## Small backend bricks to slot in just-in-time
 

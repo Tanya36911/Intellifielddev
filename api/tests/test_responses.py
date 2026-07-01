@@ -361,6 +361,21 @@ def test_get_response_includes_display_names(client, login):
     assert got["rep_name"], "rep_name missing from detail"
 
 
+def test_get_response_includes_store_chain_and_code(client, login):
+    """The detail carries the store's chain + code (for the verdict subtitle), so
+    the response pop-up can show 'CVS, sf' the way the prototype does."""
+    token = login("marcus@lumenbeauty.com")
+    rose = _sku_id("LUM-VL-ROSE")
+    created = _submit(client, token, _lumen_version_id(), _node_id("sf"), [
+        {"question_id": "q1", "sku_id": str(rose), "value": 5},
+    ]).json()
+    got = client.get(f"/responses/{created['id']}",
+                     headers={"Authorization": f"Bearer {token}"}).json()
+    assert got["store_chain"] == "CVS"   # the SF store is a CVS in the seed
+    assert got["store_code"] == "sf"
+    assert "store_address" in got
+
+
 def test_list_rows_include_survey_id_scored_passed(client, login):
     """GET /responses list rows must carry survey_id, scored, and passed."""
     token = login("marcus@lumenbeauty.com")

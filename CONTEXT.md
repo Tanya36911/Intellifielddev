@@ -568,3 +568,16 @@ fast-follow, never the headline.
     admin frontend tests, admin build clean. Spec:
     docs/superpowers/specs/2026-06-30-admin-hierarchy-fidelity-design.md. NOTE: re-seed the deployed dev DB
     after deploy for the demo data; the bulk endpoint needs no migration.
+  - **Screen 2, Admin Responses (2026-07-01): DONE.** The response-detail pop-up now matches the prototype
+    on the two things it was missing: (1) a red **SKU-gap callout** ("N of M audited shades below the facings
+    threshold. These roll into the per-SKU out-of-stock analytics.") shown under the verdict when a store has
+    audited shades below the facings threshold, computed live on the frontend from the response's per-SKU
+    verdicts (new pure helper skuGapSummary in useResponses.ts, unit-tested); and (2) the verdict subtitle now
+    shows the store's **chain, store code, and address** (e.g. "CVS, sf") instead of just the store name.
+    Small additive backend change (no migration): GET /responses and /responses/{id} now also return
+    store_chain, store_code, store_address (three columns added to ScopedRepo._RESPONSE_COLS_R, which already
+    joins the nodes table), with a new test in api/tests/test_responses.py. Frontend: ResponseRow/Detail types
+    gained the three fields, ResponseDetailModal.tsx renders the callout + the richer subtitle, plus a .skuGap
+    style. Deliberately still deferred (not in our data model / blocked): "Completed in N min" (no timing
+    data), the barcode answer type and skip-logic "not shown" label (no such question types), and shelf photos
+    (need object storage). Gate GREEN: 258 backend tests (257 + 1) + 273 admin frontend tests, build clean.

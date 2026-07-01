@@ -3,8 +3,10 @@ import {
   responsesForSurvey,
   countBySurvey,
   responseStatus,
+  skuGapSummary,
   type ResponseRow,
   type ResponseDetail,
+  type ResponseItem,
 } from './useResponses'
 
 // Helper to build a minimal ResponseRow fixture
@@ -19,6 +21,9 @@ const row = (id: string, survey_id: string, survey_version_id = 'v1-id'): Respon
   submitted_at: '2026-06-01T10:00:00Z',
   created_at: '2026-06-01T10:00:00Z',
   store_name: 'SF Store',
+  store_chain: 'CVS',
+  store_code: 'sf',
+  store_address: null,
   survey_name: 'Test Survey',
   survey_version_number: 1,
   rep_name: 'Marcus Bell',
@@ -79,6 +84,9 @@ describe('responseStatus', () => {
     submitted_at: '2026-06-01T10:00:00Z',
     created_at: '2026-06-01T10:00:00Z',
     store_name: 'Store',
+    store_chain: null,
+    store_code: 'x',
+    store_address: null,
     survey_name: 'Survey',
     survey_version_number: 1,
     rep_name: 'Rep',
@@ -122,5 +130,42 @@ describe('responseStatus', () => {
     expect(r.scored).toBe(1)
     expect(r.passed).toBe(1)
     expect(r.pct).toBe(100)
+  })
+})
+
+describe('skuGapSummary', () => {
+  const detailWith = (items: ResponseItem[]): ResponseDetail => ({
+    id: 'r1', survey_version_id: 'v1', survey_id: 's1', store_node_id: 'n1',
+    store_path: '/lumen/', user_id: 'u1', online: true,
+    submitted_at: '2026-06-01T10:00:00Z', created_at: '2026-06-01T10:00:00Z',
+    store_name: 'Store', store_chain: null, store_code: 'x', store_address: null,
+    survey_name: 'Survey', survey_version_number: 1, rep_name: 'Rep',
+    overall: null, scored: 0, passed: 0, items, questions: {},
+  })
+
+  it('counts scored per-SKU items that failed the facings threshold', () => {
+    const s = skuGapSummary(detailWith([
+      { question_id: 'q1', sku_id: 'a', value: 5, pass: true },
+      { question_id: 'q1', sku_id: 'b', value: 2, pass: false },
+      { question_id: 'q1', sku_id: 'c', value: 1, pass: false },
+      { question_id: 'q2', sku_id: null, value: 'Yes', pass: true }, // non-SKU, ignored
+    ]))
+    expect(s).toEqual({ gaps: 2, total: 3 })
+  })
+
+  it('returns zero gaps when every audited shade passes', () => {
+    const s = skuGapSummary(detailWith([
+      { question_id: 'q1', sku_id: 'a', value: 5, pass: true },
+      { question_id: 'q1', sku_id: 'b', value: 6, pass: true },
+    ]))
+    expect(s).toEqual({ gaps: 0, total: 2 })
+  })
+
+  it('ignores per-SKU items with no verdict (unscored)', () => {
+    const s = skuGapSummary(detailWith([
+      { question_id: 'q1', sku_id: 'a', value: 5, pass: null },
+      { question_id: 'q1', sku_id: 'b', value: 2, pass: false },
+    ]))
+    expect(s).toEqual({ gaps: 1, total: 1 })
   })
 })

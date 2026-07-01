@@ -1,5 +1,5 @@
 import { Modal, Avatar, Chip, Icon } from '@intelli/ui'
-import { useResponseDetail, responseStatus, type ResponseDetail } from './useResponses'
+import { useResponseDetail, responseStatus, skuGapSummary, type ResponseDetail } from './useResponses'
 import type { BackendQuestion } from './useSurveys'
 import type { Sku } from '../Catalog/useCatalog'
 import styles from './ResponseDetailModal.module.css'
@@ -263,6 +263,7 @@ export function ResponseDetailModal({
   const { data: detail, isLoading } = useResponseDetail(responseId, open)
 
   const sum = detail ? responseStatus(detail) : null
+  const gap = detail ? skuGapSummary(detail) : null
   const tone = sum ? STATUS_TONE[sum.status] : undefined
   const fg = tone ? `var(--${tone}-fg)` : 'var(--text-2)'
   const bg = tone ? `var(--${tone}-bg)` : 'var(--surface-2, var(--surface-hover))'
@@ -296,7 +297,11 @@ export function ResponseDetailModal({
                 <Avatar name={detail.rep_name} size={34} />
                 <div>
                   <div className={styles.verdictName}>{detail.rep_name}</div>
-                  <div className={styles.verdictSub}>{detail.store_name}</div>
+                  <div className={styles.verdictSub}>
+                    {[detail.store_chain, detail.store_code, detail.store_address]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </div>
                 </div>
               </div>
               <div className={styles.verdictRight}>
@@ -312,6 +317,17 @@ export function ResponseDetailModal({
                 )}
               </div>
             </div>
+
+            {/* SKU gap callout: audited shades below the facings threshold */}
+            {gap && gap.gaps > 0 && (
+              <div className={styles.skuGap}>
+                <Icon name="box" size={15} />
+                <span>
+                  {gap.gaps} of {gap.total} audited shades below the facings threshold.
+                  These roll into the per-SKU out-of-stock analytics.
+                </span>
+              </div>
+            )}
 
             {/* Meta strip */}
             <div className={styles.metaStrip}>

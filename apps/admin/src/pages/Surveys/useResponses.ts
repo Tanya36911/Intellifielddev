@@ -14,6 +14,9 @@ export type ResponseRow = {
   submitted_at: string
   created_at: string
   store_name: string
+  store_chain: string | null
+  store_code: string
+  store_address: string | null
   survey_name: string
   survey_version_number: number
   rep_name: string
@@ -105,4 +108,20 @@ export function responseStatus(detail: ResponseDetail): ResponseStatus {
   else if (passed === 0) status = 'fail'
   else status = 'partial'
   return { pct, status, scored, passed }
+}
+
+/**
+ * Count the audited shades (per-SKU items) that failed the facings threshold, for
+ * the red "N of M audited shades below the facings threshold" callout. Only items
+ * that were actually scored (pass true or false) count toward the total; items
+ * without a verdict (no pass rule) are ignored, matching the facings grid.
+ */
+export function skuGapSummary(detail: ResponseDetail): { gaps: number; total: number } {
+  const scoredSkuItems = detail.items.filter(
+    (i) => i.sku_id != null && i.pass !== null,
+  )
+  return {
+    gaps: scoredSkuItems.filter((i) => i.pass === false).length,
+    total: scoredSkuItems.length,
+  }
 }
